@@ -49,11 +49,16 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
 .head-mid{text-align:center}
 .tagline{font-size:11px;letter-spacing:.26em;color:var(--muted);text-transform:uppercase}
 .tagline b{color:var(--cyan);font-weight:600}
-.best-chip{
-  font-family:'Press Start 2P';font-size:10px;color:var(--yellow);
-  border:1px solid rgba(255,210,63,.4);padding:11px 15px;border-radius:10px;
-  background:rgba(255,210,63,.06);box-shadow:0 0 24px -10px rgba(255,210,63,.5);white-space:nowrap;
+.header-right{display:flex;gap:10px;align-items:center}
+.chip{
+  font-family:'Press Start 2P';font-size:10px;
+  border:1px solid rgba(255,255,255,.3);padding:11px 15px;border-radius:10px;
+  background:rgba(255,255,255,.06);white-space:nowrap;cursor:pointer;
+  transition:transform .15s, border-color .2s, color .2s;
 }
+.chip:hover{transform:translateY(-2px);border-color:var(--cyan);color:#fff}
+.chip.user{color:var(--green);border-color:rgba(77,238,138,.4);background:rgba(77,238,138,.06)}
+.chip.lb{color:var(--yellow);border-color:rgba(255,210,63,.4);background:rgba(255,210,63,.06)}
 .layout{
   position:relative;z-index:1;flex:1;
   display:grid;grid-template-columns:220px auto 240px;gap:18px;
@@ -193,6 +198,45 @@ footer b{color:#7f8ac2}
   .board-wrap{height:min(58vh,560px)}
   #next{height:250px}
 }
+
+/* Модалки */
+.modal{
+  position:fixed;inset:0;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(6,9,22,.9);backdrop-filter:blur(8px);
+}
+.modal-box{
+  background:linear-gradient(180deg, rgba(24,29,63,.98), rgba(13,17,40,.98));
+  border:1px solid var(--line);border-radius:16px;padding:32px;
+  max-width:380px;width:90%;box-shadow:0 30px 80px -20px rgba(0,0,0,.9);
+}
+.modal-title{font-family:'Press Start 2P';font-size:16px;color:var(--cyan);margin-bottom:24px;text-align:center}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.form-group input{
+  width:100%;padding:12px 14px;border-radius:9px;
+  background:#0d1334;border:1px solid var(--line);color:var(--ink);
+  font-family:'Rubik';font-size:14px;transition:border-color .2s;
+}
+.form-group input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(38,217,242,.15)}
+.form-error{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+.modal-btns{display:flex;gap:10px;margin-top:24px}
+.modal-btns .btn{flex:1;font-size:10px;padding:14px 20px}
+
+/* Таблица лидеров */
+.leaderboard{
+  max-height:400px;overflow-y:auto;margin-top:20px;
+}
+.lb-row{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;
+  border-radius:8px;background:rgba(13,17,40,.6);margin-bottom:8px;
+  transition:background .2s;
+}
+.lb-row:hover{background:rgba(38,217,242,.08)}
+.lb-rank{font-family:'Press Start 2P';font-size:12px;color:var(--yellow);min-width:32px}
+.lb-name{flex:1;font-size:14px;font-weight:600;color:var(--ink)}
+.lb-score{font-family:'Press Start 2P';font-size:11px;color:var(--cyan)}
+.lb-empty{text-align:center;color:var(--muted);padding:20px;font-size:13px}
 </style>
 </head>
 <body>
@@ -211,7 +255,10 @@ footer b{color:#7f8ac2}
   <div class="head-mid">
     <div class="tagline">SRS · 7-BAG · <b>T-СПИНЫ</b> · WEB AUDIO</div>
   </div>
-  <div class="best-chip">РЕКОРД <span id="bestTop">0</span></div>
+  <div class="header-right">
+    <div class="chip lb" onclick="openLeaderboard()">🏆 ЛИДЕРЫ</div>
+    <div class="chip user" id="userChip" onclick="showAuthModal()">ВОЙТИ</div>
+  </div>
 </header>
 
 <main class="layout">
@@ -294,6 +341,7 @@ footer b{color:#7f8ac2}
       <button class="btn-mini" id="btnPause">ПАУЗА</button>
       <button class="btn-mini" id="btnSfx">ЗВУК</button>
       <button class="btn-mini" id="btnMus">МУЗЫКА</button>
+      <button class="btn-mini" id="btnHints">👁 ПОДСКАЗКИ: ВЫКЛ</button>
     </div>
   </aside>
 </main>
@@ -310,9 +358,38 @@ footer b{color:#7f8ac2}
 
 <footer><b>ENTER</b> — старт · <b>P</b> — пауза · чистый JS, без библиотек</footer>
 
+<!-- Модалка игрока -->
+<div class="modal hidden" id="authModal">
+  <div class="modal-box">
+    <div class="modal-title">ИГРОК</div>
+    <div class="form-group">
+      <label>Ваше имя</label>
+      <input type="text" id="authUsername" maxlength="20" autocomplete="username" placeholder="Введите имя...">
+    </div>
+    <div class="form-error" id="authError"></div>
+    <div class="modal-btns">
+      <button class="btn" id="authSubmit">СОХРАНИТЬ</button>
+    </div>
+    <div style="margin-top:18px;text-align:center">
+      <button class="btn-mini" id="authCancel" style="width:auto;padding:8px 16px">ОТМЕНА</button>
+      <button class="btn-mini" id="authLogout" style="width:auto;padding:8px 16px;margin-left:8px">СБРОСИТЬ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка таблицы лидеров -->
+<div class="modal hidden" id="lbModal">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-title">🏆 ТАБЛИЦА ЛИДЕРОВ</div>
+    <div class="leaderboard" id="leaderboard"></div>
+    <div style="margin-top:20px">
+      <button class="btn" id="lbClose" style="width:100%">ЗАКРЫТЬ</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
-/* ============ БАЗА ============ */
 const $=id=>document.getElementById(id);
 const COLS=10, ROWS=20;
 const COLORS={I:'#26d9f2',J:'#4f8bff',L:'#ff9440',O:'#ffd23f',S:'#4dee8a',T:'#b45cff',Z:'#ff5c6a'};
@@ -325,12 +402,12 @@ const SHAPES={
   T:[[0,1,0],[1,1,1],[0,0,0]],
   Z:[[1,1,0],[0,1,1],[0,0,0]],
 };
-const KJ={ // SRS-кики, JLSTZ (экранные координаты)
+const KJ={
  '0>1':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]], '1>0':[[0,0],[1,0],[1,1],[0,-2],[1,-2]],
  '1>2':[[0,0],[1,0],[1,1],[0,-2],[1,-2]], '2>1':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
  '2>3':[[0,0],[1,0],[1,-1],[0,2],[1,2]],  '3>2':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
  '3>0':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '0>3':[[0,0],[1,0],[1,-1],[0,2],[1,2]]};
-const KI={ // SRS-кики для I
+const KI={
  '0>1':[[0,0],[-2,0],[1,0],[-2,1],[1,-2]], '1>0':[[0,0],[2,0],[-1,0],[2,-1],[-1,2]],
  '1>2':[[0,0],[-1,0],[2,0],[-1,-2],[2,1]], '2>1':[[0,0],[1,0],[-2,0],[1,2],[-2,-1]],
  '2>3':[[0,0],[2,0],[-1,0],[2,-1],[-1,2]], '3>2':[[0,0],[-2,0],[1,0],[-2,1],[1,-2]],
@@ -349,6 +426,111 @@ function rotateM(m,dir){const n=m.length,res=Array.from({length:n},()=>Array(n).
   for(let y=0;y<n;y++)for(let x=0;x<n;x++){
     if(dir>0)res[y][x]=m[n-1-x][y]; else res[y][x]=m[x][n-1-y];}
   return res;}
+
+/* ============ LOCALSTORAGE: АВТОРИЗАЦИЯ И ЛИДЕРБОРД ============ */
+let currentUser = null;
+const STORAGE_KEY_USER = 'tetris_user_v2';
+const STORAGE_KEY_LEADERBOARD = 'tetris_leaderboard_v2';
+
+function loadUser(){
+  const user = localStorage.getItem(STORAGE_KEY_USER);
+  if (user) {
+    currentUser = { username: user };
+    updateUserChip();
+  }
+}
+
+function updateUserChip(){
+  const chip = $('userChip');
+  if(currentUser){
+    chip.textContent = `👤 ${currentUser.username}`;
+  }else{
+    chip.textContent = 'ВОЙТИ';
+  }
+}
+
+function showAuthModal(){
+  $('authModal').classList.remove('hidden');
+  $('authError').textContent = '';
+  $('authUsername').value = currentUser ? currentUser.username : '';
+  $('authLogout').style.display = currentUser ? 'inline-block' : 'none';
+  setTimeout(() => $('authUsername').focus(), 100);
+}
+
+function hideAuthModal(){
+  $('authModal').classList.add('hidden');
+}
+
+function doAuth(){
+  const username = $('authUsername').value.trim();
+  const err = $('authError');
+  if(!username){ err.textContent = 'Введите имя'; return; }
+  if(username.length < 2 || username.length > 20){ err.textContent = 'Имя от 2 до 20 символов'; return; }
+  
+  localStorage.setItem(STORAGE_KEY_USER, username);
+  currentUser = { username };
+  updateUserChip();
+  hideAuthModal();
+}
+
+function doLogout(){
+  localStorage.removeItem(STORAGE_KEY_USER);
+  currentUser = null;
+  updateUserChip();
+  hideAuthModal();
+}
+
+function submitScore(score){
+  if(!currentUser) return;
+  let leaderboard = JSON.parse(localStorage.getItem(STORAGE_KEY_LEADERBOARD) || '[]');
+  const existing = leaderboard.find(e => e.username.toLowerCase() === currentUser.username.toLowerCase());
+  if (existing) {
+    if (score > existing.score) { existing.score = score; existing.date = Date.now(); }
+  } else {
+    leaderboard.push({ username: currentUser.username, score: score, date: Date.now() });
+  }
+  leaderboard.sort((a, b) => b.score - a.score);
+  if (leaderboard.length > 50) leaderboard.length = 50;
+  localStorage.setItem(STORAGE_KEY_LEADERBOARD, JSON.stringify(leaderboard));
+}
+
+function openLeaderboard(){
+  $('lbModal').classList.remove('hidden');
+  const lb = $('leaderboard');
+  lb.innerHTML = '<div class="lb-empty">Загрузка...</div>';
+  const leaderboard = JSON.parse(localStorage.getItem(STORAGE_KEY_LEADERBOARD) || '[]');
+  if(!leaderboard.length){
+    lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
+    return;
+  }
+  lb.innerHTML = leaderboard.map((entry, i) => `
+    <div class="lb-row">
+      <div class="lb-rank">#${i+1}</div>
+      <div class="lb-name">${escapeHtml(entry.username)}</div>
+      <div class="lb-score">${entry.score.toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+$('authSubmit').onclick = doAuth;
+$('authCancel').onclick = hideAuthModal;
+$('authLogout').onclick = doLogout;
+$('lbClose').onclick = () => $('lbModal').classList.add('hidden');
+
+/* ============ НАСТРОЙКИ: ПОДСКАЗКИ ============ */
+let hintsEnabled = false; // По умолчанию выключено
+
+function toggleHints() {
+  hintsEnabled = !hintsEnabled;
+  $('btnHints').textContent = hintsEnabled ? '👁 ПОДСКАЗКИ: ВКЛ' : '👁 ПОДСКАЗКИ: ВЫКЛ';
+}
+$('btnHints').onclick = toggleHints;
 
 /* ============ ЗВУК ============ */
 let ac=null,master,sfxG,musG,sfxOn=true,musOn=true;
@@ -381,7 +563,6 @@ const sfx={
   level(){[523,659,784,1046].forEach((f,i)=>tone(f,.09,'triangle',.07,0,i*.07))},
   over(){[440,349,293,220,165].forEach((f,i)=>tone(f,.28,'sawtooth',.06,f*.7,i*.2))},
 };
-/* Музыка: «Коробейника» на осцилляторах */
 const midi2f=m=>440*Math.pow(2,(m-69)/12);
 const MEL=[['E5',1],['B4',.5],['C5',.5],['D5',1],['C5',.5],['B4',.5],
  ['A4',1],['A4',.5],['C5',.5],['E5',1],['D5',.5],['C5',.5],
@@ -393,7 +574,7 @@ const MEL=[['E5',1],['B4',.5],['C5',.5],['D5',1],['C5',.5],['B4',.5],
  ['C5',1],['A4',1],['A4',1],[null,1]];
 const N2M={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const n2m=s=>12*(+s[1]+1)+N2M[s[0]];
-const ROOTS=[45,45,40,45,38,45,40,45]; // A2 A2 E2 A2 D2 A2 E2 A2
+const ROOTS=[45,45,40,45,38,45,40,45];
 const BEAT=60/150;
 let mTimer=null,mIdx=0,mBeat=0,mNext=0;
 function musNote(f,t,d,type,vol){
@@ -408,7 +589,7 @@ function scheduleMusic(){
   while(mNext<ac.currentTime+.35){
     const [n,d]=MEL[mIdx];
     if(n)musNote(midi2f(n2m(n)),mNext,d*BEAT*.92,'square',.045);
-    const span=Math.round(d); // бас по долям
+    const span=Math.round(d);
     for(let b=0;b<span;b++){
       const beat=mBeat+b, root=ROOTS[Math.floor(beat/4)%8];
       musNote(midi2f(root+(beat%2?12:0)),mNext+b*BEAT,BEAT*.55,'triangle',.05);
@@ -563,9 +744,9 @@ function gameOver(){
   state='over';stopMusic();sfx.over();shake=6;
   const isRec=score>best;
   if(isRec){best=score;localStorage.setItem('tetris.best',best);}
-  $('bestTop').textContent=best;
   $('finScore').textContent=score;$('finLines').textContent=linesCleared;$('finLevel').textContent=level;
   $('recBadge').classList.toggle('hidden',!isRec);
+  submitScore(score);
   show('ovOver');
 }
 function startGame(){
@@ -588,7 +769,6 @@ function togglePause(){
 function show(id){hideAll();$(id).classList.remove('hidden');}
 function hideAll(){['ovStart','ovPause','ovOver'].forEach(i=>$(i).classList.add('hidden'));}
 
-/* ============ HUD / ЭФФЕКТЫ ============ */
 function hudSet(el,v){v=String(v);if(el.textContent!==v){el.textContent=v;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}}
 function popup(text,cls='',dy=0){
   const d=document.createElement('div');
@@ -602,7 +782,6 @@ function mkPart(x,y,type){
           s:.16+Math.random()*.14,c:COLORS[type]||'#fff',life:1,r:Math.random()*6,vr:(Math.random()-.5)*10};
 }
 
-/* ============ ЦИКЛ ============ */
 const speed=l=>Math.max(60,780*Math.pow(.84,l-1));
 function update(dt){
   timeMs+=dt;
@@ -612,12 +791,10 @@ function update(dt){
 
   if(clearing){clearing.t-=dt;if(clearing.t<=0)finishClear();return;}
 
-  // DAS / автоповтор
   for(const dir of ['left','right']){
     const k=keys[dir];if(!k||!k.held)continue;
     k.t+=dt;if(k.t>DAS){k.r+=dt;while(k.r>=ARR){k.r-=ARR;moveX(dir==='left'?-1:1);}}
   }
-  // гравитация
   const soft=softHeld&&keys.down&&keys.down.held;
   const interval=soft?Math.min(35,speed(level)):speed(level);
   dropTimer+=dt;
@@ -630,7 +807,6 @@ function update(dt){
   else lockTimer=0;
 }
 
-/* ============ РЕНДЕР ============ */
 function drawBlock(cnv,x,y,type,ghost=false,alpha=1){
   const col=COLORS[type];
   if(ghost){
@@ -650,11 +826,11 @@ function drawBlock(cnv,x,y,type,ghost=false,alpha=1){
   cnv.beginPath();cnv.ellipse(x+.28,y+.25,.14,.08,-.6,0,7);cnv.fill();
   cnv.restore();
 }
+
 function render(dt){
   const w=gameCv.width,cell=w/COLS;
   g.setTransform(cell,0,0,cell,0,0);
   if(shake>0){g.translate((Math.random()-.5)*shake*.08,(Math.random()-.5)*shake*.08);shake=Math.max(0,shake-dt*.02);}
-  // фон поля
   const bg=g.createLinearGradient(0,0,0,ROWS);
   bg.addColorStop(0,'#0d1334');bg.addColorStop(1,'#070a1e');
   g.fillStyle=bg;g.fillRect(-1,-1,COLS+2,ROWS+2);
@@ -668,7 +844,6 @@ function render(dt){
   const lv=LVLC[(level-1)%8];
   glow.addColorStop(0,hexA(lv,.22));glow.addColorStop(1,'rgba(0,0,0,0)');
   g.fillStyle=glow;g.fillRect(0,0,COLS,1.6);
-  // шлейф сброса
   const now=performance.now();
   trails=trails.filter(t=>now-t.born<190);
   for(const t of trails){
@@ -677,33 +852,31 @@ function render(dt){
     for(let y=0;y<t.m.length;y++)for(let x=0;x<t.m[y].length;x++)
       if(t.m[y][x])g.fillRect(t.x+x+.08,t.fromY+y,t.m[y][x]?0.84:0,(t.toY-t.fromY)+.84);
   }
-  // зафиксированные блоки
   for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)
     if(board&&board[y][x])drawBlock(g,x,y,board[y][x]);
-  // вспышка очистки
   if(clearing){
     const p=1-clearing.t/250, a=Math.sin(p*Math.PI);
     g.fillStyle=`rgba(255,255,255,${.85*a})`;
     for(const ry of clearing.rows)g.fillRect(0,ry,COLS,1);
   }
-  // призрак и фигура
   if(cur&&(state==='playing')){
-    const d=dropDist();
-    if(d>0)for(let y=0;y<cur.m.length;y++)for(let x=0;x<cur.m[y].length;x++)
-      if(cur.m[y][x]&&cur.y+d+y>=0)drawBlock(g,cur.x+x,cur.y+d+y,cur.type,true);
+    // ПРИЗРАК РИСУЕТСЯ ТОЛЬКО ЕСЛИ hintsEnabled === true
+    if(hintsEnabled){
+      const d=dropDist();
+      if(d>0)for(let y=0;y<cur.m.length;y++)for(let x=0;x<cur.m[y].length;x++)
+        if(cur.m[y][x]&&cur.y+d+y>=0)drawBlock(g,cur.x+x,cur.y+d+y,cur.type,true);
+    }
     g.save();g.shadowColor=COLORS[cur.type];g.shadowBlur=cell*.4;
     for(let y=0;y<cur.m.length;y++)for(let x=0;x<cur.m[y].length;x++)
       if(cur.m[y][x]&&cur.y+y>=0)drawBlock(g,cur.x+x,cur.y+y,cur.type);
     g.restore();
   }
-  // частицы
   particles=particles.filter(p=>p.life>0);
   for(const p of particles){
     p.life-=dt/700;p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=14*dt/1000;p.r+=p.vr*dt/1000;
     g.save();g.globalAlpha=Math.max(0,p.life);g.translate(p.x,p.y);g.rotate(p.r);
     g.fillStyle=p.c;g.fillRect(-p.s/2,-p.s/2,p.s,p.s);g.restore();
   }
-  // опасность
   if(board){
     let top=ROWS;
     for(let y=0;y<ROWS;y++)if(board[y].some(c=>c)){top=y;break;}
@@ -717,29 +890,82 @@ function render(dt){
   if(flashA>0){g.fillStyle=`rgba(255,255,255,${flashA})`;g.fillRect(0,0,COLS,ROWS);flashA-=dt/300;}
   g.setTransform(1,0,0,1,0,0);
 }
-function drawMini(ctx2,type,cw,ch,cell,alpha){
-  const m=SHAPES[type];let minx=9,maxx=-1,miny=9,maxy=-1;
-  for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)
-    if(m[y][x]){minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y);}
-  const ox=(cw-(maxx-minx+1)*cell)/2-minx*cell, oy=(ch-(maxy-miny+1)*cell)/2-miny*cell;
-  ctx2.save();ctx2.setTransform(cell,0,0,cell,ox,oy);ctx2.globalAlpha=alpha;
-  for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)
-    if(m[y][x])drawBlock(ctx2,x,y,type);
+
+// ИСПРАВЛЕННАЯ функция отрисовки мини-фигур
+function drawMini(ctx2, type, slotW, slotH, cell, alpha) {
+  const m = SHAPES[type];
+  let minX = 4, maxX = -1, minY = 4, maxY = -1;
+  for (let y = 0; y < m.length; y++) {
+    for (let x = 0; x < m[y].length; x++) {
+      if (m[y][x]) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  const pW = (maxX - minX + 1) * cell;
+  const pH = (maxY - minY + 1) * cell;
+  const ox = (slotW - pW) / 2 - minX * cell;
+  const oy = (slotH - pH) / 2 - minY * cell;
+
+  ctx2.save();
+  ctx2.setTransform(1, 0, 0, 1, 0, 0);
+  ctx2.clearRect(0, 0, slotW, slotH); // Гарантированная очистка
+  ctx2.setTransform(cell, 0, 0, cell, ox, oy);
+  ctx2.globalAlpha = alpha;
+  for (let y = 0; y < m.length; y++) {
+    for (let x = 0; x < m[y].length; x++) {
+      if (m[y][x]) drawBlock(ctx2, x, y, type);
+    }
+  }
   ctx2.restore();
 }
+
 function renderSide(){
   // HOLD
-  hctx.setTransform(1,0,0,1,0,0);hctx.clearRect(0,0,holdCv.width,holdCv.height);
-  if(hold)drawMini(hctx,hold,holdCv.width,holdCv.height,holdCv.width/5.2,canHold?1:.45);
+  hctx.setTransform(1, 0, 0, 1, 0, 0);
+  hctx.clearRect(0, 0, holdCv.width, holdCv.height);
+  if (hintsEnabled && hold) {
+    const cell = holdCv.width / 5.2;
+    drawMini(hctx, hold, holdCv.width, holdCv.height, cell, canHold ? 1 : 0.45);
+  } else if (!hintsEnabled) {
+    hctx.fillStyle = 'rgba(255,255,255,0.15)';
+    hctx.font = '24px "Press Start 2P"';
+    hctx.textAlign = 'center';
+    hctx.fillText('?', holdCv.width / 2, holdCv.height / 2 + 8);
+  }
+
   // NEXT
-  nctx.setTransform(1,0,0,1,0,0);nctx.clearRect(0,0,nextCv.width,nextCv.height);
-  const slotH=nextCv.height/4;
-  for(let i=0;i<4&&i<queue.length;i++){
-    drawMini(nctx,queue[i],nextCv.width,slotH,nextCv.width/5.4,1-i*.14);
+  nctx.setTransform(1, 0, 0, 1, 0, 0);
+  nctx.clearRect(0, 0, nextCv.width, nextCv.height);
+  const slotH = nextCv.height / 4;
+
+  if (hintsEnabled) {
+    for (let i = 0; i < 4 && i < queue.length; i++) {
+      const cell = nextCv.width / 5.4;
+      const y = i * slotH;
+      nctx.save();
+      nctx.translate(0, y);
+      nctx.clearRect(0, 0, nextCv.width, slotH); // Очистка конкретной ячейки
+      drawMini(nctx, queue[i], nextCv.width, slotH, cell, 1 - i * 0.14);
+      nctx.restore();
+    }
+  } else {
+    for (let i = 0; i < 4; i++) {
+      const y = i * slotH;
+      nctx.save();
+      nctx.translate(0, y);
+      nctx.clearRect(0, 0, nextCv.width, slotH);
+      nctx.fillStyle = 'rgba(255,255,255,0.15)';
+      nctx.font = '18px "Press Start 2P"';
+      nctx.textAlign = 'center';
+      nctx.fillText('?', nextCv.width / 2, slotH / 2 + 6);
+      nctx.restore();
+    }
   }
 }
 
-/* ============ ФОН: ПАДАЮЩИЕ СИЛУЭТЫ ============ */
+/* ============ ФОН ============ */
 const bgCv=$('bgfx'),bctx=bgCv.getContext('2d');
 let bgPieces=[];
 function bgInit(){
@@ -797,11 +1023,29 @@ const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
   ArrowDown:'down',KeyS:'down',ArrowUp:'cw',KeyX:'cw',KeyZ:'ccw',
   Space:'drop',KeyC:'hold',ShiftLeft:'hold',ShiftRight:'hold',
   KeyP:'pause',Escape:'pause',KeyR:'restart',KeyM:'sfx',KeyN:'music',Enter:'enter'};
-addEventListener('keydown',e=>{
-  const c=KEYMAP[e.code];if(!c)return;
-  e.preventDefault();if(!e.repeat)press(c);
+
+// ИСПРАВЛЕНИЕ: Игнорируем нажатия, если фокус в поле ввода
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.code === 'Escape') {
+      e.target.blur();
+      hideAuthModal();
+      $('lbModal').classList.add('hidden');
+    }
+    return; // Позволяем спокойно печатать буквы C, P, R и т.д.
+  }
+  const c = KEYMAP[e.code];
+  if (!c) return;
+  e.preventDefault();
+  if (!e.repeat) press(c);
 });
-addEventListener('keyup',e=>{const c=KEYMAP[e.code];if(c)release(c);});
+
+addEventListener('keyup', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  const c = KEYMAP[e.code];
+  if (c) release(c);
+});
+
 addEventListener('blur',()=>{if(state==='playing')togglePause();});
 document.querySelectorAll('.tbtn').forEach(b=>{
   const k=b.dataset.k;
@@ -831,7 +1075,7 @@ function fit(){
 }
 addEventListener('resize',fit);
 
-$('bestTop').textContent=best;
+loadUser();
 fit();
 let lastT=performance.now();
 function frame(now){
