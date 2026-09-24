@@ -47,8 +47,6 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
 .tile:hover{transform:translateY(-6px) rotate(-5deg) scale(1.08)}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 .head-mid{text-align:center}
-.tagline{font-size:11px;letter-spacing:.26em;color:var(--muted);text-transform:uppercase}
-.tagline b{color:var(--cyan);font-weight:600}
 .header-right{display:flex;gap:10px;align-items:center}
 .chip{
   font-family:'Press Start 2P';font-size:10px;
@@ -61,7 +59,7 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
 .chip.lb{color:var(--yellow);border-color:rgba(255,210,63,.4);background:rgba(255,210,63,.06)}
 .layout{
   position:relative;z-index:1;flex:1;
-  display:grid;grid-template-columns:220px auto 240px;gap:18px;
+  display:grid;grid-template-columns:200px auto 240px;gap:18px;
   align-items:start;justify-content:center;padding:8px 22px 26px;
 }
 .col{display:flex;flex-direction:column;gap:14px}
@@ -76,11 +74,8 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
   display:flex;align-items:center;gap:8px;margin-bottom:12px;
 }
 .panel h3::before{content:'';width:7px;height:7px;background:var(--ac);box-shadow:0 0 10px var(--ac)}
-.hold{--ac:var(--cyan)} .stats{--ac:var(--yellow)} .next{--ac:var(--pink)} .help{--ac:var(--green)}
-#hold,#next{display:block;margin:0 auto}
-#hold{width:118px;height:80px}
-#next{width:132px;height:332px}
-.hold.locked #hold{opacity:.35;filter:grayscale(.6)}
+.stats{--ac:var(--yellow)} .next{--ac:var(--pink)} .help{--ac:var(--green)}
+#next{display:block;margin:0 auto; width:132px; height:332px;}
 .stat{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed rgba(120,140,255,.14)}
 .stat:last-child{border-bottom:0}
 .stat .k{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
@@ -186,7 +181,6 @@ kbd{
 }
 .tbtn:active{transform:translateY(3px);box-shadow:none;border-color:var(--cyan)}
 footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:0 12px 16px}
-footer b{color:#7f8ac2}
 @media (pointer:coarse){.touch{display:flex}}
 @media (max-width:1020px){
   header{justify-content:center;text-align:center}
@@ -261,9 +255,7 @@ footer b{color:#7f8ac2}
     <span class="tile" style="--c:#4f8bff;--d:.6s">И</span>
     <span class="tile" style="--c:#ff9440;--d:.75s">С</span>
   </div>
-  <div class="head-mid">
-    <div class="tagline">SRS · 7-BAG · <b>T-СПИНЫ</b> · WEB AUDIO</div>
-  </div>
+  <div class="head-mid"></div>
   <div class="header-right">
     <div class="chip lb" onclick="openLeaderboard()">🏆 ЛИДЕРЫ</div>
     <div class="chip user" id="userChip" onclick="showAuthModal()">ВОЙТИ</div>
@@ -272,10 +264,6 @@ footer b{color:#7f8ac2}
 
 <main class="layout">
   <aside class="col">
-    <section class="panel hold" id="holdPanel">
-      <h3>ЗАХВАТ · C</h3>
-      <canvas id="hold" width="118" height="80"></canvas>
-    </section>
     <section class="panel stats">
       <h3>СТАТИСТИКА</h3>
       <div class="stat"><span class="k">Счёт</span><span class="v" id="score">0</span></div>
@@ -303,7 +291,6 @@ footer b{color:#7f8ac2}
           <span><kbd>←</kbd><kbd>→</kbd> движение</span>
           <span><kbd>↑</kbd> поворот</span>
           <span><kbd>SPACE</kbd> сброс</span>
-          <span><kbd>C</kbd> захват</span>
         </div>
         <button class="btn play" id="btnStart">▶ ИГРАТЬ</button>
         <p class="ov-sub" style="font-size:12px">или нажми <kbd>ENTER</kbd></p>
@@ -340,7 +327,6 @@ footer b{color:#7f8ac2}
         <li>Поворот ↻ / ↺ <span><kbd>↑ X</kbd> <kbd>Z</kbd></span></li>
         <li>Мягкий спуск <span><kbd>↓</kbd></span></li>
         <li>Сброс <span><kbd>SPACE</kbd></span></li>
-        <li>Захват <span><kbd>C</kbd></span></li>
         <li>Пауза <span><kbd>P</kbd></span></li>
         <li>Звук / Музыка <span><kbd>M</kbd> <kbd>N</kbd></span></li>
         <li>Заново <span><kbd>R</kbd></span></li>
@@ -362,10 +348,7 @@ footer b{color:#7f8ac2}
   <button class="tbtn" data-k="cw">⟳</button>
   <button class="tbtn" data-k="down">▼</button>
   <button class="tbtn" data-k="drop">⤓</button>
-  <button class="tbtn" data-k="hold">▣</button>
 </div>
-
-<footer><b>ENTER</b> — старт · <b>P</b> — пауза · чистый JS, без библиотек</footer>
 
 <!-- Модалка игрока -->
 <div class="modal hidden" id="authModal">
@@ -401,14 +384,10 @@ footer b{color:#7f8ac2}
 <script>
 'use strict';
 
-/* ═══════════════════════════════════════════════════════════════
-   ⚙️ НАСТРОЙКИ JSONBIN — ВСТАВЬТЕ СВОИ КЛЮЧИ СЮДА
-   ═══════════════════════════════════════════════════════════════ */
 const JSONBIN_CONFIG = {
-  BIN_ID: '6ab56efdffd5d160532b7302',           // Например: '65f1a2b3c4d5e6f7g8h9i0j1'
-  MASTER_KEY: '$2a$10$cIrkcDK4A.vA.7JMweW3h.v09rAR5FagkWhzyAWXkfE9khk1xKy/O'    // Например: '$2a$10$...'
+  BIN_ID: 'ВАШ_BIN_ID',
+  MASTER_KEY: 'ВАШ_MASTER_KEY'
 };
-/* ═══════════════════════════════════════════════════════════════ */
 
 const $=id=>document.getElementById(id);
 const COLS=10, ROWS=20;
@@ -447,83 +426,48 @@ function rotateM(m,dir){const n=m.length,res=Array.from({length:n},()=>Array(n).
     if(dir>0)res[y][x]=m[n-1-x][y]; else res[y][x]=m[x][n-1-y];}
   return res;}
 
-/* ═══════════════════════════════════════════════════════════════
-   JSONBIN API — ГЛОБАЛЬНАЯ ТАБЛИЦА ЛИДЕРОВ
-   ═══════════════════════════════════════════════════════════════ */
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_CONFIG.BIN_ID}`;
 const JSONBIN_HEADERS = {
   'Content-Type': 'application/json',
   'X-Master-Key': JSONBIN_CONFIG.MASTER_KEY
 };
 
-// Загрузка таблицы лидеров из JSONBin
 async function loadLeaderboardFromCloud() {
   try {
-    const response = await fetch(`${JSONBIN_URL}/latest`, {
-      method: 'GET',
-      headers: JSONBIN_HEADERS
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
+    const response = await fetch(`${JSONBIN_URL}/latest`, { method: 'GET', headers: JSONBIN_HEADERS });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     return data.record || [];
   } catch (error) {
     console.error('Ошибка загрузки из JSONBin:', error);
-    // Fallback на localStorage
     return JSON.parse(localStorage.getItem('tetris_leaderboard_v2') || '[]');
   }
 }
 
-// Сохранение таблицы лидеров в JSONBin
 async function saveLeaderboardToCloud(leaderboard) {
   try {
-    const response = await fetch(JSONBIN_URL, {
-      method: 'PUT',
-      headers: JSONBIN_HEADERS,
-      body: JSON.stringify(leaderboard)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    // Также сохраняем локально как кэш
+    const response = await fetch(JSONBIN_URL, { method: 'PUT', headers: JSONBIN_HEADERS, body: JSON.stringify(leaderboard) });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     localStorage.setItem('tetris_leaderboard_v2', JSON.stringify(leaderboard));
     return true;
   } catch (error) {
     console.error('Ошибка сохранения в JSONBin:', error);
-    // Fallback на localStorage
     localStorage.setItem('tetris_leaderboard_v2', JSON.stringify(leaderboard));
     return false;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   LOCALSTORAGE: АВТОРИЗАЦИЯ (ЛОКАЛЬНАЯ)
-   ═══════════════════════════════════════════════════════════════ */
 let currentUser = null;
 const STORAGE_KEY_USER = 'tetris_user_v2';
 
 function loadUser(){
   const user = localStorage.getItem(STORAGE_KEY_USER);
-  if (user) {
-    currentUser = { username: user };
-    updateUserChip();
-  }
+  if (user) { currentUser = { username: user }; updateUserChip(); }
 }
-
 function updateUserChip(){
   const chip = $('userChip');
-  if(currentUser){
-    chip.textContent = `👤 ${currentUser.username}`;
-  }else{
-    chip.textContent = 'ВОЙТИ';
-  }
+  chip.textContent = currentUser ? `👤 ${currentUser.username}` : 'ВОЙТИ';
 }
-
 function showAuthModal(){
   $('authModal').classList.remove('hidden');
   $('authError').textContent = '';
@@ -531,90 +475,55 @@ function showAuthModal(){
   $('authLogout').style.display = currentUser ? 'inline-block' : 'none';
   setTimeout(() => $('authUsername').focus(), 100);
 }
-
-function hideAuthModal(){
-  $('authModal').classList.add('hidden');
-}
-
+function hideAuthModal(){ $('authModal').classList.add('hidden'); }
 function doAuth(){
   const username = $('authUsername').value.trim();
   const err = $('authError');
   if(!username){ err.textContent = 'Введите имя'; return; }
   if(username.length < 2 || username.length > 20){ err.textContent = 'Имя от 2 до 20 символов'; return; }
-  
   localStorage.setItem(STORAGE_KEY_USER, username);
   currentUser = { username };
   updateUserChip();
   hideAuthModal();
 }
-
 function doLogout(){
   localStorage.removeItem(STORAGE_KEY_USER);
   currentUser = null;
   updateUserChip();
   hideAuthModal();
 }
-
-// Отправка счёта в глобальную таблицу лидеров
 async function submitScore(score){
   if(!currentUser) return;
-  
-  // Загружаем текущую таблицу
   let leaderboard = await loadLeaderboardFromCloud();
-  
-  // Находим или создаём запись для текущего игрока
   const existing = leaderboard.find(e => e.username.toLowerCase() === currentUser.username.toLowerCase());
   if (existing) {
-    if (score > existing.score) {
-      existing.score = score;
-      existing.date = Date.now();
-    }
+    if (score > existing.score) { existing.score = score; existing.date = Date.now(); }
   } else {
-    leaderboard.push({
-      username: currentUser.username,
-      score: score,
-      date: Date.now()
-    });
+    leaderboard.push({ username: currentUser.username, score: score, date: Date.now() });
   }
-  
-  // Сортировка и ограничение
   leaderboard.sort((a, b) => b.score - a.score);
   if (leaderboard.length > 100) leaderboard.length = 100;
-  
-  // Сохраняем в облако
   await saveLeaderboardToCloud(leaderboard);
 }
-
-// Открытие таблицы лидеров
 async function openLeaderboard(){
   $('lbModal').classList.remove('hidden');
   const lb = $('leaderboard');
   lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
-  
   const leaderboard = await loadLeaderboardFromCloud();
-  
   if(!leaderboard.length){
     lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
     return;
   }
-  
   lb.innerHTML = leaderboard.slice(0, 50).map((entry, i) => {
     const isMe = currentUser && entry.username.toLowerCase() === currentUser.username.toLowerCase();
-    return `
-      <div class="lb-row ${isMe ? 'me' : ''}">
-        <div class="lb-rank">#${i+1}</div>
-        <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
-        <div class="lb-score">${entry.score.toLocaleString()}</div>
-      </div>
-    `;
+    return `<div class="lb-row ${isMe ? 'me' : ''}">
+      <div class="lb-rank">#${i+1}</div>
+      <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
+      <div class="lb-score">${entry.score.toLocaleString()}</div>
+    </div>`;
   }).join('');
 }
-
-function escapeHtml(str){
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+function escapeHtml(str){ const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
 $('authSubmit').onclick = doAuth;
 $('authCancel').onclick = hideAuthModal;
@@ -622,20 +531,13 @@ $('authLogout').onclick = doLogout;
 $('lbClose').onclick = () => $('lbModal').classList.add('hidden');
 $('lbRefresh').onclick = () => openLeaderboard();
 
-/* ═══════════════════════════════════════════════════════════════
-   НАСТРОЙКИ: ПОДСКАЗКИ
-   ═══════════════════════════════════════════════════════════════ */
 let hintsEnabled = false;
-
 function toggleHints() {
   hintsEnabled = !hintsEnabled;
   $('btnHints').textContent = hintsEnabled ? '👁 ПОДСКАЗКИ: ВКЛ' : '👁 ПОДСКАЗКИ: ВЫКЛ';
 }
 $('btnHints').onclick = toggleHints;
 
-/* ═══════════════════════════════════════════════════════════════
-   ЗВУК
-   ═══════════════════════════════════════════════════════════════ */
 let ac=null,master,sfxG,musG,sfxOn=true,musOn=true;
 function audioInit(){
   if(ac)return;
@@ -657,7 +559,6 @@ function tone(f,dur,type='square',vol=.06,slide=0,delay=0,dest){
 const sfx={
   move(){tone(190,.03,'square',.02)},
   rotate(){tone(330,.05,'square',.04);tone(495,.04,'square',.03,0,.03)},
-  hold(){tone(460,.07,'triangle',.06)},
   hard(){tone(170,.1,'sawtooth',.09,55);tone(60,.13,'sine',.09)},
   lock(){tone(150,.05,'sine',.05)},
   clear(n){[523,659,784].slice(0,1+n).forEach((f,i)=>tone(f,.1,'triangle',.07,0,i*.055))},
@@ -667,14 +568,7 @@ const sfx={
   over(){[440,349,293,220,165].forEach((f,i)=>tone(f,.28,'sawtooth',.06,f*.7,i*.2))},
 };
 const midi2f=m=>440*Math.pow(2,(m-69)/12);
-const MEL=[['E5',1],['B4',.5],['C5',.5],['D5',1],['C5',.5],['B4',.5],
- ['A4',1],['A4',.5],['C5',.5],['E5',1],['D5',.5],['C5',.5],
- ['B4',1.5],['C5',.5],['D5',1],['E5',1],
- ['C5',1],['A4',1],['A4',1],[null,1],
- ['D5',1.5],['F5',.5],['A5',1],['G5',.5],['F5',.5],
- ['E5',1.5],['C5',.5],['E5',1],['D5',.5],['C5',.5],
- ['B4',1],['B4',.5],['C5',.5],['D5',1],['E5',1],
- ['C5',1],['A4',1],['A4',1],[null,1]];
+const MEL=[['E5',1],['B4',.5],['C5',.5],['D5',1],['C5',.5],['B4',.5],['A4',1],['A4',.5],['C5',.5],['E5',1],['D5',.5],['C5',.5],['B4',1.5],['C5',.5],['D5',1],['E5',1],['C5',1],['A4',1],['A4',1],[null,1],['D5',1.5],['F5',.5],['A5',1],['G5',.5],['F5',.5],['E5',1.5],['C5',.5],['E5',1],['D5',.5],['C5',.5],['B4',1],['B4',.5],['C5',.5],['D5',1],['E5',1],['C5',1],['A4',1],['A4',1],[null,1]];
 const N2M={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const n2m=s=>12*(+s[1]+1)+N2M[s[0]];
 const ROOTS=[45,45,40,45,38,45,40,45];
@@ -703,16 +597,12 @@ function scheduleMusic(){
 function startMusic(){if(!ac||mTimer||!musOn)return;mIdx=0;mBeat=0;mNext=ac.currentTime+.1;mTimer=setInterval(scheduleMusic,100);}
 function stopMusic(){clearInterval(mTimer);mTimer=null;}
 
-/* ═══════════════════════════════════════════════════════════════
-   СОСТОЯНИЕ ИГРЫ (остальной код без изменений)
-   ═══════════════════════════════════════════════════════════════ */
 const gameCv=$('game'), g=gameCv.getContext('2d');
-const holdCv=$('hold'), hctx=holdCv.getContext('2d');
 const nextCv=$('next'), nctx=nextCv.getContext('2d');
 const wrap=$('wrap'), popups=$('popups');
 let dpr=Math.min(2,window.devicePixelRatio||1);
 
-let board,cur,hold=null,canHold=true,queue=[],bag=[];
+let board,cur,queue=[],bag=[];
 let score,linesCleared,level,combo,b2b,timeMs,state='menu';
 let dropTimer=0,lockTimer=0,lockResets=0,softHeld=false,lastAction='spawn',lastKick=0;
 let clearing=null,particles=[],trails=[],shake=0,flashA=0;
@@ -765,21 +655,16 @@ function hardDrop(){
   cur.y+=d;score+=2*d;hudSet($('score'),score);
   shake=Math.max(shake,4);sfx.hard();lockPiece();
 }
-function doHold(){
-  if(state!=='playing'||clearing||!canHold)return;
-  sfx.hold();
-  const t=cur.type;
-  if(hold===null){hold=t;spawnNext();}
-  else{const h=hold;hold=t;cur=makePiece(h);dropTimer=0;lockTimer=0;lockResets=0;
-       if(collides(cur.m,cur.x,cur.y))gameOver();}
-  canHold=false;$('holdPanel').classList.add('locked');
-}
+
 function spawnNext(){
   ensureQueue();
-  cur=makePiece(queue.shift());ensureQueue();
+  const nextType = queue.shift(); 
+  cur = makePiece(nextType);
+  ensureQueue();
   dropTimer=0;lockTimer=0;lockResets=0;lastAction='spawn';
   if(collides(cur.m,cur.x,cur.y))gameOver();
 }
+
 function tCorners(){
   const cx=cur.x+1,cy=cur.y+1;
   const occ=(x,y)=>x<0||x>=COLS||y>=ROWS||(y>=0&&board[y][x]);
@@ -803,7 +688,6 @@ function lockPiece(){
   const full=[];
   for(let y=0;y<ROWS;y++)if(board[y].every(c=>c))full.push(y);
 
-  canHold=true;$('holdPanel').classList.remove('locked');
   let pts=0,difficult=false,label=null,cls='p-clear';
 
   if(full.length){
@@ -851,18 +735,18 @@ function gameOver(){
   if(isRec){best=score;localStorage.setItem('tetris.best',best);}
   $('finScore').textContent=score;$('finLines').textContent=linesCleared;$('finLevel').textContent=level;
   $('recBadge').classList.toggle('hidden',!isRec);
-  submitScore(score); // Асинхронно отправляем в облако
+  submitScore(score);
   show('ovOver');
 }
 function startGame(){
   audioInit();if(ac&&ac.state==='suspended')ac.resume();
-  board=emptyBoard();queue=[];bag=[];hold=null;canHold=true;
+  board=emptyBoard();queue=[];bag=[];
   score=0;linesCleared=0;level=1;combo=-1;b2b=false;timeMs=0;
   dropTimer=0;lockTimer=0;lockResets=0;softHeld=false;clearing=null;
   particles=[];trails=[];shake=0;flashA=0;
   $('score').textContent='0';$('lines').textContent='0';$('level').textContent='1';
   $('time').textContent='0:00';$('combo').textContent='—';$('b2b').textContent='—';
-  $('lvlBar').style.width='0%';$('holdPanel').classList.add('locked');
+  $('lvlBar').style.width='0%';
   wrap.style.setProperty('--lv',LVLC[0]);
   hideAll();state='playing';ensureQueue();spawnNext();
   startMusic();
@@ -900,16 +784,26 @@ function update(dt){
     const k=keys[dir];if(!k||!k.held)continue;
     k.t+=dt;if(k.t>DAS){k.r+=dt;while(k.r>=ARR){k.r-=ARR;moveX(dir==='left'?-1:1);}}
   }
-  const soft=softHeld&&keys.down&&keys.down.held;
-  const interval=soft?Math.min(35,speed(level)):speed(level);
+  
+  const soft = keys.down && keys.down.held;
+  const interval = soft ? Math.max(50, speed(level) * 0.15) : speed(level);
+  
   dropTimer+=dt;
   while(dropTimer>=interval){
     dropTimer-=interval;
-    if(canDown()){cur.y++;lockTimer=0;if(soft){score+=1;$('score').textContent=score;}}
-    else break;
+    if(canDown()){
+      cur.y++;
+      lockTimer=0;
+      if(soft){ score+=1; $('score').textContent=score; }
+    }else{ break; }
   }
-  if(!canDown()){lockTimer+=dt;if(lockTimer>=LOCK)lockPiece();}
-  else lockTimer=0;
+  
+  if(!canDown()){
+    lockTimer+=dt;
+    if(lockTimer>=LOCK)lockPiece();
+  }else{
+    lockTimer=0;
+  }
 }
 
 function drawBlock(cnv,x,y,type,ghost=false,alpha=1){
@@ -995,73 +889,90 @@ function render(dt){
   g.setTransform(1,0,0,1,0,0);
 }
 
-function drawMini(ctx2, type, slotW, slotH, cell, alpha) {
+// ПОЛНОСТЬЮ ПЕРЕПИСАННАЯ ФУНКЦИЯ ОТРИСОВКИ МИНИ-ФИГУР
+// Без translate, всё рисуется в абсолютных координатах
+function drawMiniPiece(ctx, type, centerX, centerY, cellSize, alpha) {
   const m = SHAPES[type];
-  let minX = 4, maxX = -1, minY = 4, maxY = -1;
+  
+  // Находим границы фигуры
+  let minX = 999, maxX = -999, minY = 999, maxY = -999;
   for (let y = 0; y < m.length; y++) {
     for (let x = 0; x < m[y].length; x++) {
       if (m[y][x]) {
-        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
       }
     }
   }
-  const pW = (maxX - minX + 1) * cell;
-  const pH = (maxY - minY + 1) * cell;
-  const ox = (slotW - pW) / 2 - minX * cell;
-  const oy = (slotH - pH) / 2 - minY * cell;
-
-  ctx2.save();
-  ctx2.setTransform(1, 0, 0, 1, 0, 0);
-  ctx2.clearRect(0, 0, slotW, slotH);
-  ctx2.setTransform(cell, 0, 0, cell, ox, oy);
-  ctx2.globalAlpha = alpha;
+  
+  // Размер фигуры в клетках
+  const pieceWidth = maxX - minX + 1;
+  const pieceHeight = maxY - minY + 1;
+  
+  // Центр фигуры в клетках
+  const pieceCenterX = minX + pieceWidth / 2;
+  const pieceCenterY = minY + pieceHeight / 2;
+  
+  // Смещение для центрирования
+  const offsetX = centerX - pieceCenterX * cellSize;
+  const offsetY = centerY - pieceCenterY * cellSize;
+  
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  
+  // Рисуем каждый блок в абсолютных координатах
   for (let y = 0; y < m.length; y++) {
     for (let x = 0; x < m[y].length; x++) {
-      if (m[y][x]) drawBlock(ctx2, x, y, type);
+      if (m[y][x]) {
+        const blockX = offsetX + x * cellSize;
+        const blockY = offsetY + y * cellSize;
+        
+        // Простая отрисовка блока
+        const col = COLORS[type];
+        const gr = ctx.createLinearGradient(blockX, blockY, blockX, blockY + cellSize);
+        gr.addColorStop(0, shade(col, 0.34));
+        gr.addColorStop(0.5, col);
+        gr.addColorStop(1, shade(col, -0.3));
+        
+        ctx.fillStyle = gr;
+        ctx.fillRect(blockX + 1, blockY + 1, cellSize - 2, cellSize - 2);
+        
+        // Блик
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillRect(blockX + 3, blockY + 3, cellSize * 0.3, cellSize * 0.2);
+      }
     }
   }
-  ctx2.restore();
+  
+  ctx.restore();
 }
 
+// ПЕРЕПИСАННАЯ ФУНКЦИЯ ОТРИСОВКИ БОКОВОЙ ПАНЕЛИ
+// Полностью очищает canvas перед отрисовкой
 function renderSide(){
-  hctx.setTransform(1, 0, 0, 1, 0, 0);
-  hctx.clearRect(0, 0, holdCv.width, holdCv.height);
-  if (hintsEnabled && hold) {
-    const cell = holdCv.width / 5.2;
-    drawMini(hctx, hold, holdCv.width, holdCv.height, cell, canHold ? 1 : 0.45);
-  } else if (!hintsEnabled) {
-    hctx.fillStyle = 'rgba(255,255,255,0.15)';
-    hctx.font = '24px "Press Start 2P"';
-    hctx.textAlign = 'center';
-    hctx.fillText('?', holdCv.width / 2, holdCv.height / 2 + 8);
-  }
-
+  // ЖЁСТКАЯ ОЧИСТКА всего canvas
   nctx.setTransform(1, 0, 0, 1, 0, 0);
   nctx.clearRect(0, 0, nextCv.width, nextCv.height);
+  
   const slotH = nextCv.height / 4;
-
-  if (hintsEnabled) {
-    for (let i = 0; i < 4 && i < queue.length; i++) {
-      const cell = nextCv.width / 5.4;
-      const y = i * slotH;
-      nctx.save();
-      nctx.translate(0, y);
-      nctx.clearRect(0, 0, nextCv.width, slotH);
-      drawMini(nctx, queue[i], nextCv.width, slotH, cell, 1 - i * 0.14);
-      nctx.restore();
-    }
-  } else {
-    for (let i = 0; i < 4; i++) {
-      const y = i * slotH;
-      nctx.save();
-      nctx.translate(0, y);
-      nctx.clearRect(0, 0, nextCv.width, slotH);
+  const centerX = nextCv.width / 2;
+  const cellSize = nextCv.width / 5;
+  
+  for (let i = 0; i < 4; i++) {
+    const type = queue[i];
+    const centerY = (i + 0.5) * slotH;
+    
+    if (hintsEnabled && type) {
+      drawMiniPiece(nctx, type, centerX, centerY, cellSize, 1 - i * 0.15);
+    } else {
+      // Рисуем знак вопроса
       nctx.fillStyle = 'rgba(255,255,255,0.15)';
-      nctx.font = '18px "Press Start 2P"';
+      nctx.font = `${cellSize * 1.2}px "Press Start 2P"`;
       nctx.textAlign = 'center';
-      nctx.fillText('?', nextCv.width / 2, slotH / 2 + 6);
-      nctx.restore();
+      nctx.textBaseline = 'middle';
+      nctx.fillText('?', centerX, centerY);
     }
   }
 }
@@ -1110,7 +1021,6 @@ function press(code){
     case 'cw':rotate(1);break;
     case 'ccw':rotate(-1);break;
     case 'drop':hardDrop();break;
-    case 'hold':doHold();break;
   }
 }
 function release(code){
@@ -1120,16 +1030,11 @@ function release(code){
 }
 const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
   ArrowDown:'down',KeyS:'down',ArrowUp:'cw',KeyX:'cw',KeyZ:'ccw',
-  Space:'drop',KeyC:'hold',ShiftLeft:'hold',ShiftRight:'hold',
-  KeyP:'pause',Escape:'pause',KeyR:'restart',KeyM:'sfx',KeyN:'music',Enter:'enter'};
+  Space:'drop', KeyP:'pause',Escape:'pause',KeyR:'restart',KeyM:'sfx',KeyN:'music',Enter:'enter'};
 
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-    if (e.code === 'Escape') {
-      e.target.blur();
-      hideAuthModal();
-      $('lbModal').classList.add('hidden');
-    }
+    if (e.code === 'Escape') { e.target.blur(); hideAuthModal(); $('lbModal').classList.add('hidden'); }
     return;
   }
   const c = KEYMAP[e.code];
@@ -1164,10 +1069,8 @@ function fit(){
   dpr=Math.min(2,window.devicePixelRatio||1);
   const r=gameCv.getBoundingClientRect();
   gameCv.width=Math.round(r.width*dpr);gameCv.height=Math.round(r.height*dpr);
-  for(const cv of [holdCv,nextCv]){
-    const rc=cv.getBoundingClientRect();
-    cv.width=Math.round(rc.width*dpr);cv.height=Math.round(rc.height*dpr);
-  }
+  const rc=nextCv.getBoundingClientRect();
+  nextCv.width=Math.round(rc.width*dpr);nextCv.height=Math.round(rc.height*dpr);
   bgInit();
 }
 addEventListener('resize',fit);
