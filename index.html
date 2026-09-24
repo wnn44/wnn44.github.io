@@ -233,10 +233,19 @@ footer b{color:#7f8ac2}
   transition:background .2s;
 }
 .lb-row:hover{background:rgba(38,217,242,.08)}
+.lb-row.me{background:rgba(77,238,138,.12);border:1px solid rgba(77,238,138,.3)}
 .lb-rank{font-family:'Press Start 2P';font-size:12px;color:var(--yellow);min-width:32px}
 .lb-name{flex:1;font-size:14px;font-weight:600;color:var(--ink)}
 .lb-score{font-family:'Press Start 2P';font-size:11px;color:var(--cyan)}
 .lb-empty{text-align:center;color:var(--muted);padding:20px;font-size:13px}
+.lb-loading{text-align:center;color:var(--cyan);padding:20px;font-size:13px}
+.lb-refresh{
+  font-family:'Press Start 2P';font-size:9px;padding:8px 16px;
+  background:rgba(38,217,242,.1);border:1px solid rgba(38,217,242,.3);
+  color:var(--cyan);border-radius:8px;cursor:pointer;margin-bottom:12px;
+  transition:all .2s;
+}
+.lb-refresh:hover{background:rgba(38,217,242,.2);transform:translateY(-2px)}
 </style>
 </head>
 <body>
@@ -381,6 +390,7 @@ footer b{color:#7f8ac2}
 <div class="modal hidden" id="lbModal">
   <div class="modal-box" style="max-width:500px">
     <div class="modal-title">🏆 ТАБЛИЦА ЛИДЕРОВ</div>
+    <button class="lb-refresh" id="lbRefresh">🔄 ОБНОВИТЬ</button>
     <div class="leaderboard" id="leaderboard"></div>
     <div style="margin-top:20px">
       <button class="btn" id="lbClose" style="width:100%">ЗАКРЫТЬ</button>
@@ -390,6 +400,16 @@ footer b{color:#7f8ac2}
 
 <script>
 'use strict';
+
+/* ═══════════════════════════════════════════════════════════════
+   ⚙️ НАСТРОЙКИ JSONBIN — ВСТАВЬТЕ СВОИ КЛЮЧИ СЮДА
+   ═══════════════════════════════════════════════════════════════ */
+const JSONBIN_CONFIG = {
+  BIN_ID: '6ab56efdffd5d160532b7302',           // Например: '65f1a2b3c4d5e6f7g8h9i0j1'
+  MASTER_KEY: '$2a$10$cIrkcDK4A.vA.7JMweW3h.v09rAR5FagkWhzyAWXkfE9khk1xKy/O'    // Например: '$2a$10$...'
+};
+/* ═══════════════════════════════════════════════════════════════ */
+
 const $=id=>document.getElementById(id);
 const COLS=10, ROWS=20;
 const COLORS={I:'#26d9f2',J:'#4f8bff',L:'#ff9440',O:'#ffd23f',S:'#4dee8a',T:'#b45cff',Z:'#ff5c6a'};
@@ -427,10 +447,65 @@ function rotateM(m,dir){const n=m.length,res=Array.from({length:n},()=>Array(n).
     if(dir>0)res[y][x]=m[n-1-x][y]; else res[y][x]=m[x][n-1-y];}
   return res;}
 
-/* ============ LOCALSTORAGE: АВТОРИЗАЦИЯ И ЛИДЕРБОРД ============ */
+/* ═══════════════════════════════════════════════════════════════
+   JSONBIN API — ГЛОБАЛЬНАЯ ТАБЛИЦА ЛИДЕРОВ
+   ═══════════════════════════════════════════════════════════════ */
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_CONFIG.BIN_ID}`;
+const JSONBIN_HEADERS = {
+  'Content-Type': 'application/json',
+  'X-Master-Key': JSONBIN_CONFIG.MASTER_KEY
+};
+
+// Загрузка таблицы лидеров из JSONBin
+async function loadLeaderboardFromCloud() {
+  try {
+    const response = await fetch(`${JSONBIN_URL}/latest`, {
+      method: 'GET',
+      headers: JSONBIN_HEADERS
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.record || [];
+  } catch (error) {
+    console.error('Ошибка загрузки из JSONBin:', error);
+    // Fallback на localStorage
+    return JSON.parse(localStorage.getItem('tetris_leaderboard_v2') || '[]');
+  }
+}
+
+// Сохранение таблицы лидеров в JSONBin
+async function saveLeaderboardToCloud(leaderboard) {
+  try {
+    const response = await fetch(JSONBIN_URL, {
+      method: 'PUT',
+      headers: JSONBIN_HEADERS,
+      body: JSON.stringify(leaderboard)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    // Также сохраняем локально как кэш
+    localStorage.setItem('tetris_leaderboard_v2', JSON.stringify(leaderboard));
+    return true;
+  } catch (error) {
+    console.error('Ошибка сохранения в JSONBin:', error);
+    // Fallback на localStorage
+    localStorage.setItem('tetris_leaderboard_v2', JSON.stringify(leaderboard));
+    return false;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOCALSTORAGE: АВТОРИЗАЦИЯ (ЛОКАЛЬНАЯ)
+   ═══════════════════════════════════════════════════════════════ */
 let currentUser = null;
 const STORAGE_KEY_USER = 'tetris_user_v2';
-const STORAGE_KEY_LEADERBOARD = 'tetris_leaderboard_v2';
 
 function loadUser(){
   const user = localStorage.getItem(STORAGE_KEY_USER);
@@ -480,36 +555,59 @@ function doLogout(){
   hideAuthModal();
 }
 
-function submitScore(score){
+// Отправка счёта в глобальную таблицу лидеров
+async function submitScore(score){
   if(!currentUser) return;
-  let leaderboard = JSON.parse(localStorage.getItem(STORAGE_KEY_LEADERBOARD) || '[]');
+  
+  // Загружаем текущую таблицу
+  let leaderboard = await loadLeaderboardFromCloud();
+  
+  // Находим или создаём запись для текущего игрока
   const existing = leaderboard.find(e => e.username.toLowerCase() === currentUser.username.toLowerCase());
   if (existing) {
-    if (score > existing.score) { existing.score = score; existing.date = Date.now(); }
+    if (score > existing.score) {
+      existing.score = score;
+      existing.date = Date.now();
+    }
   } else {
-    leaderboard.push({ username: currentUser.username, score: score, date: Date.now() });
+    leaderboard.push({
+      username: currentUser.username,
+      score: score,
+      date: Date.now()
+    });
   }
+  
+  // Сортировка и ограничение
   leaderboard.sort((a, b) => b.score - a.score);
-  if (leaderboard.length > 50) leaderboard.length = 50;
-  localStorage.setItem(STORAGE_KEY_LEADERBOARD, JSON.stringify(leaderboard));
+  if (leaderboard.length > 100) leaderboard.length = 100;
+  
+  // Сохраняем в облако
+  await saveLeaderboardToCloud(leaderboard);
 }
 
-function openLeaderboard(){
+// Открытие таблицы лидеров
+async function openLeaderboard(){
   $('lbModal').classList.remove('hidden');
   const lb = $('leaderboard');
-  lb.innerHTML = '<div class="lb-empty">Загрузка...</div>';
-  const leaderboard = JSON.parse(localStorage.getItem(STORAGE_KEY_LEADERBOARD) || '[]');
+  lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
+  
+  const leaderboard = await loadLeaderboardFromCloud();
+  
   if(!leaderboard.length){
     lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
     return;
   }
-  lb.innerHTML = leaderboard.map((entry, i) => `
-    <div class="lb-row">
-      <div class="lb-rank">#${i+1}</div>
-      <div class="lb-name">${escapeHtml(entry.username)}</div>
-      <div class="lb-score">${entry.score.toLocaleString()}</div>
-    </div>
-  `).join('');
+  
+  lb.innerHTML = leaderboard.slice(0, 50).map((entry, i) => {
+    const isMe = currentUser && entry.username.toLowerCase() === currentUser.username.toLowerCase();
+    return `
+      <div class="lb-row ${isMe ? 'me' : ''}">
+        <div class="lb-rank">#${i+1}</div>
+        <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
+        <div class="lb-score">${entry.score.toLocaleString()}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 function escapeHtml(str){
@@ -522,9 +620,12 @@ $('authSubmit').onclick = doAuth;
 $('authCancel').onclick = hideAuthModal;
 $('authLogout').onclick = doLogout;
 $('lbClose').onclick = () => $('lbModal').classList.add('hidden');
+$('lbRefresh').onclick = () => openLeaderboard();
 
-/* ============ НАСТРОЙКИ: ПОДСКАЗКИ ============ */
-let hintsEnabled = false; // По умолчанию выключено
+/* ═══════════════════════════════════════════════════════════════
+   НАСТРОЙКИ: ПОДСКАЗКИ
+   ═══════════════════════════════════════════════════════════════ */
+let hintsEnabled = false;
 
 function toggleHints() {
   hintsEnabled = !hintsEnabled;
@@ -532,7 +633,9 @@ function toggleHints() {
 }
 $('btnHints').onclick = toggleHints;
 
-/* ============ ЗВУК ============ */
+/* ═══════════════════════════════════════════════════════════════
+   ЗВУК
+   ═══════════════════════════════════════════════════════════════ */
 let ac=null,master,sfxG,musG,sfxOn=true,musOn=true;
 function audioInit(){
   if(ac)return;
@@ -600,7 +703,9 @@ function scheduleMusic(){
 function startMusic(){if(!ac||mTimer||!musOn)return;mIdx=0;mBeat=0;mNext=ac.currentTime+.1;mTimer=setInterval(scheduleMusic,100);}
 function stopMusic(){clearInterval(mTimer);mTimer=null;}
 
-/* ============ СОСТОЯНИЕ ИГРЫ ============ */
+/* ═══════════════════════════════════════════════════════════════
+   СОСТОЯНИЕ ИГРЫ (остальной код без изменений)
+   ═══════════════════════════════════════════════════════════════ */
 const gameCv=$('game'), g=gameCv.getContext('2d');
 const holdCv=$('hold'), hctx=holdCv.getContext('2d');
 const nextCv=$('next'), nctx=nextCv.getContext('2d');
@@ -746,7 +851,7 @@ function gameOver(){
   if(isRec){best=score;localStorage.setItem('tetris.best',best);}
   $('finScore').textContent=score;$('finLines').textContent=linesCleared;$('finLevel').textContent=level;
   $('recBadge').classList.toggle('hidden',!isRec);
-  submitScore(score);
+  submitScore(score); // Асинхронно отправляем в облако
   show('ovOver');
 }
 function startGame(){
@@ -860,7 +965,6 @@ function render(dt){
     for(const ry of clearing.rows)g.fillRect(0,ry,COLS,1);
   }
   if(cur&&(state==='playing')){
-    // ПРИЗРАК РИСУЕТСЯ ТОЛЬКО ЕСЛИ hintsEnabled === true
     if(hintsEnabled){
       const d=dropDist();
       if(d>0)for(let y=0;y<cur.m.length;y++)for(let x=0;x<cur.m[y].length;x++)
@@ -891,7 +995,6 @@ function render(dt){
   g.setTransform(1,0,0,1,0,0);
 }
 
-// ИСПРАВЛЕННАЯ функция отрисовки мини-фигур
 function drawMini(ctx2, type, slotW, slotH, cell, alpha) {
   const m = SHAPES[type];
   let minX = 4, maxX = -1, minY = 4, maxY = -1;
@@ -910,7 +1013,7 @@ function drawMini(ctx2, type, slotW, slotH, cell, alpha) {
 
   ctx2.save();
   ctx2.setTransform(1, 0, 0, 1, 0, 0);
-  ctx2.clearRect(0, 0, slotW, slotH); // Гарантированная очистка
+  ctx2.clearRect(0, 0, slotW, slotH);
   ctx2.setTransform(cell, 0, 0, cell, ox, oy);
   ctx2.globalAlpha = alpha;
   for (let y = 0; y < m.length; y++) {
@@ -922,7 +1025,6 @@ function drawMini(ctx2, type, slotW, slotH, cell, alpha) {
 }
 
 function renderSide(){
-  // HOLD
   hctx.setTransform(1, 0, 0, 1, 0, 0);
   hctx.clearRect(0, 0, holdCv.width, holdCv.height);
   if (hintsEnabled && hold) {
@@ -935,7 +1037,6 @@ function renderSide(){
     hctx.fillText('?', holdCv.width / 2, holdCv.height / 2 + 8);
   }
 
-  // NEXT
   nctx.setTransform(1, 0, 0, 1, 0, 0);
   nctx.clearRect(0, 0, nextCv.width, nextCv.height);
   const slotH = nextCv.height / 4;
@@ -946,7 +1047,7 @@ function renderSide(){
       const y = i * slotH;
       nctx.save();
       nctx.translate(0, y);
-      nctx.clearRect(0, 0, nextCv.width, slotH); // Очистка конкретной ячейки
+      nctx.clearRect(0, 0, nextCv.width, slotH);
       drawMini(nctx, queue[i], nextCv.width, slotH, cell, 1 - i * 0.14);
       nctx.restore();
     }
@@ -965,7 +1066,6 @@ function renderSide(){
   }
 }
 
-/* ============ ФОН ============ */
 const bgCv=$('bgfx'),bctx=bgCv.getContext('2d');
 let bgPieces=[];
 function bgInit(){
@@ -991,7 +1091,6 @@ function renderBG(dt){
   }
 }
 
-/* ============ ВВОД ============ */
 const keys={left:{held:false,t:0,r:0},right:{held:false,t:0,r:0},down:{held:false}};
 function press(code){
   if(code==='enter'){
@@ -1024,7 +1123,6 @@ const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
   Space:'drop',KeyC:'hold',ShiftLeft:'hold',ShiftRight:'hold',
   KeyP:'pause',Escape:'pause',KeyR:'restart',KeyM:'sfx',KeyN:'music',Enter:'enter'};
 
-// ИСПРАВЛЕНИЕ: Игнорируем нажатия, если фокус в поле ввода
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
     if (e.code === 'Escape') {
@@ -1032,7 +1130,7 @@ addEventListener('keydown', e => {
       hideAuthModal();
       $('lbModal').classList.add('hidden');
     }
-    return; // Позволяем спокойно печатать буквы C, P, R и т.д.
+    return;
   }
   const c = KEYMAP[e.code];
   if (!c) return;
@@ -1062,7 +1160,6 @@ $('btnPause').onclick=()=>{if(state==='menu')startGame();else togglePause();};
 $('btnSfx').onclick=toggleSfx;
 $('btnMus').onclick=toggleMus;
 
-/* ============ РАЗМЕРЫ И ЗАПУСК ============ */
 function fit(){
   dpr=Math.min(2,window.devicePixelRatio||1);
   const r=gameCv.getBoundingClientRect();
