@@ -171,17 +171,31 @@ kbd{
   background:rgba(255,210,63,.08);animation:pulse 1.2s infinite;
 }
 .touch{
-  display:none;position:relative;z-index:2;justify-content:center;gap:10px;
-  padding:6px 16px 20px;flex-wrap:wrap;
+  display:none;
+  position:relative;
+  z-index:2;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 20px 15px;
+  width:100%;
+  max-width:480px;
+  margin:0 auto;
+  flex-shrink:0;
 }
+.touch-group{display:flex;gap:8px}
 .tbtn{
-  width:58px;height:58px;border-radius:14px;font-size:20px;color:#cdd6ff;
+  width:54px;height:54px;border-radius:13px;font-size:19px;color:#cdd6ff;
   background:rgba(22,28,63,.9);border:1px solid #333e7c;cursor:pointer;
   box-shadow:0 4px 0 #10142e;touch-action:none;user-select:none;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .08s,box-shadow .08s;
 }
 .tbtn:active{transform:translateY(3px);box-shadow:none;border-color:var(--cyan)}
 footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:0 12px 16px}
 @media (pointer:coarse){.touch{display:flex}}
+
+/* Планшеты */
 @media (max-width:1020px){
   header{justify-content:center;text-align:center}
   .layout{grid-template-columns:1fr;justify-items:center;gap:14px}
@@ -191,6 +205,112 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   .help,.btnrow-side{display:none}
   .board-wrap{height:min(58vh,560px)}
   #next{height:250px}
+}
+
+/* Мобильные телефоны */
+@media (max-width:768px){
+  html,body{
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+  }
+  header{
+    padding:8px 12px 4px;
+    gap:8px;
+    flex-wrap:nowrap;
+  }
+  .logo{gap:4px}
+  .logo .tile{
+    font-size:13px;
+    padding:.3em .26em;
+    border-radius:6px;
+    animation:none;
+  }
+  .head-mid{display:none}
+  .header-right{gap:5px}
+  .chip{font-size:8px;padding:8px 9px;border-radius:7px}
+
+  .layout{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:4px;
+    gap:6px;
+    min-height:0;
+    overflow:hidden;
+  }
+
+  /* Статистика — компактная полоска */
+  .col:first-child{
+    display:flex;
+    flex-direction:row;
+    width:100%;
+    max-width:400px;
+    flex-shrink:0;
+  }
+  .col:first-child .panel{flex:1;padding:8px 10px}
+  .stats{display:flex;flex-direction:row;justify-content:space-around;align-items:center}
+  .stats h3{display:none}
+  .stats .bar{display:none}
+  .stats div:nth-of-type(n+5){display:none} /* скрываем Комбо, B2B, Время */
+  .stats .stat{
+    border-bottom:none;
+    padding:2px 5px;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+  }
+  .stats .stat .k{font-size:8px}
+  .stats .stat .v{font-size:11px}
+  #score{font-size:13px}
+
+  /* Очередь и помощь — скрыть */
+  .col:last-child{display:none}
+
+  .stage{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:0;
+  }
+
+  .board-wrap{
+    height:100%;
+    max-height:100%;
+    aspect-ratio:1/2;
+    width:auto;
+    max-width:calc(100vw - 16px);
+    padding:5px;
+    border-radius:12px;
+  }
+  .board-wrap i.c{width:12px;height:12px}
+
+  /* Тач-кнопки */
+  .touch{padding:8px 12px 12px;gap:8px}
+  .touch-group{gap:6px}
+  .tbtn{width:48px;height:48px;font-size:17px;border-radius:11px}
+
+  /* Модальные окна */
+  .modal-box{padding:20px;width:95%}
+  .modal-title{font-size:13px}
+  .btn{font-size:10px;padding:12px 18px}
+  .lb-row{padding:8px 10px}
+  .lb-rank{font-size:10px}
+  .lb-name{font-size:12px}
+  .lb-score{font-size:9px}
+}
+
+/* Очень маленькие экраны */
+@media (max-width:380px){
+  .logo .tile{font-size:11px}
+  .chip{font-size:7px;padding:6px 8px}
+  .tbtn{width:42px;height:42px;font-size:15px}
+  .touch-group{gap:5px}
+  .touch{padding:6px 10px 10px}
 }
 
 /* Модалки */
@@ -342,12 +462,16 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
 </main>
 
 <div class="touch">
-  <button class="tbtn" data-k="left">◀</button>
-  <button class="tbtn" data-k="right">▶</button>
-  <button class="tbtn" data-k="ccw">⟲</button>
-  <button class="tbtn" data-k="cw">⟳</button>
-  <button class="tbtn" data-k="down">▼</button>
-  <button class="tbtn" data-k="drop">⤓</button>
+  <div class="touch-group">
+    <button class="tbtn" data-k="left">◀</button>
+    <button class="tbtn" data-k="down">▼</button>
+    <button class="tbtn" data-k="right">▶</button>
+  </div>
+  <div class="touch-group">
+    <button class="tbtn" data-k="ccw">⟲</button>
+    <button class="tbtn" data-k="cw">⟳</button>
+    <button class="tbtn" data-k="drop">⤓</button>
+  </div>
 </div>
 
 <!-- Модалка игрока -->
