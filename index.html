@@ -328,6 +328,32 @@ const GAMES = [
       });
       ctx.shadowBlur = 0;
     }
+  },
+  {
+    id: '2048',
+    title: 'NEON 2048',
+    desc: 'Соединяй числа, достигни 2048 и построй свой неоновый рекорд.',
+    url: '2048.html',
+    color: '#a855ff',
+    renderPreview: (canvas) => {
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#05010d';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Рисуем пару неоновых плиток для превью
+      const tiles = [
+        { c: '#00f0ff', x: 20, y: 20 },
+        { c: '#ff2bd6', x: 70, y: 20 },
+        { c: '#a855ff', x: 20, y: 70 },
+        { c: '#ffe94d', x: 70, y: 70 }
+      ];
+      tiles.forEach(t => {
+        ctx.fillStyle = t.c;
+        ctx.shadowColor = t.c;
+        ctx.shadowBlur = 12;
+        ctx.fillRect(t.x, t.y, 40, 40);
+      });
+      ctx.shadowBlur = 0;
+    }
   }
 ];
 
