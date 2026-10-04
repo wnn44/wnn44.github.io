@@ -280,6 +280,12 @@ h1 {
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+// Глобальная функция выхода (на случай, если есть inline onclick в HTML)
+window.doLogout = function() {
+  console.log('🚪 Выход из системы...');
+  Auth.logout();
+  window.location.replace('index.html');
+};
   'use strict';
   
   console.log('🚀 2048: Инициализация...');
