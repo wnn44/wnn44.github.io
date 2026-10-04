@@ -295,10 +295,10 @@ if (typeof Auth === 'undefined') {
 const currentPlayer = Auth.currentUser();
 
 // ==========================================
-// 2. КОНФИГУРАЦИЯ ОБЛАКА (JSONBin)
+// 2. КОНФИГУРАЦИЯ ОБЛАКА (JSONBin) - ИСПРАВЛЕННАЯ
 // ==========================================
 const JSONBIN_CONFIG = {
-  BIN_ID: '6ab56efdffd5d160532b7302', // Тот же ID, но данные будут фильтроваться по gameId
+  BIN_ID: '6ab56efdffd5d160532b7302',
   MASTER_KEY: '$2a$10$cIrkcDK4A.vA.7JMweW3h.v09rAR5FagkWhzyAWXkfE9khk1xKy/O'
 };
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_CONFIG.BIN_ID}`;
@@ -312,48 +312,57 @@ async function loadLeaderboardFromCloud() {
     const response = await fetch(`${JSONBIN_URL}/latest`, { method: 'GET', headers: JSONBIN_HEADERS });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    return data.record || [];
+    
+    // ГАРАНТИЯ: возвращаем только массив. Если там объект или null — вернём []
+    let lb = data.record;
+    return Array.isArray(lb) ? lb : [];
   } catch (error) {
-    console.error('Ошибка загрузки из JSONBin:', error);
-    return JSON.parse(localStorage.getItem('n2048_leaderboard') || '[]');
+    console.warn('Не удалось загрузить из JSONBin, используем локальное хранилище:', error);
+    try {
+      const local = localStorage.getItem('n2048_leaderboard');
+      return local ? JSON.parse(local) : [];
+    } catch {
+      return [];
+    }
   }
 }
 
 async function saveLeaderboardToCloud(leaderboard) {
   try {
-    const response = await fetch(JSONBIN_URL, { method: 'PUT', headers: JSONBIN_HEADERS, body: JSON.stringify(leaderboard) });
+    // ГАРАНТИЯ: сохраняем только массив
+    const safeLb = Array.isArray(leaderboard) ? leaderboard : [];
+    const response = await fetch(JSONBIN_URL, { 
+      method: 'PUT', 
+      headers: JSONBIN_HEADERS, 
+      body: JSON.stringify(safeLb) 
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    localStorage.setItem('n2048_leaderboard', JSON.stringify(leaderboard));
+    localStorage.setItem('n2048_leaderboard', JSON.stringify(safeLb));
     return true;
   } catch (error) {
     console.error('Ошибка сохранения в JSONBin:', error);
-    localStorage.setItem('n2048_leaderboard', JSON.stringify(leaderboard));
+    const safeLb = Array.isArray(leaderboard) ? leaderboard : [];
+    localStorage.setItem('n2048_leaderboard', JSON.stringify(safeLb));
     return false;
   }
 }
 
 // ==========================================
-// 3. ИНТЕГРАЦИЯ С AUTH И ЛИДЕРАМИ
+// 3. ИНТЕГРАЦИЯ С AUTH И ЛИДЕРАМИ - ИСПРАВЛЕННАЯ
 // ==========================================
-function updateUserChip() {
-  const chip = document.getElementById('userChip');
-  if (chip && currentPlayer) chip.textContent = `👤 ${currentPlayer}`;
-}
-
-function doLogout() {
-  Auth.logout();
-  window.location.replace('index.html');
-}
-
 async function submitScore(score) {
   if (!currentPlayer) return;
   let leaderboard = await loadLeaderboardFromCloud();
-  // Фильтруем только рекорды для 2048
-  let gameLb = leaderboard.filter(e => e.gameId === '2048');
+  
+  // Фильтруем только рекорды для 2048 (с защитой от null/undefined)
+  let gameLb = leaderboard.filter(e => e && e.gameId === '2048');
   
   const existing = gameLb.find(e => e.username.toLowerCase() === currentPlayer.toLowerCase());
   if (existing) {
-    if (score > existing.score) { existing.score = score; existing.date = Date.now(); }
+    if (score > existing.score) { 
+      existing.score = score; 
+      existing.date = Date.now(); 
+    }
   } else {
     gameLb.push({ gameId: '2048', username: currentPlayer, score: score, date: Date.now() });
   }
@@ -361,32 +370,39 @@ async function submitScore(score) {
   gameLb.sort((a, b) => b.score - a.score);
   if (gameLb.length > 100) gameLb.length = 100;
   
-  // Объединяем с другими играми (если они есть в том же бине)
-  const otherGames = leaderboard.filter(e => e.gameId !== '2048');
+  // Объединяем с другими играми (например, Tetris), чтобы не затереть их
+  const otherGames = leaderboard.filter(e => e && e.gameId !== '2048');
   await saveLeaderboardToCloud([...otherGames, ...gameLb]);
 }
 
 async function openLeaderboard() {
-  document.getElementById('lbModal').classList.remove('hidden');
+  const modal = document.getElementById('lbModal');
   const lb = document.getElementById('leaderboard');
+  
+  modal.classList.remove('hidden');
   lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
   
-  const leaderboard = await loadLeaderboardFromCloud();
-  const gameLb = leaderboard.filter(e => e.gameId === '2048').slice(0, 50);
-  
-  if (!gameLb.length) {
-    lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
-    return;
+  try {
+    const leaderboard = await loadLeaderboardFromCloud();
+    const gameLb = leaderboard.filter(e => e && e.gameId === '2048').slice(0, 50);
+    
+    if (!gameLb || gameLb.length === 0) {
+      lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
+      return;
+    }
+    
+    lb.innerHTML = gameLb.map((entry, i) => {
+      const isMe = currentPlayer && entry.username.toLowerCase() === currentPlayer.toLowerCase();
+      return `<div class="lb-row ${isMe ? 'me' : ''}">
+        <div class="lb-rank">#${i+1}</div>
+        <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
+        <div class="lb-score">${Number(entry.score).toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Ошибка при открытии таблицы лидеров:', err);
+    lb.innerHTML = '<div class="lb-empty">Ошибка загрузки данных. Проверьте консоль.</div>';
   }
-  
-  lb.innerHTML = gameLb.map((entry, i) => {
-    const isMe = currentPlayer && entry.username.toLowerCase() === currentPlayer.toLowerCase();
-    return `<div class="lb-row ${isMe ? 'me' : ''}">
-      <div class="lb-rank">#${i+1}</div>
-      <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
-      <div class="lb-score">${entry.score.toLocaleString()}</div>
-    </div>`;
-  }).join('');
 }
 
 function escapeHtml(str) { 
