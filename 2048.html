@@ -279,372 +279,394 @@ h1 {
 </div>
 
 <script>
-(() => {
-'use strict';
-
-// ==========================================
-// 1. ПРОВЕРКА АВТОРИЗАЦИИ
-// ==========================================
-if (typeof Auth === 'undefined') {
-  console.error('Файл auth.js не найден.');
-  window.location.replace('index.html');
-} else if (!Auth.isSessionValid()) {
-  window.location.replace('index.html');
-}
-
-const currentPlayer = Auth.currentUser();
-
-// ==========================================
-// 2. КОНФИГУРАЦИЯ ОБЛАКА (JSONBin) - ИСПРАВЛЕННАЯ
-// ==========================================
-const JSONBIN_CONFIG = {
-  BIN_ID: '6ab56efdffd5d160532b7302',
-  MASTER_KEY: '$2a$10$cIrkcDK4A.vA.7JMweW3h.v09rAR5FagkWhzyAWXkfE9khk1xKy/O'
-};
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_CONFIG.BIN_ID}`;
-const JSONBIN_HEADERS = {
-  'Content-Type': 'application/json',
-  'X-Master-Key': JSONBIN_CONFIG.MASTER_KEY
-};
-
-async function loadLeaderboardFromCloud() {
-  try {
-    const response = await fetch(`${JSONBIN_URL}/latest`, { method: 'GET', headers: JSONBIN_HEADERS });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    
-    // ГАРАНТИЯ: возвращаем только массив. Если там объект или null — вернём []
-    let lb = data.record;
-    return Array.isArray(lb) ? lb : [];
-  } catch (error) {
-    console.warn('Не удалось загрузить из JSONBin, используем локальное хранилище:', error);
-    try {
-      const local = localStorage.getItem('n2048_leaderboard');
-      return local ? JSON.parse(local) : [];
-    } catch {
-      return [];
-    }
-  }
-}
-
-async function saveLeaderboardToCloud(leaderboard) {
-  try {
-    // ГАРАНТИЯ: сохраняем только массив
-    const safeLb = Array.isArray(leaderboard) ? leaderboard : [];
-    const response = await fetch(JSONBIN_URL, { 
-      method: 'PUT', 
-      headers: JSONBIN_HEADERS, 
-      body: JSON.stringify(safeLb) 
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    localStorage.setItem('n2048_leaderboard', JSON.stringify(safeLb));
-    return true;
-  } catch (error) {
-    console.error('Ошибка сохранения в JSONBin:', error);
-    const safeLb = Array.isArray(leaderboard) ? leaderboard : [];
-    localStorage.setItem('n2048_leaderboard', JSON.stringify(safeLb));
-    return false;
-  }
-}
-
-// ==========================================
-// 3. ИНТЕГРАЦИЯ С AUTH И ЛИДЕРАМИ - ИСПРАВЛЕННАЯ
-// ==========================================
-async function submitScore(score) {
-  if (!currentPlayer) return;
-  let leaderboard = await loadLeaderboardFromCloud();
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
   
-  // Фильтруем только рекорды для 2048 (с защитой от null/undefined)
-  let gameLb = leaderboard.filter(e => e && e.gameId === '2048');
+  console.log('🚀 2048: Инициализация...');
+
+  // 1. ПРОВЕРКА АВТОРИЗАЦИИ
+  if (typeof Auth === 'undefined') {
+    console.error('❌ Файл auth.js не загружен!');
+    window.location.replace('index.html');
+    return;
+  }
   
-  const existing = gameLb.find(e => e.username.toLowerCase() === currentPlayer.toLowerCase());
-  if (existing) {
-    if (score > existing.score) { 
-      existing.score = score; 
-      existing.date = Date.now(); 
-    }
+  if (!Auth.isSessionValid()) {
+    console.warn('⚠️ Сессия недействительна, редирект на главную.');
+    window.location.replace('index.html');
+    return;
+  }
+
+  const currentPlayer = Auth.currentUser();
+  console.log('✅ Авторизован как:', currentPlayer);
+
+  // 2. ПРИВЯЗКА ИНТЕРФЕЙСА (с защитой от null)
+  const userChip = document.getElementById('userChip');
+  if (userChip && currentPlayer) {
+    userChip.textContent = `👤 ${currentPlayer}`;
+    console.log('✅ Имя игрока отображено.');
   } else {
-    gameLb.push({ gameId: '2048', username: currentPlayer, score: score, date: Date.now() });
+    console.error('❌ Не найден элемент userChip или currentPlayer пуст.');
   }
-  
-  gameLb.sort((a, b) => b.score - a.score);
-  if (gameLb.length > 100) gameLb.length = 100;
-  
-  // Объединяем с другими играми (например, Tetris), чтобы не затереть их
-  const otherGames = leaderboard.filter(e => e && e.gameId !== '2048');
-  await saveLeaderboardToCloud([...otherGames, ...gameLb]);
-}
 
-async function openLeaderboard() {
-  const modal = document.getElementById('lbModal');
-  const lb = document.getElementById('leaderboard');
-  
-  modal.classList.remove('hidden');
-  lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
-  
-  try {
-    const leaderboard = await loadLeaderboardFromCloud();
-    const gameLb = leaderboard.filter(e => e && e.gameId === '2048').slice(0, 50);
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      console.log('🚪 Выход из системы...');
+      Auth.logout();
+      window.location.replace('index.html');
+    });
+  } else {
+    console.error('❌ Не найдена кнопка выхода (logoutBtn).');
+  }
+
+  // 3. КОНФИГУРАЦИЯ ОБЛАКА (JSONBin)
+  const JSONBIN_CONFIG = {
+    BIN_ID: '6ab56efdffd5d160532b7302',
+    MASTER_KEY: '$2a$10$cIrkcDK4A.vA.7JMweW3h.v09rAR5FagkWhzyAWXkfE9khk1xKy/O'
+  };
+  const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_CONFIG.BIN_ID}`;
+  const JSONBIN_HEADERS = {
+    'Content-Type': 'application/json',
+    'X-Master-Key': JSONBIN_CONFIG.MASTER_KEY
+  };
+
+  async function loadLeaderboardFromCloud() {
+    try {
+      const response = await fetch(`${JSONBIN_URL}/latest`, { method: 'GET', headers: JSONBIN_HEADERS });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return Array.isArray(data.record) ? data.record : [];
+    } catch (error) {
+      console.warn('⚠️ Ошибка JSONBin, используем локальное хранилище:', error);
+      try {
+        const local = localStorage.getItem('n2048_leaderboard');
+        return local ? JSON.parse(local) : [];
+      } catch { return []; }
+    }
+  }
+
+  async function saveLeaderboardToCloud(leaderboard) {
+    try {
+      const safeLb = Array.isArray(leaderboard) ? leaderboard : [];
+      const response = await fetch(JSONBIN_URL, { 
+        method: 'PUT', 
+        headers: JSONBIN_HEADERS, 
+        body: JSON.stringify(safeLb) 
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      localStorage.setItem('n2048_leaderboard', JSON.stringify(safeLb));
+      return true;
+    } catch (error) {
+      console.error('❌ Ошибка сохранения в JSONBin:', error);
+      const safeLb = Array.isArray(leaderboard) ? leaderboard : [];
+      localStorage.setItem('n2048_leaderboard', JSON.stringify(safeLb));
+      return false;
+    }
+  }
+
+  // 4. ФУНКЦИИ ЛИДЕРБОРДА
+  async function submitScore(score) {
+    if (!currentPlayer) return;
+    let leaderboard = await loadLeaderboardFromCloud();
+    let gameLb = leaderboard.filter(e => e && e.gameId === '2048');
     
-    if (!gameLb || gameLb.length === 0) {
-      lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
+    const existing = gameLb.find(e => e.username.toLowerCase() === currentPlayer.toLowerCase());
+    if (existing) {
+      if (score > existing.score) { existing.score = score; existing.date = Date.now(); }
+    } else {
+      gameLb.push({ gameId: '2048', username: currentPlayer, score: score, date: Date.now() });
+    }
+    
+    gameLb.sort((a, b) => b.score - a.score);
+    if (gameLb.length > 100) gameLb.length = 100;
+    
+    const otherGames = leaderboard.filter(e => e && e.gameId !== '2048');
+    await saveLeaderboardToCloud([...otherGames, ...gameLb]);
+  }
+
+  async function openLeaderboard() {
+    console.log('🏆 Открытие таблицы лидеров...');
+    const modal = document.getElementById('lbModal');
+    const lb = document.getElementById('leaderboard');
+    if (!modal || !lb) {
+      console.error('❌ Не найдены элементы модального окна лидеров!');
       return;
     }
     
-    lb.innerHTML = gameLb.map((entry, i) => {
-      const isMe = currentPlayer && entry.username.toLowerCase() === currentPlayer.toLowerCase();
-      return `<div class="lb-row ${isMe ? 'me' : ''}">
-        <div class="lb-rank">#${i+1}</div>
-        <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
-        <div class="lb-score">${Number(entry.score).toLocaleString()}</div>
-      </div>`;
-    }).join('');
-  } catch (err) {
-    console.error('Ошибка при открытии таблицы лидеров:', err);
-    lb.innerHTML = '<div class="lb-empty">Ошибка загрузки данных. Проверьте консоль.</div>';
-  }
-}
-
-function escapeHtml(str) { 
-  const div = document.createElement('div'); 
-  div.textContent = str; 
-  return div.innerHTML; 
-}
-
-document.getElementById('lbClose').onclick = () => document.getElementById('lbModal').classList.add('hidden');
-document.getElementById('lbRefresh').onclick = () => openLeaderboard();
-document.getElementById('logoutBtn').onclick = doLogout;
-
-updateUserChip();
-
-// ==========================================
-// 4. ЛОГИКА ИГРЫ 2048
-// ==========================================
-const S = 4, WIN = 2048, DUR = 140;
-const $ = id => document.getElementById(id);
-const cellsEl = $('cells'), tilesEl = $('tiles');
-const scEl = $('sc'), bsEl = $('bs');
-const winOv = $('winOv'), loseOv = $('loseOv'), bw = $('bw');
-
-for (let i = 0; i < 16; i++) {
-  const c = document.createElement('div');
-  c.className = 'cell';
-  cellsEl.appendChild(c);
-}
-
-let grid, tm, nid, score, best, won, keep, busy;
-
-function px() {
-  const s = getComputedStyle(document.documentElement);
-  return {
-    c: parseFloat(s.getPropertyValue('--cell')),
-    g: parseFloat(s.getPropertyValue('--gap'))
-  };
-}
-
-function setPos(t) {
-  const { c, g } = px();
-  t.el.style.setProperty('--tx', `${t.col * (c + g)}px`);
-  t.el.style.setProperty('--ty', `${t.row * (c + g)}px`);
-}
-
-function vc(v) { return v <= 2048 ? 'v' + v : 'vsuper'; }
-
-function mkEl(t) {
-  const el = document.createElement('div');
-  el.className = 'tile spawn ' + vc(t.value);
-  el.textContent = t.value;
-  t.el = el;
-  setPos(t);
-  tilesEl.appendChild(el);
-  el.addEventListener('animationend', () => el.classList.remove('spawn'), { once: true });
-}
-
-function updVal(t) {
-  t.el.className = 'tile merge-pop ' + vc(t.value);
-  t.el.textContent = t.value;
-  t.el.addEventListener('animationend', () => t.el.classList.remove('merge-pop'), { once: true });
-}
-
-function rmEl(t) {
-  if (t.el?.parentNode) t.el.remove();
-  t.el = null;
-}
-
-function empty() {
-  const e = [];
-  for (let r = 0; r < S; r++)
-    for (let c = 0; c < S; c++)
-      if (!grid[r][c]) e.push([r, c]);
-  return e;
-}
-
-function spawn() {
-  const e = empty();
-  if (!e.length) return;
-  const [r, c] = e[Math.random() * e.length | 0];
-  const t = { id: nid++, value: Math.random() < .9 ? 2 : 4, row: r, col: c, el: null };
-  grid[r][c] = t;
-  tm.set(t.id, t);
-  mkEl(t);
-}
-
-// ЗАМЕНА: загрузка рекорда через Auth
-function loadBest() {
-  best = Auth.getBest('2048');
-  bsEl.textContent = best;
-}
-
-// ЗАМЕНА: сохранение теперь происходит через Auth и облако
-function checkAndSaveBest() {
-  if (score > best) { 
-    best = score; 
-    Auth.setBest('2048', best);
-    bsEl.textContent = best; 
-    submitScore(best);
-  }
-}
-
-function reset() {
-  tilesEl.innerHTML = '';
-  grid = Array.from({ length: S }, () => Array(S).fill(null));
-  tm = new Map();
-  nid = 1; score = 0; won = false; keep = false; busy = false;
-  scEl.textContent = '0';
-  winOv.classList.remove('show');
-  loseOv.classList.remove('show');
-  spawn();
-  spawn();
-}
-
-function move(dir) {
-  if (busy) return;
-  if (winOv.classList.contains('show') || loseOv.classList.contains('show')) return;
-
-  const isR = dir === 'left' || dir === 'right';
-  const rev = dir === 'right' || dir === 'down';
-  let moved = false, gained = 0;
-  const merges = [];
-
-  for (let li = 0; li < S; li++) {
-    const cells = [];
-    for (let ci = 0; ci < S; ci++) {
-      const r = isR ? li : (rev ? S - 1 - ci : ci);
-      const c = isR ? (rev ? S - 1 - ci : ci) : li;
-      cells.push({ r, c, t: grid[r][c] });
-    }
-
-    const pr = cells.filter(x => x.t).map(x => x.t);
-    const res = [];
-    let i = 0;
-    while (i < pr.length) {
-      if (i + 1 < pr.length && pr[i].value === pr[i + 1].value) {
-        res.push({ k: pr[i], v: pr[i + 1], nv: pr[i].value * 2 });
-        gained += pr[i].value * 2;
-        i += 2;
-      } else {
-        res.push({ k: pr[i], v: null, nv: null });
-        i++;
-      }
-    }
-
-    for (let j = 0; j < res.length; j++) {
-      const tgt = cells[j], e = res[j];
-      if (e.k.row !== tgt.r || e.k.col !== tgt.c) moved = true;
-      e.k.row = tgt.r;
-      e.k.col = tgt.c;
-      if (e.v) {
-        if (e.v.row !== tgt.r || e.v.col !== tgt.c) moved = true;
-        e.v.row = tgt.r;
-        e.v.col = tgt.c;
-        merges.push(e);
-      }
-    }
-  }
-
-  if (!moved) return;
-  busy = true;
-
-  for (const t of tm.values()) setPos(t);
-
-  setTimeout(() => {
-    for (const m of merges) {
-      rmEl(m.v);
-      tm.delete(m.v.id);
-      m.k.value = m.nv;
-      updVal(m.k);
-      if (m.nv === WIN && !won) {
-        won = true;
-        if (!keep) setTimeout(() => winOv.classList.add('show'), 180);
-      }
-    }
-
-    grid = Array.from({ length: S }, () => Array(S).fill(null));
-    for (const t of tm.values()) grid[t.row][t.col] = t;
-
-    score += gained;
-    scEl.textContent = score;
+    modal.classList.remove('hidden');
+    lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
     
-    // Проверка и сохранение рекорда
-    checkAndSaveBest();
-
-    spawn();
-
-    let over = true;
-    outer:
-    for (let r = 0; r < S; r++)
-      for (let c = 0; c < S; c++) {
-        if (!grid[r][c]) { over = false; break outer; }
-        const v = grid[r][c].value;
-        if (c + 1 < S && grid[r][c + 1]?.value === v) { over = false; break outer; }
-        if (r + 1 < S && grid[r + 1]?.[c]?.value === v) { over = false; break outer; }
+    try {
+      const leaderboard = await loadLeaderboardFromCloud();
+      const gameLb = leaderboard.filter(e => e && e.gameId === '2048').slice(0, 50);
+      
+      if (!gameLb || gameLb.length === 0) {
+        lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
+        return;
       }
-    if (over) setTimeout(() => loseOv.classList.add('show'), 280);
+      
+      lb.innerHTML = gameLb.map((entry, i) => {
+        const isMe = currentPlayer && entry.username.toLowerCase() === currentPlayer.toLowerCase();
+        return `<div class="lb-row ${isMe ? 'me' : ''}">
+          <div class="lb-rank">#${i+1}</div>
+          <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
+          <div class="lb-score">${Number(entry.score).toLocaleString()}</div>
+        </div>`;
+      }).join('');
+      console.log('✅ Таблица лидеров успешно загружена.');
+    } catch (err) {
+      console.error('❌ Критическая ошибка при открытии таблицы:', err);
+      lb.innerHTML = '<div class="lb-empty">Ошибка загрузки данных. См. консоль (F12).</div>';
+    }
+  }
 
-    busy = false;
-  }, DUR + 15);
-}
+  function escapeHtml(str) { 
+    const div = document.createElement('div'); 
+    div.textContent = str; 
+    return div.innerHTML; 
+  }
 
-const km = {
-  ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down',
-  a:'left', d:'right', w:'up', s:'down',
-  A:'left', D:'right', W:'up', S:'down'
-};
-window.addEventListener('keydown', e => {
-  const d = km[e.key];
-  if (d) { e.preventDefault(); move(d); }
+  // 5. НАЗНАЧЕНИЕ СОБЫТИЙ (Безопасное, без inline onclick в HTML)
+  const lbCloseBtn = document.getElementById('lbClose');
+  if (lbCloseBtn) lbCloseBtn.addEventListener('click', () => {
+    document.getElementById('lbModal').classList.add('hidden');
+  });
+
+  const lbRefreshBtn = document.getElementById('lbRefresh');
+  if (lbRefreshBtn) lbRefreshBtn.addEventListener('click', openLeaderboard);
+  
+  // Находим кнопку "ЛИДЕРЫ" в шапке и вешаем событие напрямую, убирая зависимость от HTML onclick
+  const lbHeaderBtn = document.querySelector('.chip.lb');
+  if (lbHeaderBtn) {
+    lbHeaderBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openLeaderboard();
+    });
+  }
+
+  console.log('✅ Все обработчики событий успешно назначены.');
+
+  // ==========================================
+  // 6. ЛОГИКА ИГРЫ 2048 (Оригинальная, с интеграцией Auth)
+  // ==========================================
+  const S = 4, WIN = 2048, DUR = 140;
+  const $ = id => document.getElementById(id);
+  const cellsEl = $('cells'), tilesEl = $('tiles');
+  const scEl = $('sc'), bsEl = $('bs');
+  const winOv = $('winOv'), loseOv = $('loseOv'), bw = $('bw');
+
+  for (let i = 0; i < 16; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    cellsEl.appendChild(c);
+  }
+
+  let grid, tm, nid, score, best, won, keep, busy;
+
+  function px() {
+    const s = getComputedStyle(document.documentElement);
+    return { c: parseFloat(s.getPropertyValue('--cell')), g: parseFloat(s.getPropertyValue('--gap')) };
+  }
+
+  function setPos(t) {
+    const { c, g } = px();
+    t.el.style.setProperty('--tx', `${t.col * (c + g)}px`);
+    t.el.style.setProperty('--ty', `${t.row * (c + g)}px`);
+  }
+
+  function vc(v) { return v <= 2048 ? 'v' + v : 'vsuper'; }
+
+  function mkEl(t) {
+    const el = document.createElement('div');
+    el.className = 'tile spawn ' + vc(t.value);
+    el.textContent = t.value;
+    t.el = el;
+    setPos(t);
+    tilesEl.appendChild(el);
+    el.addEventListener('animationend', () => el.classList.remove('spawn'), { once: true });
+  }
+
+  function updVal(t) {
+    t.el.className = 'tile merge-pop ' + vc(t.value);
+    t.el.textContent = t.value;
+    t.el.addEventListener('animationend', () => t.el.classList.remove('merge-pop'), { once: true });
+  }
+
+  function rmEl(t) {
+    if (t.el?.parentNode) t.el.remove();
+    t.el = null;
+  }
+
+  function empty() {
+    const e = [];
+    for (let r = 0; r < S; r++)
+      for (let c = 0; c < S; c++)
+        if (!grid[r][c]) e.push([r, c]);
+    return e;
+  }
+
+  function spawn() {
+    const e = empty();
+    if (!e.length) return;
+    const [r, c] = e[Math.random() * e.length | 0];
+    const t = { id: nid++, value: Math.random() < .9 ? 2 : 4, row: r, col: c, el: null };
+    grid[r][c] = t;
+    tm.set(t.id, t);
+    mkEl(t);
+  }
+
+  function loadBest() {
+    best = Auth.getBest('2048');
+    bsEl.textContent = best;
+  }
+
+  function checkAndSaveBest() {
+    if (score > best) { 
+      best = score; 
+      Auth.setBest('2048', best);
+      bsEl.textContent = best; 
+      submitScore(best);
+    }
+  }
+
+  function reset() {
+    tilesEl.innerHTML = '';
+    grid = Array.from({ length: S }, () => Array(S).fill(null));
+    tm = new Map();
+    nid = 1; score = 0; won = false; keep = false; busy = false;
+    scEl.textContent = '0';
+    winOv.classList.remove('show');
+    loseOv.classList.remove('show');
+    spawn();
+    spawn();
+  }
+
+  function move(dir) {
+    if (busy) return;
+    if (winOv.classList.contains('show') || loseOv.classList.contains('show')) return;
+
+    const isR = dir === 'left' || dir === 'right';
+    const rev = dir === 'right' || dir === 'down';
+    let moved = false, gained = 0;
+    const merges = [];
+
+    for (let li = 0; li < S; li++) {
+      const cells = [];
+      for (let ci = 0; ci < S; ci++) {
+        const r = isR ? li : (rev ? S - 1 - ci : ci);
+        const c = isR ? (rev ? S - 1 - ci : ci) : li;
+        cells.push({ r, c, t: grid[r][c] });
+      }
+
+      const pr = cells.filter(x => x.t).map(x => x.t);
+      const res = [];
+      let i = 0;
+      while (i < pr.length) {
+        if (i + 1 < pr.length && pr[i].value === pr[i + 1].value) {
+          res.push({ k: pr[i], v: pr[i + 1], nv: pr[i].value * 2 });
+          gained += pr[i].value * 2;
+          i += 2;
+        } else {
+          res.push({ k: pr[i], v: null, nv: null });
+          i++;
+        }
+      }
+
+      for (let j = 0; j < res.length; j++) {
+        const tgt = cells[j], e = res[j];
+        if (e.k.row !== tgt.r || e.k.col !== tgt.c) moved = true;
+        e.k.row = tgt.r;
+        e.k.col = tgt.c;
+        if (e.v) {
+          if (e.v.row !== tgt.r || e.v.col !== tgt.c) moved = true;
+          e.v.row = tgt.r;
+          e.v.col = tgt.c;
+          merges.push(e);
+        }
+      }
+    }
+
+    if (!moved) return;
+    busy = true;
+
+    for (const t of tm.values()) setPos(t);
+
+    setTimeout(() => {
+      for (const m of merges) {
+        rmEl(m.v);
+        tm.delete(m.v.id);
+        m.k.value = m.nv;
+        updVal(m.k);
+        if (m.nv === WIN && !won) {
+          won = true;
+          if (!keep) setTimeout(() => winOv.classList.add('show'), 180);
+        }
+      }
+
+      grid = Array.from({ length: S }, () => Array(S).fill(null));
+      for (const t of tm.values()) grid[t.row][t.col] = t;
+
+      score += gained;
+      scEl.textContent = score;
+      checkAndSaveBest();
+      spawn();
+
+      let over = true;
+      outer:
+      for (let r = 0; r < S; r++)
+        for (let c = 0; c < S; c++) {
+          if (!grid[r][c]) { over = false; break outer; }
+          const v = grid[r][c].value;
+          if (c + 1 < S && grid[r][c + 1]?.value === v) { over = false; break outer; }
+          if (r + 1 < S && grid[r + 1]?.[c]?.value === v) { over = false; break outer; }
+        }
+      if (over) setTimeout(() => loseOv.classList.add('show'), 280);
+
+      busy = false;
+    }, DUR + 15);
+  }
+
+  const km = {
+    ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down',
+    a:'left', d:'right', w:'up', s:'down',
+    A:'left', D:'right', W:'up', S:'down'
+  };
+  window.addEventListener('keydown', e => {
+    const d = km[e.key];
+    if (d) { e.preventDefault(); move(d); }
+  });
+
+  let ts = null;
+  bw.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) ts = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, { passive: true });
+  bw.addEventListener('touchmove', e => { if (ts) e.preventDefault(); }, { passive: false });
+  bw.addEventListener('touchend', e => {
+    if (!ts) return;
+    const t = e.changedTouches[0], dx = t.clientX - ts.x, dy = t.clientY - ts.y;
+    ts = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+    move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  });
+
+  let ms = null;
+  bw.addEventListener('mousedown', e => { ms = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('mouseup', e => {
+    if (!ms) return;
+    const dx = e.clientX - ms.x, dy = e.clientY - ms.y;
+    ms = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
+    move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  });
+
+  $('newBtn').onclick = $('winNewBtn').onclick = $('loseNewBtn').onclick = reset;
+  $('keepBtn').onclick = () => { keep = true; winOv.classList.remove('show'); };
+
+  loadBest();
+  reset();
+  console.log('✅ Игра 2048 полностью инициализирована и готова к работе.');
 });
-
-let ts = null;
-bw.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) ts = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-}, { passive: true });
-bw.addEventListener('touchmove', e => { if (ts) e.preventDefault(); }, { passive: false });
-bw.addEventListener('touchend', e => {
-  if (!ts) return;
-  const t = e.changedTouches[0], dx = t.clientX - ts.x, dy = t.clientY - ts.y;
-  ts = null;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
-  move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-});
-
-let ms = null;
-bw.addEventListener('mousedown', e => { ms = { x: e.clientX, y: e.clientY }; });
-window.addEventListener('mouseup', e => {
-  if (!ms) return;
-  const dx = e.clientX - ms.x, dy = e.clientY - ms.y;
-  ms = null;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
-  move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-});
-
-$('newBtn').onclick = $('winNewBtn').onclick = $('loseNewBtn').onclick = reset;
-$('keepBtn').onclick = () => { keep = true; winOv.classList.remove('show'); };
-
-loadBest();
-reset();
-
-})();
 </script>
 </body>
 </html>
