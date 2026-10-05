@@ -231,7 +231,8 @@ h1 {
   <header>
     <h1>NEON 2048</h1>
     <div class="header-right">
-      <div class="chip lb" onclick="openLeaderboard()">🏆 ЛИДЕРЫ</div>
+      <!-- УБРАН onclick, добавлен id для безопасного addEventListener -->
+      <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
       <div class="chip user" id="userChip">ИГРОК</div>
       <div class="chip logout" id="logoutBtn">ВЫЙТИ</div>
     </div>
@@ -280,14 +281,7 @@ h1 {
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-// Глобальная функция выхода (на случай, если есть inline onclick в HTML)
-window.doLogout = function() {
-  console.log('🚪 Выход из системы...');
-  Auth.logout();
-  window.location.replace('index.html');
-};
   'use strict';
-  
   console.log('🚀 2048: Инициализация...');
 
   // 1. ПРОВЕРКА АВТОРИЗАЦИИ
@@ -306,13 +300,11 @@ window.doLogout = function() {
   const currentPlayer = Auth.currentUser();
   console.log('✅ Авторизован как:', currentPlayer);
 
-  // 2. ПРИВЯЗКА ИНТЕРФЕЙСА (с защитой от null)
+  // 2. ПРИВЯЗКА ИНТЕРФЕЙСА
   const userChip = document.getElementById('userChip');
   if (userChip && currentPlayer) {
     userChip.textContent = `👤 ${currentPlayer}`;
     console.log('✅ Имя игрока отображено.');
-  } else {
-    console.error('❌ Не найден элемент userChip или currentPlayer пуст.');
   }
 
   const logoutBtn = document.getElementById('logoutBtn');
@@ -322,9 +314,13 @@ window.doLogout = function() {
       Auth.logout();
       window.location.replace('index.html');
     });
-  } else {
-    console.error('❌ Не найдена кнопка выхода (logoutBtn).');
   }
+
+  // Глобальная функция на всякий случай
+  window.doLogout = function() {
+    Auth.logout();
+    window.location.replace('index.html');
+  };
 
   // 3. КОНФИГУРАЦИЯ ОБЛАКА (JSONBin)
   const JSONBIN_CONFIG = {
@@ -373,14 +369,21 @@ window.doLogout = function() {
 
   // 4. ФУНКЦИИ ЛИДЕРБОРДА
   async function submitScore(score) {
+    console.log('💾 Попытка сохранить рекорд:', score, 'для игрока:', currentPlayer);
     if (!currentPlayer) return;
+    
     let leaderboard = await loadLeaderboardFromCloud();
     let gameLb = leaderboard.filter(e => e && e.gameId === '2048');
     
     const existing = gameLb.find(e => e.username.toLowerCase() === currentPlayer.toLowerCase());
     if (existing) {
-      if (score > existing.score) { existing.score = score; existing.date = Date.now(); }
+      if (score > existing.score) { 
+        existing.score = score; 
+        existing.date = Date.now(); 
+        console.log('✅ Рекорд обновлён до:', score);
+      }
     } else {
+      console.log('➕ Добавляем новую запись для:', currentPlayer);
       gameLb.push({ gameId: '2048', username: currentPlayer, score: score, date: Date.now() });
     }
     
@@ -388,6 +391,7 @@ window.doLogout = function() {
     if (gameLb.length > 100) gameLb.length = 100;
     
     const otherGames = leaderboard.filter(e => e && e.gameId !== '2048');
+    console.log('📤 Отправка в JSONBin:', gameLb.length, 'записей 2048');
     await saveLeaderboardToCloud([...otherGames, ...gameLb]);
   }
 
@@ -395,10 +399,7 @@ window.doLogout = function() {
     console.log('🏆 Открытие таблицы лидеров...');
     const modal = document.getElementById('lbModal');
     const lb = document.getElementById('leaderboard');
-    if (!modal || !lb) {
-      console.error('❌ Не найдены элементы модального окна лидеров!');
-      return;
-    }
+    if (!modal || !lb) return;
     
     modal.classList.remove('hidden');
     lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
@@ -433,7 +434,7 @@ window.doLogout = function() {
     return div.innerHTML; 
   }
 
-  // 5. НАЗНАЧЕНИЕ СОБЫТИЙ (Безопасное, без inline onclick в HTML)
+  // 5. НАЗНАЧЕНИЕ СОБЫТИЙ (Безопасное, через addEventListener)
   const lbCloseBtn = document.getElementById('lbClose');
   if (lbCloseBtn) lbCloseBtn.addEventListener('click', () => {
     document.getElementById('lbModal').classList.add('hidden');
@@ -442,8 +443,7 @@ window.doLogout = function() {
   const lbRefreshBtn = document.getElementById('lbRefresh');
   if (lbRefreshBtn) lbRefreshBtn.addEventListener('click', openLeaderboard);
   
-  // Находим кнопку "ЛИДЕРЫ" в шапке и вешаем событие напрямую, убирая зависимость от HTML onclick
-  const lbHeaderBtn = document.querySelector('.chip.lb');
+  const lbHeaderBtn = document.getElementById('lbHeaderBtn');
   if (lbHeaderBtn) {
     lbHeaderBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -454,7 +454,7 @@ window.doLogout = function() {
   console.log('✅ Все обработчики событий успешно назначены.');
 
   // ==========================================
-  // 6. ЛОГИКА ИГРЫ 2048 (Оригинальная, с интеграцией Auth)
+  // 6. ЛОГИКА ИГРЫ 2048
   // ==========================================
   const S = 4, WIN = 2048, DUR = 140;
   const $ = id => document.getElementById(id);
@@ -528,11 +528,15 @@ window.doLogout = function() {
   }
 
   function checkAndSaveBest() {
+    console.log('🔍 Проверка рекорда: текущий счёт =', score, ', лучший =', best);
     if (score > best) { 
+      console.log('🎉 Новый рекорд!', score);
       best = score; 
       Auth.setBest('2048', best);
       bsEl.textContent = best; 
       submitScore(best);
+    } else {
+      console.log('⏭️ Рекорд не побит.');
     }
   }
 
