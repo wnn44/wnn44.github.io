@@ -61,14 +61,14 @@ const Auth = (() => {
       if (!user) return { ok: false, error: 'Пользователь не найден' };
       const hash = await hashPassword(password);
       if (hash !== user.hash) return { ok: false, error: 'Неверный пароль' };
-      sessionStorage.setItem(SESSION_KEY, uname);
+      localStorage.setItem(SESSION_KEY, uname);
       return { ok: true, username: uname };
     },
 
-    logout() { sessionStorage.removeItem(SESSION_KEY); },
+    logout() { localStorage.removeItem(SESSION_KEY); },
 
     currentUser() {
-      const uname = sessionStorage.getItem(SESSION_KEY);
+      const uname = localStorage.getItem(SESSION_KEY);
       if (!uname) return null;
       const users = loadUsers();
       return users[uname] ? uname : null;
