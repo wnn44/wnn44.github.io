@@ -86,6 +86,8 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
 .stat .v{font-family:'Press Start 2P';font-size:13px}
 #score{font-size:16px;color:var(--cyan);text-shadow:0 0 14px rgba(38,217,242,.5)}
 #b2b{color:var(--orange)}
+#bestScore{color:var(--yellow);text-shadow:0 0 10px rgba(255,210,63,.4)}
+#worldRec{color:var(--pink);text-shadow:0 0 10px rgba(255,79,163,.4)}
 .v.pop{animation:pop .28s ease}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
 .bar{height:6px;background:#1b2148;border-radius:99px;overflow:hidden;margin-top:6px}
@@ -314,6 +316,8 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
       <div class="stat"><span class="k">Комбо</span><span class="v" id="combo">—</span></div>
       <div class="stat"><span class="k">B2B</span><span class="v" id="b2b">—</span></div>
       <div class="stat"><span class="k">Время</span><span class="v" id="time">0:00</span></div>
+      <div class="stat"><span class="k">Рекорд</span><span class="v" id="bestScore">—</span></div>
+      <div class="stat"><span class="k">Мировой</span><span class="v" id="worldRec">—</span></div>
     </section>
   </aside>
 
@@ -515,6 +519,58 @@ async function saveScoreToCloud(gameId, username, score){
   }
 }
 
+async function fetchPlayerBest(gameId, username){
+  try{
+    const { data, error } = await sb
+      .from('leaderboards')
+      .select('score')
+      .eq('game_id', gameId)
+      .eq('username', username)
+      .maybeSingle();
+    if (error) throw error;
+    return (data && typeof data.score === 'number') ? data.score : 0;
+  }catch(e){
+    console.warn('⚠️ Ошибка загрузки личного рекорда:', e);
+    return Auth.getBest('tetris') || 0;
+  }
+}
+
+async function fetchGlobalRecord(gameId){
+  try{
+    const { data, error } = await sb
+      .from('leaderboards')
+      .select('username, score')
+      .eq('game_id', gameId)
+      .order('score', { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    return data && data[0]
+      ? { username: data[0].username, score: data[0].score }
+      : { username: '—', score: 0 };
+  }catch(e){
+    console.warn('⚠️ Ошибка загрузки мирового рекорда:', e);
+    return { username: '—', score: 0 };
+  }
+}
+
+async function refreshStats(){
+  const bsEl = $('bestScore');
+  const wrEl = $('worldRec');
+  if (bsEl) bsEl.textContent = '…';
+  if (wrEl) wrEl.textContent = '…';
+  const [pb, wr] = await Promise.all([
+    fetchPlayerBest('tetris', currentPlayer),
+    fetchGlobalRecord('tetris')
+  ]);
+  best = pb || 0;
+  worldRecord = wr.score || 0;
+  if (bsEl) bsEl.textContent = Number(best).toLocaleString();
+  if (wrEl){
+    wrEl.textContent = Number(worldRecord).toLocaleString();
+    wrEl.title = wr.username && wr.username !== '—' ? `Рекорд: ${wr.username}` : '';
+  }
+}
+
 // ==========================================
 // 3. ИНТЕГРАЦИЯ С AUTH (Вместо старой логики)
 // ==========================================
@@ -635,10 +691,14 @@ let score,linesCleared,level,combo,b2b,timeMs,state='menu';
 let dropTimer=0,lockTimer=0,lockResets=0,softHeld=false,lastAction='spawn',lastKick=0;
 let clearing=null,particles=[],trails=[],shake=0,flashA=0;
 
+
 // ==========================================
-// 4. ЗАМЕНА LOCALSTORAGE НА AUTH
+// 4. РЕКОРДЫ: личный + мировой
 // ==========================================
-let best = Auth.getBest('tetris');
+let best = 0;         // заполнится из Supabase в refreshStats()
+let worldRecord = 0;
+
+refreshStats();
 
 function emptyBoard(){return Array.from({length:ROWS},()=>Array(COLS).fill(null));}
 function refillBag(){
@@ -771,7 +831,7 @@ function gameOver(){
   }
   $('finScore').textContent=score;$('finLines').textContent=linesCleared;$('finLevel').textContent=level;
   $('recBadge').classList.toggle('hidden',!isRec);
-  submitScore(score);
+  submitScore(score).finally(() => refreshStats());
   show('ovOver');
 }
 function startGame(){
