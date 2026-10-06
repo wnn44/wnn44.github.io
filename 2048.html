@@ -193,7 +193,7 @@ h1 {
   background: linear-gradient(90deg, var(--cyan), var(--magenta));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.Leaderboards { max-height: 400px; overflow-y: auto; margin-top: 20px; }
+.leaderboards { max-height: 400px; overflow-y: auto; margin-top: 20px; }
 .lb-row {
   display: flex; align-items: center; gap: 12px; padding: 10px 12px;
   border-radius: 8px; background: rgba(13,17,40,.6); margin-bottom: 8px;
@@ -273,7 +273,7 @@ h1 {
   <div class="modal-box">
     <div class="modal-title">🏆 ТАБЛИЦА ЛИДЕРОВ</div>
     <button class="lb-refresh" id="lbRefresh">🔄 ОБНОВИТЬ</button>
-    <div class="Leaderboards" id="Leaderboards"></div>
+    <div class="leaderboards" id="leaderboards"></div>
     <div style="margin-top:20px">
       <button class="btn" id="lbClose" style="width:100%">ЗАКРЫТЬ</button>
     </div>
@@ -328,10 +328,10 @@ const SUPABASE_URL = 'https://ovoacfpdgupfdrdmomgp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wt0MIOGgL0V_qbOCOudyJw_CiG19rO1';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function fetchLeaderboards(gameId){
+async function fetchleaderboards(gameId){
   try{
     const { data, error } = await sb
-      .from('Leaderboards')
+      .from('leaderboards')
       .select('username, score')
       .eq('game_id', gameId)
       .order('score', { ascending: false })
@@ -341,7 +341,7 @@ async function fetchLeaderboards(gameId){
   } catch(e){
     console.warn('⚠️ Ошибка Supabase:', e);
     try {
-      const local = localStorage.getItem('n2048_Leaderboards');
+      const local = localStorage.getItem('n2048_leaderboards');
       return local ? JSON.parse(local) : [];
     } catch { return []; }
   }
@@ -350,7 +350,7 @@ async function fetchLeaderboards(gameId){
 async function saveScoreToCloud(gameId, username, score){
   try{
     const { data: existing, error: selErr } = await sb
-      .from('Leaderboards')
+      .from('leaderboards')
       .select('id, score')
       .eq('game_id', gameId)
       .eq('username', username)
@@ -360,14 +360,14 @@ async function saveScoreToCloud(gameId, username, score){
     if (existing){
       if (score > existing.score){
         const { error } = await sb
-          .from('Leaderboards')
+          .from('leaderboards')
           .update({ score, date: new Date().toISOString() })
           .eq('id', existing.id);
         if (error) throw error;
       }
     } else {
       const { error } = await sb
-        .from('Leaderboards')
+        .from('leaderboards')
         .insert({ game_id: gameId, username, score });
       if (error) throw error;
     }
@@ -384,17 +384,17 @@ async function submitScore(score) {
   await saveScoreToCloud('2048', currentPlayer, score);
 }
 
-  async function openLeaderboards() {
+  async function openleaderboards() {
     console.log('🏆 Открытие таблицы лидеров...');
     const modal = document.getElementById('lbModal');
-    const lb = document.getElementById('Leaderboards');
+    const lb = document.getElementById('leaderboards');
     if (!modal || !lb) return;
     
     modal.classList.remove('hidden');
     lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
     
     try {
-		const gameLb = await fetchLeaderboards('2048');
+		const gameLb = await fetchleaderboards('2048');
       
       if (!gameLb || gameLb.length === 0) {
         lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
@@ -429,13 +429,13 @@ async function submitScore(score) {
   });
 
   const lbRefreshBtn = document.getElementById('lbRefresh');
-  if (lbRefreshBtn) lbRefreshBtn.addEventListener('click', openLeaderboards);
+  if (lbRefreshBtn) lbRefreshBtn.addEventListener('click', openleaderboards);
   
   const lbHeaderBtn = document.getElementById('lbHeaderBtn');
   if (lbHeaderBtn) {
     lbHeaderBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      openLeaderboards();
+      openleaderboards();
     });
   }
 

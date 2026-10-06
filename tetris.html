@@ -260,7 +260,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   max-width:380px;width:90%;box-shadow:0 30px 80px -20px rgba(0,0,0,.9);
 }
 .modal-title{font-family:'Press Start 2P';font-size:16px;color:var(--cyan);margin-bottom:24px;text-align:center}
-.Leaderboards{max-height:400px;overflow-y:auto;margin-top:20px;}
+.leaderboards{max-height:400px;overflow-y:auto;margin-top:20px;}
 .lb-row{
   display:flex;align-items:center;gap:12px;padding:10px 12px;
   border-radius:8px;background:rgba(13,17,40,.6);margin-bottom:8px;
@@ -297,7 +297,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   </div>
   <div class="head-mid"></div>
   <div class="header-right">
-    <div class="chip lb" onclick="openLeaderboards()">🏆 ЛИДЕРЫ</div>
+    <div class="chip lb" onclick="openleaderboards()">🏆 ЛИДЕРЫ</div>
     <div class="chip user" id="userChip">ИГРОК</div>
     <div class="chip logout" id="logoutBtn">ВЫЙТИ</div>
   </div>
@@ -400,7 +400,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   <div class="modal-box" style="max-width:500px">
     <div class="modal-title">🏆 ТАБЛИЦА ЛИДЕРОВ</div>
     <button class="lb-refresh" id="lbRefresh">🔄 ОБНОВИТЬ</button>
-    <div class="Leaderboards" id="Leaderboards"></div>
+    <div class="leaderboards" id="leaderboards"></div>
     <div style="margin-top:20px">
       <button class="btn" id="lbClose" style="width:100%">ЗАКРЫТЬ</button>
     </div>
@@ -468,10 +468,10 @@ function rotateM(m,dir){const n=m.length,res=Array.from({length:n},()=>Array(n).
   return res;}
 
 
-async function fetchLeaderboards(gameId){
+async function fetchleaderboards(gameId){
   try{
     const { data, error } = await sb
-      .from('Leaderboards')
+      .from('leaderboards')
       .select('username, score')
       .eq('game_id', gameId)
       .order('score', { ascending: false })
@@ -480,14 +480,14 @@ async function fetchLeaderboards(gameId){
     return data || [];
   } catch(e){
     console.error('Ошибка загрузки лидерборда:', e);
-    return JSON.parse(localStorage.getItem('tetris_Leaderboards_v2') || '[]');
+    return JSON.parse(localStorage.getItem('tetris_leaderboards_v2') || '[]');
   }
 }
 
 async function saveScoreToCloud(gameId, username, score){
   try{
     const { data: existing, error: selErr } = await sb
-      .from('Leaderboards')
+      .from('leaderboards')
       .select('id, score')
       .eq('game_id', gameId)
       .eq('username', username)
@@ -497,14 +497,14 @@ async function saveScoreToCloud(gameId, username, score){
     if (existing){
       if (score > existing.score){
         const { error } = await sb
-          .from('Leaderboards')
+          .from('leaderboards')
           .update({ score, date: new Date().toISOString() })
           .eq('id', existing.id);
         if (error) throw error;
       }
     } else {
       const { error } = await sb
-        .from('Leaderboards')
+        .from('leaderboards')
         .insert({ game_id: gameId, username, score });
       if (error) throw error;
     }
@@ -533,16 +533,16 @@ async function submitScore(score){
   await saveScoreToCloud('tetris', currentPlayer, score);
 }
 
-async function openLeaderboards(){
+async function openleaderboards(){
   $('lbModal').classList.remove('hidden');
-  const lb = $('Leaderboards');
+  const lb = $('leaderboards');
   lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
-  const Leaderboards = await fetchLeaderboards('tetris');
-  if(!Leaderboards.length){
+  const leaderboards = await fetchleaderboards('tetris');
+  if(!leaderboards.length){
     lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
     return;
   }
-  lb.innerHTML = Leaderboards.slice(0, 50).map((entry, i) => {
+  lb.innerHTML = leaderboards.slice(0, 50).map((entry, i) => {
     const isMe = currentPlayer && entry.username.toLowerCase() === currentPlayer.toLowerCase();
     return `<div class="lb-row ${isMe ? 'me' : ''}">
       <div class="lb-rank">#${i+1}</div>
@@ -554,7 +554,7 @@ async function openLeaderboards(){
 function escapeHtml(str){ const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
 $('lbClose').onclick = () => $('lbModal').classList.add('hidden');
-$('lbRefresh').onclick = () => openLeaderboards();
+$('lbRefresh').onclick = () => openleaderboards();
 $('logoutBtn').onclick = doLogout;
 
 updateUserChip();
