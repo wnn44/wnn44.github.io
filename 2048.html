@@ -70,6 +70,7 @@ h1 {
 .score .l { font-size: 9px; letter-spacing: 2px; color: #a898d8; text-transform: uppercase; }
 .score .v { font-size: 20px; font-weight: 800; color: var(--cyan); text-shadow: 0 0 6px rgba(0,240,255,.6); }
 .score.best .v { color: var(--magenta); text-shadow: 0 0 6px rgba(255,43,214,.6); }
+.score.record .v { color: var(--yellow); text-shadow: 0 0 6px rgba(255,233,77,.6); }
 
 .ctrl { display: flex; justify-content: space-between; align-items: center; }
 .hint { font-size: 11px; color: #a898d8; letter-spacing: 1px; }
@@ -221,6 +222,8 @@ h1 {
   .vsuper { font-size: 18px; }
   header { justify-content: center; }
   .header-right { width: 100%; justify-content: center; margin-top: 8px; }
+  .score { min-width: 64px; padding: 5px 8px; }
+  .score .v { font-size: 16px; }
 }
 @media (max-width:360px) {
   :root { --cell: 62px; --gap: 7px; }
@@ -239,10 +242,11 @@ h1 {
     </div>
   </header>
   
-  <div class="scores">
+<div class="scores">
     <div class="score"><div class="l">Score</div><div class="v" id="sc">0</div></div>
     <div class="score best"><div class="l">Best</div><div class="v" id="bs">0</div></div>
-  </div>
+    <div class="score record"><div class="l">Record</div><div class="v" id="rc">0</div></div>
+</div>
 
   <div class="ctrl">
     <div class="hint">← ↑ ↓ → / WASD / Swipe</div>
@@ -378,6 +382,40 @@ async function saveScoreToCloud(gameId, username, score){
   }
 }
 
+async function fetchPlayerBest(gameId, username){
+  try{
+    const { data, error } = await sb
+      .from('leaderboards')
+      .select('score')
+      .eq('game_id', gameId)
+      .eq('username', username)
+      .maybeSingle();
+    if (error) throw error;
+    return (data && typeof data.score === 'number') ? data.score : 0;
+  }catch(e){
+    console.warn('⚠️ Ошибка загрузки личного рекорда:', e);
+    return Auth.getBest('2048') || 0;
+  }
+}
+
+async function fetchGlobalRecord(gameId){
+  try{
+    const { data, error } = await sb
+      .from('leaderboards')
+      .select('username, score')
+      .eq('game_id', gameId)
+      .order('score', { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    return data && data[0]
+      ? { username: data[0].username, score: data[0].score }
+      : { username: '—', score: 0 };
+  }catch(e){
+    console.warn('⚠️ Ошибка загрузки общего рекорда:', e);
+    return { username: '—', score: 0 };
+  }
+}
+
   // 4. ФУНКЦИИ ЛИДЕРБОРДА
 async function submitScore(score) {
   if (!currentPlayer) return;
@@ -510,23 +548,36 @@ async function submitScore(score) {
     mkEl(t);
   }
 
-  function loadBest() {
-    best = Auth.getBest('2048');
-    bsEl.textContent = best;
-  }
+const rcEl = document.getElementById('rc');
 
-  function checkAndSaveBest() {
-    console.log('🔍 Проверка рекорда: текущий счёт =', score, ', лучший =', best);
-    if (score > best) { 
-      console.log('🎉 Новый рекорд!', score);
-      best = score; 
-      Auth.setBest('2048', best);
-      bsEl.textContent = best; 
-      submitScore(best);
-    } else {
-      console.log('⏭️ Рекорд не побит.');
-    }
+async function loadBest() {
+  bsEl.textContent = '…';
+  rcEl.textContent = '…';
+  const [playerBest, globalRec] = await Promise.all([
+    fetchPlayerBest('2048', currentPlayer),
+    fetchGlobalRecord('2048')
+  ]);
+  best = playerBest;
+  bsEl.textContent = best;
+  rcEl.textContent = Number(globalRec.score).toLocaleString();
+  rcEl.title = globalRec.username && globalRec.username !== '—'
+    ? `Рекорд: ${globalRec.username}`
+    : '';
+}
+
+function checkAndSaveBest() {
+  console.log('🔍 Проверка рекорда: текущий счёт =', score, ', лучший =', best);
+  if (score > best) {
+    console.log('🎉 Новый рекорд!', score);
+    best = score;
+    Auth.setBest('2048', best);   // локальный бэкап
+    bsEl.textContent = best;
+    // После сабмита в Supabase обновим оба показателя (личный + мировой)
+    Promise.resolve(submitScore(best)).then(() => loadBest());
+  } else {
+    console.log('⏭️ Рекорд не побит.');
   }
+}
 
   function reset() {
     tilesEl.innerHTML = '';
