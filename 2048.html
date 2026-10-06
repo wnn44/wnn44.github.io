@@ -59,6 +59,7 @@ h1 {
 .chip:hover { transform: translateY(-2px); border-color: var(--cyan); color: #fff; }
 .chip.user { color: var(--cyan); border-color: rgba(0,240,255,.4); background: rgba(0,240,255,.08); }
 .chip.lb { color: var(--yellow); border-color: rgba(255,233,77,.4); background: rgba(255,233,77,.08); }
+.chip.menu{color:var(--cyan);border-color:rgba(38,217,242,.4);background:rgba(38,217,242,.08)}
 .chip.logout { color: var(--red); border-color: rgba(255,92,106,.4); background: rgba(255,92,106,.08); }
 
 .scores { display: flex; gap: 8px; }
@@ -238,7 +239,7 @@ h1 {
       <!-- УБРАН onclick, добавлен id для безопасного addEventListener -->
       <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
       <div class="chip user" id="userChip">ИГРОК</div>
-      <div class="chip logout" id="logoutBtn">ВЫЙТИ</div>
+      <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
     </div>
   </header>
   
@@ -475,6 +476,11 @@ async function submitScore(score) {
       e.preventDefault();
       openleaderboards();
     });
+	
+  const menuBtn = document.getElementById('menuBtn');
+  if (menuBtn) menuBtn.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
   }
 
   console.log('✅ Все обработчики событий успешно назначены.');
