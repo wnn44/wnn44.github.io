@@ -303,8 +303,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
     <div class="chip lb" onclick="openleaderboards()">🏆 ЛИДЕРЫ</div>
     <div class="chip user" id="userChip">ИГРОК</div>
     <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
-	<div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
-    <div class="chip logout" id="logoutBtn">ВЫЙТИ</div>
+   // <div class="chip logout" id="logoutBtn">ВЫЙТИ</div>
   </div>
 </header>
 
@@ -614,7 +613,7 @@ function escapeHtml(str){ const div = document.createElement('div'); div.textCon
 
 $('lbClose').onclick = () => $('lbModal').classList.add('hidden');
 $('lbRefresh').onclick = () => openleaderboards();
-$('logoutBtn').onclick = doLogout;
+//$('logoutBtn').onclick = doLogout;
 $('menuBtn').onclick = () => { window.location.href = 'index.html'; };
 
 updateUserChip();
