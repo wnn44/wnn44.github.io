@@ -60,6 +60,7 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
 .chip:hover{transform:translateY(-2px);border-color:var(--cyan);color:#fff}
 .chip.user{color:var(--green);border-color:rgba(77,238,138,.4);background:rgba(77,238,138,.06)}
 .chip.lb{color:var(--yellow);border-color:rgba(255,210,63,.4);background:rgba(255,210,63,.06)}
+.chip.menu{color:var(--cyan,#00f0ff);border-color:rgba(38,217,242,.4);background:rgba(38,217,242,.08)}
 .chip.logout{color:var(--red);border-color:rgba(255,92,106,.4);background:rgba(255,92,106,.06)}
 .layout{
   position:relative;z-index:1;flex:1;
@@ -301,7 +302,8 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   <div class="header-right">
     <div class="chip lb" onclick="openleaderboards()">🏆 ЛИДЕРЫ</div>
     <div class="chip user" id="userChip">ИГРОК</div>
-    <div class="chip logout" id="logoutBtn">ВЫЙТИ</div>
+    <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
+	<div class="chip logout" id="logoutBtn">ВЫЙТИ</div>
   </div>
 </header>
 
