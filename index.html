@@ -5,44 +5,123 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NEON ARCADE</title>
 <style>
-  :root { --bg: #05060f; --bg2: #0b0d1f; --accent: #00f0ff; --accent2: #ff00d4; --text: #e6f7ff; --danger: #ff3355; --success: #00ff88; }
+  :root {
+    --bg: #05060f; --bg2: #0b0d1f;
+    --accent: #00f0ff; --accent2: #ff00d4;
+    --text: #e6f7ff; --danger: #ff3355; --success: #00ff88;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { min-height: 100%; background: radial-gradient(ellipse at top, var(--bg2), var(--bg) 70%); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+  html, body {
+    min-height: 100%;
+    background: radial-gradient(ellipse at top, var(--bg2), var(--bg) 70%);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
   body { padding: 24px; }
-  header { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto 32px; padding-bottom: 16px; border-bottom: 1px solid rgba(0,240,255,0.2); }
-  .logo { font-size: 28px; letter-spacing: 6px; font-weight: 800; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 1100px; margin: 0 auto 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0,240,255,0.2);
+  }
+  .logo {
+    font-size: 28px; letter-spacing: 6px; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
   .user-box { display: flex; align-items: center; gap: 12px; font-size: 13px; }
   .user-box .uname { color: var(--accent); letter-spacing: 2px; text-shadow: 0 0 8px var(--accent); }
-  .btn-logout { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 14px; font-size: 11px; letter-spacing: 2px; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
+  .btn-logout {
+    background: transparent; color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 6px 14px; font-size: 11px; letter-spacing: 2px;
+    cursor: pointer; border-radius: 4px; text-transform: uppercase;
+  }
   .btn-logout:hover { background: var(--danger); color: #000; }
   main { max-width: 1100px; margin: 0 auto; }
   .hero { text-align: center; margin-bottom: 40px; }
-  .hero h1 { font-size: 48px; letter-spacing: 8px; margin-bottom: 8px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero h1 {
+    font-size: 48px; letter-spacing: 8px; margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
   .hero p { color: #8ab; letter-spacing: 3px; font-size: 13px; }
   .auth-wrap { display: grid; place-items: center; margin-bottom: 48px; }
-  .auth-card { width: 100%; max-width: 420px; background: linear-gradient(180deg, rgba(0,240,255,0.05), rgba(255,0,212,0.03)); border: 1px solid rgba(0,240,255,0.3); border-radius: 12px; padding: 28px; box-shadow: 0 0 40px rgba(0,240,255,0.15); }
+  .auth-card {
+    width: 100%; max-width: 420px;
+    background: linear-gradient(180deg, rgba(0,240,255,0.05), rgba(255,0,212,0.03));
+    border: 1px solid rgba(0,240,255,0.3);
+    border-radius: 12px; padding: 28px;
+    box-shadow: 0 0 40px rgba(0,240,255,0.15);
+  }
   .auth-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-  .auth-tab { flex: 1; padding: 10px; background: transparent; color: #8ab; border: 1px solid rgba(0,240,255,0.2); cursor: pointer; border-radius: 6px; letter-spacing: 2px; font-size: 12px; text-transform: uppercase; }
+  .auth-tab {
+    flex: 1; padding: 10px;
+    background: transparent; color: #8ab;
+    border: 1px solid rgba(0,240,255,0.2);
+    cursor: pointer; border-radius: 6px;
+    letter-spacing: 2px; font-size: 12px; text-transform: uppercase;
+  }
   .auth-tab.active { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(0,240,255,0.3); }
   .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 10px; letter-spacing: 2px; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; }
-  .field input { width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,240,255,0.25); color: var(--text); border-radius: 6px; font-size: 14px; outline: none; }
+  .field label {
+    display: block; font-size: 10px; letter-spacing: 2px;
+    color: var(--accent); margin-bottom: 6px; text-transform: uppercase;
+  }
+  .field input {
+    width: 100%; padding: 10px 12px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,240,255,0.25);
+    color: var(--text); border-radius: 6px;
+    font-size: 14px; outline: none;
+  }
   .field input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,240,255,0.3); }
-  .btn-primary { width: 100%; padding: 12px; background: transparent; color: var(--accent); border: 2px solid var(--accent); font-size: 13px; letter-spacing: 4px; font-weight: 700; cursor: pointer; border-radius: 6px; text-transform: uppercase; }
+  .btn-primary {
+    width: 100%; padding: 12px;
+    background: transparent; color: var(--accent);
+    border: 2px solid var(--accent);
+    font-size: 13px; letter-spacing: 4px; font-weight: 700;
+    cursor: pointer; border-radius: 6px; text-transform: uppercase;
+  }
   .btn-primary:hover { background: var(--accent); color: #000; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .msg { margin-top: 12px; font-size: 12px; text-align: center; min-height: 18px; letter-spacing: 1px; }
   .msg.err { color: var(--danger); }
   .msg.ok { color: var(--success); }
-  .games-section h2 { font-size: 14px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
-  .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-  .game-card { background: linear-gradient(180deg, rgba(0,240,255,0.04), rgba(255,0,212,0.03)); border: 1px solid rgba(0,240,255,0.25); border-radius: 12px; padding: 20px; transition: all .3s; cursor: pointer; position: relative; overflow: hidden; }
+  .games-section h2 {
+    font-size: 14px; letter-spacing: 4px; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 20px; text-align: center;
+  }
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .game-card {
+    background: linear-gradient(180deg, rgba(0,240,255,0.04), rgba(255,0,212,0.03));
+    border: 1px solid rgba(0,240,255,0.25);
+    border-radius: 12px; padding: 20px;
+    transition: all .3s; cursor: pointer;
+    position: relative; overflow: hidden;
+  }
   .game-card:hover { transform: translateY(-4px); border-color: var(--accent); }
-  .game-preview { height: 120px; border-radius: 8px; background: #02030a; margin-bottom: 14px; display: grid; place-items: center; border: 1px solid rgba(0,240,255,0.15); }
+  .game-preview {
+    height: 120px; border-radius: 8px;
+    background: #02030a; margin-bottom: 14px;
+    display: grid; place-items: center;
+    border: 1px solid rgba(0,240,255,0.15);
+  }
   .game-preview canvas { display: block; }
   .game-card h3 { font-size: 18px; letter-spacing: 3px; margin-bottom: 6px; }
   .game-card p { font-size: 12px; color: #8ab; line-height: 1.5; margin-bottom: 14px; }
-  .game-card .play-btn { display: inline-block; padding: 8px 20px; background: transparent; color: var(--accent); border: 1px solid var(--accent); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; border-radius: 4px; }
+  .game-card .play-btn {
+    display: inline-block; padding: 8px 20px;
+    background: transparent; color: var(--accent);
+    border: 1px solid var(--accent);
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    border-radius: 4px;
+  }
   .game-card:hover .play-btn { background: var(--accent); color: #000; }
   .game-card.locked { opacity: 0.5; cursor: not-allowed; }
   .game-card.locked:hover { transform: none; border-color: rgba(0,240,255,0.25); }
@@ -50,15 +129,18 @@
 </style>
 </head>
 <body>
+
 <header>
   <div class="logo">NEON ARCADE</div>
   <div class="user-box" id="user-box"></div>
 </header>
+
 <main>
   <section class="hero">
     <h1>ИГРОВАЯ ПЛАТФОРМА</h1>
     <p>Войдите, чтобы играть и сохранять рекорды</p>
   </section>
+
   <section class="auth-wrap" id="auth-section">
     <div class="auth-card">
       <div class="auth-tabs">
@@ -66,24 +148,149 @@
         <button class="auth-tab" data-tab="register" type="button">Регистрация</button>
       </div>
       <form id="auth-form" autocomplete="off">
-        <div class="field"><label for="username">Логин</label><input type="text" id="username" maxlength="20" required></div>
-        <div class="field"><label for="password">Пароль</label><input type="password" id="password" maxlength="64" required></div>
+        <div class="field">
+          <label for="username">Логин</label>
+          <input type="text" id="username" maxlength="20" required>
+        </div>
+        <div class="field">
+          <label for="password">Пароль</label>
+          <input type="password" id="password" maxlength="64" required>
+        </div>
         <button type="submit" class="btn-primary" id="submit-btn">Войти</button>
         <div class="msg" id="auth-msg"></div>
       </form>
     </div>
   </section>
+
   <section class="games-section">
     <h2>Доступные игры</h2>
     <div class="games-grid" id="games-grid"></div>
   </section>
 </main>
+
 <footer>© NEON ARCADE</footer>
 
-<script src="auth.js"></script>
+<!-- ============ AUTH ВСТРОЕН ПРЯМО СЮДА ============ -->
+<script>
+'use strict';
+
+const Auth = (() => {
+  const USERS_KEY = 'neon_users';
+  const SESSION_KEY = 'neon_session';
+
+  async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password + '::neon_salt_v1');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function loadUsers() {
+    try { return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); }
+    catch (e) { return {}; }
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  function validateUsername(name) {
+    if (typeof name !== 'string') return 'Некорректное имя';
+    const t = name.trim();
+    if (t.length < 3) return 'Логин минимум 3 символа';
+    if (t.length > 20) return 'Логин максимум 20 символов';
+    if (!/^[a-zA-Z0-9_\-]+$/.test(t)) return 'Только латиница, цифры, _ и -';
+    return null;
+  }
+
+  function validatePassword(pwd) {
+    if (typeof pwd !== 'string') return 'Некорректный пароль';
+    if (pwd.length < 4) return 'Пароль минимум 4 символа';
+    if (pwd.length > 64) return 'Пароль максимум 64 символа';
+    return null;
+  }
+
+  return {
+    async register(username, password) {
+      const uErr = validateUsername(username);
+      if (uErr) return { ok: false, error: uErr };
+      const pErr = validatePassword(password);
+      if (pErr) return { ok: false, error: pErr };
+      const users = loadUsers();
+      const uname = username.trim();
+      if (users[uname]) return { ok: false, error: 'Пользователь уже существует' };
+      users[uname] = { hash: await hashPassword(password), created: Date.now(), games: {} };
+      saveUsers(users);
+      return { ok: true };
+    },
+
+    async login(username, password) {
+      const uErr = validateUsername(username);
+      if (uErr) return { ok: false, error: uErr };
+      if (!password) return { ok: false, error: 'Введите пароль' };
+      const users = loadUsers();
+      const uname = username.trim();
+      const user = users[uname];
+      if (!user) return { ok: false, error: 'Пользователь не найден' };
+      const hash = await hashPassword(password);
+      if (hash !== user.hash) return { ok: false, error: 'Неверный пароль' };
+      sessionStorage.setItem(SESSION_KEY, uname);
+      return { ok: true, username: uname };
+    },
+
+    logout() { sessionStorage.removeItem(SESSION_KEY); },
+
+    currentUser() {
+      const uname = sessionStorage.getItem(SESSION_KEY);
+      if (!uname) return null;
+      const users = loadUsers();
+      return users[uname] ? uname : null;
+    },
+
+    getBest(gameId) {
+      const u = this.currentUser();
+      if (!u) return 0;
+      const users = loadUsers();
+      return (users[u]?.games?.[gameId]) || 0;
+    },
+
+    setBest(gameId, score) {
+      const u = this.currentUser();
+      if (!u) return;
+      const users = loadUsers();
+      if (!users[u]) return;
+      if (!users[u].games) users[u].games = {};
+      const cur = users[u].games[gameId] || 0;
+      if (score > cur) {
+        users[u].games[gameId] = score;
+        saveUsers(users);
+      }
+    },
+
+    isSessionValid() { return this.currentUser() !== null; },
+
+    requireAuth(redirectUrl = 'index.html') {
+      if (!this.isSessionValid()) {
+        window.location.replace(redirectUrl);
+        return false;
+      }
+      return true;
+    },
+
+    getDisplayName() { return this.currentUser() || 'Гость'; }
+  };
+})();
+
+// Делаем Auth доступным глобально (на случай, если скрипты в разных областях)
+window.Auth = Auth;
+</script>
+
+<!-- ============ ОСНОВНОЙ СКРИПТ СТРАНИЦЫ ============ -->
 <script>
 (() => {
 'use strict';
+
 const authSection = document.getElementById('auth-section');
 const userBox = document.getElementById('user-box');
 const gamesGrid = document.getElementById('games-grid');
@@ -91,31 +298,60 @@ const authForm = document.getElementById('auth-form');
 const authMsg = document.getElementById('auth-msg');
 const submitBtn = document.getElementById('submit-btn');
 const tabs = document.querySelectorAll('.auth-tab');
+
 let currentTab = 'login';
 
 const GAMES = [
   {
-    id: 'tetris', title: 'NEON TETRIS', desc: 'Классический тетрис с SRS-вращением, hold и ghost piece.',
-    url: 'tetris.html', color: '#00f0ff',
+    id: 'tetris',
+    title: 'NEON TETRIS',
+    desc: 'Классический тетрис с SRS-вращением, hold, ghost piece и неоновой эстетикой.',
+    url: 'tetris.html',
+    color: '#00f0ff',
     renderPreview: (canvas) => {
       const ctx = canvas.getContext('2d');
-      const shapes = [{ c: '#00f0ff', x: 20, y: 30, s: [[1,1,1,1]] }, { c: '#ff00d4', x: 30, y: 60, s: [[0,1,0],[1,1,1]] }];
-      ctx.fillStyle = '#02030a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const shapes = [
+        { c: '#00f0ff', x: 20, y: 30, s: [[1,1,1,1]] },
+        { c: '#ff00d4', x: 30, y: 60, s: [[0,1,0],[1,1,1]] },
+        { c: '#00ff88', x: 80, y: 40, s: [[0,1,1],[1,1,0]] },
+        { c: '#ffe600', x: 100, y: 75, s: [[1,1],[1,1]] }
+      ];
+      ctx.fillStyle = '#02030a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       shapes.forEach(sh => {
-        ctx.fillStyle = sh.c; ctx.shadowColor = sh.c; ctx.shadowBlur = 10;
-        sh.s.forEach((row, y) => row.forEach((v, x) => { if (v) ctx.fillRect(sh.x + x*14, sh.y + y*14, 12, 12); }));
+        ctx.fillStyle = sh.c;
+        ctx.shadowColor = sh.c;
+        ctx.shadowBlur = 10;
+        sh.s.forEach((row, y) => row.forEach((v, x) => {
+          if (v) ctx.fillRect(sh.x + x*14, sh.y + y*14, 12, 12);
+        }));
       });
       ctx.shadowBlur = 0;
     }
   },
   {
-    id: '2048', title: 'NEON 2048', desc: 'Соединяй числа, достигни 2048 и построй свой неоновый рекорд.',
-    url: '2048.html', color: '#a855ff',
+    id: '2048',
+    title: 'NEON 2048',
+    desc: 'Соединяй числа, достигни 2048 и построй свой неоновый рекорд.',
+    url: '2048.html',
+    color: '#a855ff',
     renderPreview: (canvas) => {
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#05010d'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const tiles = [{ c: '#00f0ff', x: 20, y: 20 }, { c: '#ff2bd6', x: 70, y: 20 }, { c: '#a855ff', x: 20, y: 70 }, { c: '#ffe94d', x: 70, y: 70 }];
-      tiles.forEach(t => { ctx.fillStyle = t.c; ctx.shadowColor = t.c; ctx.shadowBlur = 12; ctx.fillRect(t.x, t.y, 40, 40); });
+      ctx.fillStyle = '#05010d';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Рисуем пару неоновых плиток для превью
+      const tiles = [
+        { c: '#00f0ff', x: 20, y: 20 },
+        { c: '#ff2bd6', x: 70, y: 20 },
+        { c: '#a855ff', x: 20, y: 70 },
+        { c: '#ffe94d', x: 70, y: 70 }
+      ];
+      tiles.forEach(t => {
+        ctx.fillStyle = t.c;
+        ctx.shadowColor = t.c;
+        ctx.shadowBlur = 12;
+        ctx.fillRect(t.x, t.y, 40, 40);
+      });
       ctx.shadowBlur = 0;
     }
   }
@@ -125,51 +361,84 @@ function renderUserBox() {
   const user = Auth.currentUser();
   userBox.innerHTML = '';
   if (user) {
-    const span = document.createElement('span'); span.textContent = '● ' + user; span.className = 'uname';
-    const btn = document.createElement('button'); btn.className = 'btn-logout'; btn.textContent = 'Выйти';
+    const span = document.createElement('span');
+    span.textContent = '● ' + user;
+    span.className = 'uname';
+    const btn = document.createElement('button');
+    btn.className = 'btn-logout';
+    btn.textContent = 'Выйти';
     btn.addEventListener('click', () => { Auth.logout(); renderAll(); });
-    userBox.appendChild(span); userBox.appendChild(btn);
+    userBox.appendChild(span);
+    userBox.appendChild(btn);
   } else {
-    const span = document.createElement('span'); span.textContent = 'Гость'; span.style.color = '#689';
+    const span = document.createElement('span');
+    span.textContent = 'Гость';
+    span.style.color = '#689';
     userBox.appendChild(span);
   }
 }
 
-function renderAuthVisibility() { authSection.style.display = Auth.currentUser() ? 'none' : 'grid'; }
+function renderAuthVisibility() {
+  authSection.style.display = Auth.currentUser() ? 'none' : 'grid';
+}
 
 function renderGames() {
   gamesGrid.innerHTML = '';
   const loggedIn = Auth.currentUser() !== null;
+
   GAMES.forEach(game => {
-    const card = document.createElement('div'); card.className = 'game-card';
-    const preview = document.createElement('div'); preview.className = 'game-preview';
-    const canvas = document.createElement('canvas'); canvas.width = 180; canvas.height = 110;
+    const card = document.createElement('div');
+    card.className = 'game-card';
+
+    const preview = document.createElement('div');
+    preview.className = 'game-preview';
+    const canvas = document.createElement('canvas');
+    canvas.width = 180; canvas.height = 110;
     preview.appendChild(canvas);
     if (game.renderPreview) game.renderPreview(canvas);
-    const title = document.createElement('h3'); title.textContent = game.title;
-    const desc = document.createElement('p'); desc.textContent = game.desc;
-    const btn = document.createElement('button'); btn.className = 'play-btn';
+
+    const title = document.createElement('h3');
+    title.textContent = game.title;
+
+    const desc = document.createElement('p');
+    desc.textContent = game.desc;
+
+    const btn = document.createElement('button');
+    btn.className = 'play-btn';
+
     if (loggedIn) {
       btn.textContent = 'Играть';
       card.addEventListener('click', () => { window.location.href = game.url; });
     } else {
       btn.textContent = 'Войдите, чтобы играть';
       card.classList.add('locked');
-      card.addEventListener('click', () => { document.getElementById('username').focus(); authSection.scrollIntoView({ behavior: 'smooth' }); });
+      card.addEventListener('click', () => {
+        document.getElementById('username').focus();
+        authSection.scrollIntoView({ behavior: 'smooth' });
+      });
     }
-    card.appendChild(preview); card.appendChild(title); card.appendChild(desc); card.appendChild(btn);
+
+    card.appendChild(preview);
+    card.appendChild(title);
+    card.appendChild(desc);
+    card.appendChild(btn);
     gamesGrid.appendChild(card);
   });
 }
 
-function renderAll() { renderUserBox(); renderAuthVisibility(); renderGames(); }
+function renderAll() {
+  renderUserBox();
+  renderAuthVisibility();
+  renderGames();
+}
 
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
     currentTab = tab.dataset.tab;
     tabs.forEach(t => t.classList.toggle('active', t === tab));
     submitBtn.textContent = currentTab === 'login' ? 'Войти' : 'Создать аккаунт';
-    authMsg.textContent = ''; authMsg.className = 'msg';
+    authMsg.textContent = '';
+    authMsg.className = 'msg';
   });
 });
 
@@ -177,8 +446,10 @@ authForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
-  authMsg.textContent = ''; authMsg.className = 'msg';
+  authMsg.textContent = '';
+  authMsg.className = 'msg';
   submitBtn.disabled = true;
+
   try {
     let result;
     if (currentTab === 'login') {
@@ -194,11 +465,22 @@ authForm.addEventListener('submit', async (e) => {
         return;
       }
     }
-    if (result.ok) { authMsg.textContent = 'Добро пожаловать!'; authMsg.className = 'msg ok'; setTimeout(renderAll, 400); }
-    else { authMsg.textContent = result.error; authMsg.className = 'msg err'; }
+
+    if (result.ok) {
+      authMsg.textContent = 'Добро пожаловать!';
+      authMsg.className = 'msg ok';
+      setTimeout(renderAll, 400);
+    } else {
+      authMsg.textContent = result.error;
+      authMsg.className = 'msg err';
+    }
   } catch (err) {
-    authMsg.textContent = 'Ошибка: ' + err.message; authMsg.className = 'msg err';
-  } finally { submitBtn.disabled = false; }
+    console.error(err);
+    authMsg.textContent = 'Ошибка: ' + err.message;
+    authMsg.className = 'msg err';
+  } finally {
+    submitBtn.disabled = false;
+  }
 });
 
 renderAll();

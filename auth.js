@@ -1,12 +1,5 @@
 'use strict';
 
-// ==========================================
-// НАСТРОЙКИ SUPABASE (ЗАПОЛНИТЕ СВОИМИ ДАННЫМИ)
-// ==========================================
-const SUPABASE_URL = 'https://ovoacfpdgupfdrdmomgp.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_wt0MIOGgL0V_qbOCOudyJw_CiG19rO1';
-// ==========================================
-
 const Auth = (() => {
   const USERS_KEY = 'neon_users';
   const SESSION_KEY = 'neon_session';
@@ -111,67 +104,7 @@ const Auth = (() => {
       return true;
     },
 
-    getDisplayName() { return this.currentUser() || 'Гость'; },
-
-    // --- SUPABASE LEADERBOARD FUNCTIONS ---
-    async getLeaderboard(gameId) {
-      try {
-        const url = `${SUPABASE_URL}/rest/v1/leaderboards?game_id=eq.${gameId}&order=score.desc&limit=100`;
-        const res = await fetch(url, {
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-          }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-      } catch (e) {
-        console.warn('Supabase недоступен, используем localStorage:', e);
-        return JSON.parse(localStorage.getItem(`lb_${gameId}`) || '[]');
-      }
-    },
-
-    async saveLeaderboard(gameId, username, score) {
-      try {
-        const checkUrl = `${SUPABASE_URL}/rest/v1/leaderboards?game_id=eq.${gameId}&username=eq.${username}`;
-        const checkRes = await fetch(checkUrl, {
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-        });
-        const existing = await checkRes.json();
-
-        if (existing.length > 0 && existing[0].score >= score) {
-          return; // Рекорд не побит
-        }
-
-        const data = { game_id: gameId, username: username, score: score };
-
-        if (existing.length > 0) {
-          await fetch(`${SUPABASE_URL}/rest/v1/leaderboards?id=eq.${existing[0].id}`, {
-            method: 'PATCH',
-            headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(data)
-          });
-        } else {
-          await fetch(`${SUPABASE_URL}/rest/v1/leaderboards`, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(data)
-          });
-        }
-      } catch (e) {
-        console.error('Ошибка сохранения в Supabase:', e);
-      }
-    }
+    getDisplayName() { return this.currentUser() || 'Гость'; }
   };
 })();
 
