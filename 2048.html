@@ -495,6 +495,7 @@ async function submitScore(score) {
   }
 
   let grid, tm, nid, score, best, won, keep, busy;
+  let savedThisGame = false;
 
   function px() {
     const s = getComputedStyle(document.documentElement);
@@ -566,30 +567,39 @@ async function loadBest() {
 }
 
 function checkAndSaveBest() {
-  console.log('🔍 Проверка рекорда: текущий счёт =', score, ', лучший =', best);
+  // Обновляем только локальный дисплей и localStorage.
+  // Никаких запросов в Supabase здесь — только в конце партии.
   if (score > best) {
-    console.log('🎉 Новый рекорд!', score);
     best = score;
-    Auth.setBest('2048', best);   // локальный бэкап
+    Auth.setBest('2048', best);
     bsEl.textContent = best;
-    // После сабмита в Supabase обновим оба показателя (личный + мировой)
-    Promise.resolve(submitScore(best)).then(() => loadBest());
-  } else {
-    console.log('⏭️ Рекорд не побит.');
   }
 }
 
-  function reset() {
-    tilesEl.innerHTML = '';
-    grid = Array.from({ length: S }, () => Array(S).fill(null));
-    tm = new Map();
-    nid = 1; score = 0; won = false; keep = false; busy = false;
-    scEl.textContent = '0';
-    winOv.classList.remove('show');
-    loseOv.classList.remove('show');
-    spawn();
-    spawn();
-  }
+function saveGame() {
+  if (savedThisGame) return;
+  if (!score || score <= 0) return;
+  savedThisGame = true;
+  console.log('💾 Отправка рекорда в Supabase:', score);
+  submitScore(score).then(loadBest).catch(err => {
+    console.warn('⚠️ Не удалось сохранить рекорд:', err);
+  });
+}
+
+function reset() {
+  saveGame();                       // сохранить прошлую партию, если была
+  savedThisGame = false;            // новая партия — счётчик сброшен
+
+  tilesEl.innerHTML = '';
+  grid = Array.from({ length: S }, () => Array(S).fill(null));
+  tm = new Map();
+  nid = 1; score = 0; won = false; keep = false; busy = false;
+  scEl.textContent = '0';
+  winOv.classList.remove('show');
+  loseOv.classList.remove('show');
+  spawn();
+  spawn();
+}
 
   function move(dir) {
     if (busy) return;
@@ -670,9 +680,12 @@ function checkAndSaveBest() {
           if (c + 1 < S && grid[r][c + 1]?.value === v) { over = false; break outer; }
           if (r + 1 < S && grid[r + 1]?.[c]?.value === v) { over = false; break outer; }
         }
-      if (over) setTimeout(() => loseOv.classList.add('show'), 280);
+if (over) {
+  setTimeout(() => loseOv.classList.add('show'), 280);
+  saveGame();
+}
 
-      busy = false;
+busy = false;
     }, DUR + 15);
   }
 
