@@ -614,6 +614,7 @@ function escapeHtml(str){ const div = document.createElement('div'); div.textCon
 $('lbClose').onclick = () => $('lbModal').classList.add('hidden');
 $('lbRefresh').onclick = () => openleaderboards();
 $('logoutBtn').onclick = doLogout;
+$('menuBtn').onclick = () => { window.location.href = 'index.html'; };
 
 updateUserChip();
 
