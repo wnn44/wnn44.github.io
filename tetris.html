@@ -467,11 +467,6 @@ function rotateM(m,dir){const n=m.length,res=Array.from({length:n},()=>Array(n).
     if(dir>0)res[y][x]=m[n-1-x][y]; else res[y][x]=m[x][n-1-y];}
   return res;}
 
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_CONFIG.BIN_ID}`;
-const JSONBIN_HEADERS = {
-  'Content-Type': 'application/json',
-  'X-Master-Key': JSONBIN_CONFIG.MASTER_KEY
-};
 
 async function fetchLeaderboards(gameId){
   try{
