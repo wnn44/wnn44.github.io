@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>NEON 2048</title>
+<link rel="stylesheet" href="common.css">
 <script src="auth.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="leaderboard.js"></script>
+<script src="leaderboard-ui.js"></script>
 <style>
 :root {
   --bg: #05010d;
@@ -273,214 +276,46 @@ h1 {
   </div>
 </div>
 
-<!-- Модалка таблицы лидеров -->
-<div class="modal hidden" id="lbModal">
-  <div class="modal-box">
-    <div class="modal-title">🏆 ТАБЛИЦА ЛИДЕРОВ</div>
-    <button class="lb-refresh" id="lbRefresh">🔄 ОБНОВИТЬ</button>
-    <div class="leaderboards" id="leaderboards"></div>
-    <div style="margin-top:20px">
-      <button class="btn" id="lbClose" style="width:100%">ЗАКРЫТЬ</button>
-    </div>
-  </div>
-</div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   'use strict';
   console.log('🚀 2048: Инициализация...');
 
-  // 1. ПРОВЕРКА АВТОРИЗАЦИИ
-  if (typeof Auth === 'undefined') {
-    console.error('❌ Файл auth.js не загружен!');
-    window.location.replace('index.html');
-    return;
-  }
-  
-  if (!Auth.isSessionValid()) {
-    console.warn('⚠️ Сессия недействительна, редирект на главную.');
-    window.location.replace('index.html');
-    return;
-  }
-
-  const currentPlayer = Auth.currentUser();
-  console.log('✅ Авторизован как:', currentPlayer);
+  // 1. ИГРОК И АВТОРИЗАЦИЯ
+  const currentPlayer = Auth.get();
+  console.log('✅ Игрок:', currentPlayer || 'Гость');
 
   // 2. ПРИВЯЗКА ИНТЕРФЕЙСА
   const userChip = document.getElementById('userChip');
-  if (userChip && currentPlayer) {
-    userChip.textContent = `👤 ${currentPlayer}`;
-    console.log('✅ Имя игрока отображено.');
+  if (userChip) {
+    userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
   }
 
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      console.log('🚪 Выход из системы...');
-      Auth.logout();
-      window.location.replace('index.html');
-    });
+  // 3. ФУНКЦИИ ЛИДЕРБОРДА
+  async function submitScore(score) {
+    if (!currentPlayer) return;
+    await Leaderboard.submit('2048', currentPlayer, score);
   }
 
-  // Глобальная функция на всякий случай
-  window.doLogout = function() {
-    Auth.logout();
-    window.location.replace('index.html');
-  };
-
-// 3. КОНФИГУРАЦИЯ SUPABASE
-const SUPABASE_URL = 'https://ovoacfpdgupfdrdmomgp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_wt0MIOGgL0V_qbOCOudyJw_CiG19rO1';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function fetchleaderboards(gameId){
-  try{
-    const { data, error } = await sb
-      .from('leaderboards')
-      .select('username, score')
-      .eq('game_id', gameId)
-      .order('score', { ascending: false })
-      .limit(50);
-    if (error) throw error;
-    return data || [];
-  } catch(e){
-    console.warn('⚠️ Ошибка Supabase:', e);
-    try {
-      const local = localStorage.getItem('n2048_leaderboards');
-      return local ? JSON.parse(local) : [];
-    } catch { return []; }
-  }
-}
-
-async function saveScoreToCloud(gameId, username, score){
-  try{
-    const { data: existing, error: selErr } = await sb
-      .from('leaderboards')
-      .select('id, score')
-      .eq('game_id', gameId)
-      .eq('username', username)
-      .maybeSingle();
-    if (selErr) throw selErr;
-
-    if (existing){
-      if (score > existing.score){
-        const { error } = await sb
-          .from('leaderboards')
-          .update({ score, date: new Date().toISOString() })
-          .eq('id', existing.id);
-        if (error) throw error;
-      }
-    } else {
-      const { error } = await sb
-        .from('leaderboards')
-        .insert({ game_id: gameId, username, score });
-      if (error) throw error;
-    }
-    return true;
-  } catch(e){
-    console.error('❌ Ошибка сохранения рекорда:', e);
-    return false;
-  }
-}
-
-async function fetchPlayerBest(gameId, username){
-  try{
-    const { data, error } = await sb
-      .from('leaderboards')
-      .select('score')
-      .eq('game_id', gameId)
-      .eq('username', username)
-      .maybeSingle();
-    if (error) throw error;
-    return (data && typeof data.score === 'number') ? data.score : 0;
-  }catch(e){
-    console.warn('⚠️ Ошибка загрузки личного рекорда:', e);
-    return Auth.getBest('2048') || 0;
-  }
-}
-
-async function fetchGlobalRecord(gameId){
-  try{
-    const { data, error } = await sb
-      .from('leaderboards')
-      .select('username, score')
-      .eq('game_id', gameId)
-      .order('score', { ascending: false })
-      .limit(1);
-    if (error) throw error;
-    return data && data[0]
-      ? { username: data[0].username, score: data[0].score }
-      : { username: '—', score: 0 };
-  }catch(e){
-    console.warn('⚠️ Ошибка загрузки общего рекорда:', e);
-    return { username: '—', score: 0 };
-  }
-}
-
-  // 4. ФУНКЦИИ ЛИДЕРБОРДА
-async function submitScore(score) {
-  if (!currentPlayer) return;
-  await saveScoreToCloud('2048', currentPlayer, score);
-}
-
-  async function openleaderboards() {
-    console.log('🏆 Открытие таблицы лидеров...');
-    const modal = document.getElementById('lbModal');
-    const lb = document.getElementById('leaderboards');
-    if (!modal || !lb) return;
-    
-    modal.classList.remove('hidden');
-    lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
-    
-    try {
-		const gameLb = await fetchleaderboards('2048');
-      
-      if (!gameLb || gameLb.length === 0) {
-        lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
-        return;
-      }
-      
-      lb.innerHTML = gameLb.map((entry, i) => {
-        const isMe = currentPlayer && entry.username.toLowerCase() === currentPlayer.toLowerCase();
-        return `<div class="lb-row ${isMe ? 'me' : ''}">
-          <div class="lb-rank">#${i+1}</div>
-          <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
-          <div class="lb-score">${Number(entry.score).toLocaleString()}</div>
-        </div>`;
-      }).join('');
-      console.log('✅ Таблица лидеров успешно загружена.');
-    } catch (err) {
-      console.error('❌ Критическая ошибка при открытии таблицы:', err);
-      lb.innerHTML = '<div class="lb-empty">Ошибка загрузки данных. См. консоль (F12).</div>';
-    }
+  function openleaderboards() {
+    LeaderboardUI.open('2048');
   }
 
-  function escapeHtml(str) { 
-    const div = document.createElement('div'); 
-    div.textContent = str; 
-    return div.innerHTML; 
-  }
-
-  // 5. НАЗНАЧЕНИЕ СОБЫТИЙ (Безопасное, через addEventListener)
-  const lbCloseBtn = document.getElementById('lbClose');
-  if (lbCloseBtn) lbCloseBtn.addEventListener('click', () => {
-    document.getElementById('lbModal').classList.add('hidden');
-  });
-
-  const lbRefreshBtn = document.getElementById('lbRefresh');
-  if (lbRefreshBtn) lbRefreshBtn.addEventListener('click', openleaderboards);
-  
   const lbHeaderBtn = document.getElementById('lbHeaderBtn');
   if (lbHeaderBtn) {
     lbHeaderBtn.addEventListener('click', (e) => {
       e.preventDefault();
       openleaderboards();
     });
-	
+  }
+
   const menuBtn = document.getElementById('menuBtn');
-  if (menuBtn) menuBtn.addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
+  if (menuBtn) {
+    menuBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
   }
 
   console.log('✅ Все обработчики событий успешно назначены.');
@@ -561,10 +396,10 @@ async function loadBest() {
   bsEl.textContent = '…';
   rcEl.textContent = '…';
   const [playerBest, globalRec] = await Promise.all([
-    fetchPlayerBest('2048', currentPlayer),
-    fetchGlobalRecord('2048')
+    Leaderboard.getPlayerBest('2048', currentPlayer),
+    Leaderboard.getGlobalRecord('2048')
   ]);
-  best = playerBest;
+  best = playerBest || 0;
   bsEl.textContent = best;
   rcEl.textContent = Number(globalRec.score).toLocaleString();
   rcEl.title = globalRec.username && globalRec.username !== '—'
@@ -573,11 +408,8 @@ async function loadBest() {
 }
 
 function checkAndSaveBest() {
-  // Обновляем только локальный дисплей и localStorage.
-  // Никаких запросов в Supabase здесь — только в конце партии.
   if (score > best) {
     best = score;
-    Auth.setBest('2048', best);
     bsEl.textContent = best;
   }
 }

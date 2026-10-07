@@ -1,0 +1,156 @@
+/* =============================================
+   NEON ARCADE — Общие стили
+   ============================================= */
+
+/* ===== Модалка таблицы лидеров ===== */
+.lb-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 9, 22, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.lb-modal.hidden {
+  display: none;
+}
+.lb-modal-box {
+  background: linear-gradient(180deg, rgba(24, 29, 63, 0.98), rgba(13, 17, 40, 0.98));
+  border: 1px solid rgba(42, 49, 96, 0.8);
+  border-radius: 16px;
+  padding: 28px 32px;
+  max-width: 480px;
+  width: 92%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.9),
+    0 0 60px -10px rgba(0, 240, 255, 0.15);
+}
+.lb-modal-title {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 20px;
+  background: linear-gradient(90deg, #00f0ff, #ff2bd6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lb-modal-refresh {
+  display: inline-block;
+  font-size: 11px;
+  padding: 8px 16px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: #00f0ff;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+.lb-modal-refresh:hover {
+  background: rgba(0, 240, 255, 0.2);
+  transform: translateY(-2px);
+}
+.lb-modal-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.lb-modal-close {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(255, 43, 214, 0.12));
+  border: 1px solid rgba(168, 85, 255, 0.45);
+  color: #e9e3ff;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 12px;
+  text-transform: uppercase;
+  transition: transform 0.12s, border-color 0.15s;
+}
+.lb-modal-close:hover {
+  border-color: #00f0ff;
+  transform: translateY(-1px);
+}
+.lb-modal-close:active {
+  transform: translateY(1px);
+}
+
+/* ===== Строки лидерборда (общие для модалки и карточек) ===== */
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(13, 17, 40, 0.6);
+  margin-bottom: 6px;
+  transition: background 0.2s;
+  border: 1px solid transparent;
+}
+.lb-row:hover {
+  background: rgba(0, 240, 255, 0.08);
+}
+.lb-row.me {
+  background: rgba(77, 238, 138, 0.12);
+  border-color: rgba(77, 238, 138, 0.3);
+}
+.lb-rank {
+  font-weight: 900;
+  font-size: 14px;
+  color: #ffd23f;
+  min-width: 32px;
+  text-align: center;
+}
+.lb-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e9e3ff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-score {
+  font-weight: 800;
+  font-size: 13px;
+  color: #00f0ff;
+  white-space: nowrap;
+}
+.lb-modal-empty,
+.lb-modal-loading {
+  text-align: center;
+  color: #a898d8;
+  padding: 24px 16px;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Утилиты ===== */
+.hidden { display: none !important; }
+
+/* ===== Адаптивность модалки ===== */
+@media (max-width: 520px) {
+  .lb-modal-box {
+    padding: 20px;
+    width: 96%;
+    border-radius: 12px;
+  }
+  .lb-modal-title {
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  .lb-rank { font-size: 12px; min-width: 28px; }
+  .lb-name { font-size: 13px; }
+  .lb-score { font-size: 11px; }
+}

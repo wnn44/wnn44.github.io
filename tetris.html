@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ТЕТРИС — неоновая аркада</title>
-<!-- Подключение модуля авторизации -->
+<!-- Подключение модулей -->
+<link rel="stylesheet" href="common.css">
 <script src="auth.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="leaderboard.js"></script>
+<script src="leaderboard-ui.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -449,41 +452,15 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   </div>
 </div>
 
-<!-- Модалка таблицы лидеров (оставлена, модалька входа удалена, так как вход на index.html) -->
-<div class="modal hidden" id="lbModal">
-  <div class="modal-box" style="max-width:500px">
-    <div class="modal-title">🏆 ТАБЛИЦА ЛИДЕРОВ</div>
-    <button class="lb-refresh" id="lbRefresh">🔄 ОБНОВИТЬ</button>
-    <div class="leaderboards" id="leaderboards"></div>
-    <div style="margin-top:20px">
-      <button class="btn" id="lbClose" style="width:100%">ЗАКРЫТЬ</button>
-    </div>
-  </div>
-</div>
+
 
 <script>
 'use strict';
 
-// ==========================================
-// 1. ПРОВЕРКА АВТОРИЗАЦИИ (Строгая)
-// ==========================================
-if (typeof Auth === 'undefined') {
-  console.error('Файл auth.js не найден. Убедитесь, что он лежит в той же папке.');
-  window.location.replace('index.html');
-} else if (!Auth.isSessionValid()) {
-  // Если сессии нет, немедленно редирект на стартовую страницу
-  window.location.replace('index.html');
-}
+// 1. ИГРОК И АВТОРИЗАЦИЯ
+const currentPlayer = Auth.get();
 
-const currentPlayer = Auth.currentUser();
-
-// ==========================================
 // 2. КОНФИГУРАЦИЯ И КОНСТАНТЫ
-// ==========================================
-const SUPABASE_URL = 'https://ovoacfpdgupfdrdmomgp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_wt0MIOGgL0V_qbOCOudyJw_CiG19rO1';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const $=id=>document.getElementById(id);
 const COLS=10, ROWS=20;
 const COLORS={I:'#26d9f2',J:'#4f8bff',L:'#ff9440',O:'#ffd23f',S:'#4dee8a',T:'#b45cff',Z:'#ff5c6a'};
@@ -521,96 +498,14 @@ function rotateM(m,dir){const n=m.length,res=Array.from({length:n},()=>Array(n).
     if(dir>0)res[y][x]=m[n-1-x][y]; else res[y][x]=m[x][n-1-y];}
   return res;}
 
-
-async function fetchleaderboards(gameId){
-  try{
-    const { data, error } = await sb
-      .from('leaderboards')
-      .select('username, score')
-      .eq('game_id', gameId)
-      .order('score', { ascending: false })
-      .limit(50);
-    if (error) throw error;
-    return data || [];
-  } catch(e){
-    console.error('Ошибка загрузки лидерборда:', e);
-    return JSON.parse(localStorage.getItem('tetris_leaderboards_v2') || '[]');
-  }
-}
-
-async function saveScoreToCloud(gameId, username, score){
-  try{
-    const { data: existing, error: selErr } = await sb
-      .from('leaderboards')
-      .select('id, score')
-      .eq('game_id', gameId)
-      .eq('username', username)
-      .maybeSingle();
-    if (selErr) throw selErr;
-
-    if (existing){
-      if (score > existing.score){
-        const { error } = await sb
-          .from('leaderboards')
-          .update({ score, date: new Date().toISOString() })
-          .eq('id', existing.id);
-        if (error) throw error;
-      }
-    } else {
-      const { error } = await sb
-        .from('leaderboards')
-        .insert({ game_id: gameId, username, score });
-      if (error) throw error;
-    }
-    return true;
-  } catch(e){
-    console.error('Ошибка сохранения рекорда:', e);
-    return false;
-  }
-}
-
-async function fetchPlayerBest(gameId, username){
-  try{
-    const { data, error } = await sb
-      .from('leaderboards')
-      .select('score')
-      .eq('game_id', gameId)
-      .eq('username', username)
-      .maybeSingle();
-    if (error) throw error;
-    return (data && typeof data.score === 'number') ? data.score : 0;
-  }catch(e){
-    console.warn('⚠️ Ошибка загрузки личного рекорда:', e);
-    return Auth.getBest('tetris') || 0;
-  }
-}
-
-async function fetchGlobalRecord(gameId){
-  try{
-    const { data, error } = await sb
-      .from('leaderboards')
-      .select('username, score')
-      .eq('game_id', gameId)
-      .order('score', { ascending: false })
-      .limit(1);
-    if (error) throw error;
-    return data && data[0]
-      ? { username: data[0].username, score: data[0].score }
-      : { username: '—', score: 0 };
-  }catch(e){
-    console.warn('⚠️ Ошибка загрузки мирового рекорда:', e);
-    return { username: '—', score: 0 };
-  }
-}
-
 async function refreshStats(){
   const bsEl = $('bestScore');
   const wrEl = $('worldRec');
   if (bsEl) bsEl.textContent = '…';
   if (wrEl) wrEl.textContent = '…';
   const [pb, wr] = await Promise.all([
-    fetchPlayerBest('tetris', currentPlayer),
-    fetchGlobalRecord('tetris')
+    Leaderboard.getPlayerBest('tetris', currentPlayer),
+    Leaderboard.getGlobalRecord('tetris')
   ]);
   best = pb || 0;
   worldRecord = wr.score || 0;
@@ -621,47 +516,20 @@ async function refreshStats(){
   }
 }
 
-// ==========================================
-// 3. ИНТЕГРАЦИЯ С AUTH (Вместо старой логики)
-// ==========================================
 function updateUserChip(){
   const chip = $('userChip');
-  if (chip && currentPlayer) chip.textContent = `👤 ${currentPlayer}`;
-}
-
-function doLogout(){
-  Auth.logout();
-  window.location.replace('index.html');
+  if (chip) chip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
 }
 
 async function submitScore(score){
   if(!currentPlayer) return;
-  await saveScoreToCloud('tetris', currentPlayer, score);
+  await Leaderboard.submit('tetris', currentPlayer, score);
 }
 
-async function openleaderboards(){
-  $('lbModal').classList.remove('hidden');
-  const lb = $('leaderboards');
-  lb.innerHTML = '<div class="lb-loading">⏳ Загрузка таблицы...</div>';
-  const leaderboards = await fetchleaderboards('tetris');
-  if(!leaderboards.length){
-    lb.innerHTML = '<div class="lb-empty">Пока нет рекордов. Сыграйте первую игру!</div>';
-    return;
-  }
-  lb.innerHTML = leaderboards.slice(0, 50).map((entry, i) => {
-    const isMe = currentPlayer && entry.username.toLowerCase() === currentPlayer.toLowerCase();
-    return `<div class="lb-row ${isMe ? 'me' : ''}">
-      <div class="lb-rank">#${i+1}</div>
-      <div class="lb-name">${escapeHtml(entry.username)}${isMe ? ' (вы)' : ''}</div>
-      <div class="lb-score">${entry.score.toLocaleString()}</div>
-    </div>`;
-  }).join('');
+function openleaderboards(){
+  LeaderboardUI.open('tetris');
 }
-function escapeHtml(str){ const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
-$('lbClose').onclick = () => $('lbModal').classList.add('hidden');
-$('lbRefresh').onclick = () => openleaderboards();
-//$('logoutBtn').onclick = doLogout;
 $('menuBtn').onclick = () => { window.location.href = 'index.html'; };
 
 updateUserChip();
@@ -904,8 +772,6 @@ function gameOver(){
   const isRec=score>best;
   if(isRec){
     best=score;
-    // ЗАМЕНА: сохраняем рекорд через Auth
-    Auth.setBest('tetris', best);
   }
   $('finScore').textContent=score;$('finLines').textContent=linesCleared;$('finLevel').textContent=level;
   $('recBadge').classList.toggle('hidden',!isRec);
