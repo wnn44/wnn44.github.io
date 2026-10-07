@@ -32,6 +32,6 @@ window.GAMES = [
     color:       '#a855ff',
     accent:      '#b45cff',
     tags:        ['головоломка'],
-    preview:     { type: 'image', src: 'previews/2048.jpg' },
+    preview:     { type: 'image', src: 'previews/2048.mp4' },
   },
 ];
