@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ТЕТРИС — неоновая аркада</title>
 <!-- Подключение модуля авторизации -->
 <script src="auth.js"></script>
@@ -402,10 +402,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   </section>
 
 <aside class="col">
-  <section class="panel hold-panel">
-    <h3>SWAP</h3>
-    <canvas id="holdDesk" width="132" height="100"></canvas>
-  </section>
   <section class="panel next">
     <h3>ОЧЕРЕДЬ</h3>
     <canvas id="next" width="132" height="332"></canvas>
@@ -916,7 +912,30 @@ function gameOver(){
   submitScore(score).finally(() => refreshStats());
   show('ovOver');
 }
+async function enterFullscreen(){
+  try{
+    const el = document.documentElement;
+    if(!document.fullscreenElement){
+      if(el.requestFullscreen){
+        await el.requestFullscreen({ navigationUI: 'hide' });
+      } else if(el.webkitRequestFullscreen){
+        el.webkitRequestFullscreen();
+      } else if(el.mozRequestFullScreen){
+        el.mozRequestFullScreen();
+      } else if(el.msRequestFullscreen){
+        el.msRequestFullscreen();
+      }
+    }
+    // Попытка залочить портретную ориентацию (работает на Android Chrome)
+    if(screen.orientation && screen.orientation.lock){
+      try{ await screen.orientation.lock('portrait'); }catch(e){}
+    }
+  }catch(e){
+    // Пользователь отменил запрос, либо браузер не поддерживает — молча продолжаем
+  }
+}
 function startGame(){
+  enterFullscreen();
   audioInit();if(ac&&ac.state==='suspended')ac.resume();
   board=emptyBoard();queue=[];bag=[];
   score=0;linesCleared=0;level=1;combo=-1;b2b=false;timeMs=0;
