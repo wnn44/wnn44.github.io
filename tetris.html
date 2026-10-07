@@ -79,7 +79,7 @@ header{position:relative;z-index:2;display:flex;align-items:center;justify-conte
   display:flex;align-items:center;gap:8px;margin-bottom:12px;
 }
 .panel h3::before{content:'';width:7px;height:7px;background:var(--ac);box-shadow:0 0 10px var(--ac)}
-.stats{--ac:var(--yellow)} .next{--ac:var(--pink)} .help{--ac:var(--green)}
+.stats{--ac:var(--yellow)} .hold-panel{--ac:var(--violet)} .next{--ac:var(--pink)} .help{--ac:var(--green)}
 #next{display:block;margin:0 auto; width:132px; height:332px;}
 .stat{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed rgba(120,140,255,.14)}
 .stat:last-child{border-bottom:0}
@@ -181,24 +181,59 @@ kbd{
   display:none;
   position:relative;
   z-index:2;
-  justify-content:space-between;
-  align-items:center;
+  flex-direction:column;
   gap:10px;
-  padding:10px 20px 15px;
+  padding:10px 12px 14px;
   width:100%;
-  max-width:480px;
+  max-width:560px;
   margin:0 auto;
   flex-shrink:0;
 }
-.touch-group{display:flex;gap:8px}
-.tbtn{
-  width:54px;height:54px;border-radius:13px;font-size:19px;color:#cdd6ff;
-  background:rgba(22,28,63,.9);border:1px solid #333e7c;cursor:pointer;
-  box-shadow:0 4px 0 #10142e;touch-action:none;user-select:none;
-  display:flex;align-items:center;justify-content:center;
-  transition:transform .08s,box-shadow .08s;
+.hold-bar{display:flex;justify-content:center}
+.hold-box{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 14px 8px;border-radius:14px;
+  background:linear-gradient(180deg, rgba(22,28,63,.85), rgba(13,17,40,.9));
+  border:1px solid var(--line);
+  box-shadow:inset 0 0 20px rgba(180,92,255,.08);
 }
-.tbtn:active{transform:translateY(3px);box-shadow:none;border-color:var(--cyan)}
+.hold-label{
+  font-family:'Press Start 2P';font-size:8px;letter-spacing:.18em;
+  color:var(--violet);text-shadow:0 0 8px rgba(180,92,255,.5);
+}
+#holdMob{display:block;width:66px;height:66px}
+.touch-row{display:flex;gap:10px;justify-content:center}
+.tbtn{
+  flex:1;
+  max-width:90px;
+  height:64px;
+  border-radius:16px;
+  font-family:'Rubik',system-ui,sans-serif;
+  font-weight:700;
+  font-size:26px;
+  color:#e6eeff;
+  background:linear-gradient(180deg, rgba(28,35,73,.95), rgba(18,23,55,.95));
+  border:2px solid #333e7c;
+  cursor:pointer;
+  box-shadow:0 5px 0 #0e1430, 0 10px 24px rgba(0,0,0,.45);
+  touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .07s ease, box-shadow .07s ease, background .15s, border-color .15s;
+}
+.tbtn:active{
+  transform:translateY(5px);
+  box-shadow:0 0 0 #0e1430;
+  border-color:var(--cyan);
+  background:linear-gradient(180deg, rgba(38,217,242,.22), rgba(38,217,242,.08));
+}
+.tbtn.mod{border-color:#8a4a1f;color:#ffc28a}
+.tbtn.mod:active{border-color:var(--orange);background:linear-gradient(180deg, rgba(255,148,64,.28), rgba(255,148,64,.1))}
+.tbtn.drop{border-color:#8a1f2e;color:#ff9aa8}
+.tbtn.drop:active{border-color:var(--red);background:linear-gradient(180deg, rgba(255,92,106,.3), rgba(255,92,106,.12))}
+.tbtn.swap{border-color:#5a2a9a;color:#c8a1ff}
+.tbtn.swap:active{border-color:var(--violet);background:linear-gradient(180deg, rgba(180,92,255,.3), rgba(180,92,255,.12))}
+.tbtn.soft{border-color:#2a5a9a;color:#9dc4ff}
+.tbtn.soft:active{border-color:var(--blue);background:linear-gradient(180deg, rgba(79,139,255,.3), rgba(79,139,255,.12))}
 footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:0 12px 16px}
 @media (pointer:coarse){.touch{display:flex}}
 @media (max-width:1020px){
@@ -234,9 +269,12 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
   .stage{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;}
   .board-wrap{height:100%;max-height:100%;aspect-ratio:1/2;width:auto;max-width:calc(100vw - 16px);padding:5px;border-radius:12px;}
   .board-wrap i.c{width:12px;height:12px}
-  .touch{padding:8px 12px 12px;gap:8px}
-  .touch-group{gap:6px}
-  .tbtn{width:48px;height:48px;font-size:17px;border-radius:11px}
+  .touch{padding:6px 8px 10px;gap:8px;max-width:100%}
+  .touch-row{gap:8px}
+  .tbtn{height:60px;font-size:24px;border-radius:15px;max-width:82px}
+  .hold-box{padding:5px 12px 6px;border-radius:12px}
+  #holdMob{width:56px;height:56px}
+  .hold-label{font-size:7px}
   .modal-box{padding:20px;width:95%}
   .modal-title{font-size:13px}
   .btn{font-size:10px;padding:12px 18px}
@@ -248,9 +286,11 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
 @media (max-width:380px){
   .logo .tile{font-size:11px}
   .chip{font-size:7px;padding:6px 8px}
-  .tbtn{width:42px;height:42px;font-size:15px}
-  .touch-group{gap:5px}
-  .touch{padding:6px 10px 10px}
+  .tbtn{height:54px;font-size:22px;border-radius:13px;max-width:74px}
+  .touch{padding:4px 6px 8px;gap:6px}
+  .touch-row{gap:6px}
+  .hold-box{padding:4px 10px 5px}
+  #holdMob{width:50px;height:50px}
 }
 .modal{
   position:fixed;inset:0;z-index:100;
@@ -361,11 +401,15 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
     </div>
   </section>
 
-  <aside class="col">
-    <section class="panel next">
-      <h3>ОЧЕРЕДЬ</h3>
-      <canvas id="next" width="132" height="332"></canvas>
-    </section>
+<aside class="col">
+  <section class="panel hold-panel">
+    <h3>SWAP</h3>
+    <canvas id="holdDesk" width="132" height="100"></canvas>
+  </section>
+  <section class="panel next">
+    <h3>ОЧЕРЕДЬ</h3>
+    <canvas id="next" width="132" height="332"></canvas>
+  </section>
     <section class="panel help">
       <h3>УПРАВЛЕНИЕ</h3>
       <ul class="keys">
@@ -388,15 +432,24 @@ footer{position:relative;z-index:1;text-align:center;color:var(--faint);font-siz
 </main>
 
 <div class="touch">
-  <div class="touch-group">
-    <button class="tbtn" data-k="left">◀</button>
-    <button class="tbtn" data-k="down">▼</button>
-    <button class="tbtn" data-k="right">▶</button>
+  <div class="hold-bar">
+    <div class="hold-box">
+      <div class="hold-label">SWAP</div>
+      <canvas id="holdMob" width="66" height="66"></canvas>
+    </div>
   </div>
-  <div class="touch-group">
-    <button class="tbtn" data-k="ccw">⟲</button>
-    <button class="tbtn" data-k="cw">⟳</button>
-    <button class="tbtn" data-k="drop">⤓</button>
+
+  <div class="touch-row">
+    <button class="tbtn" data-k="left"  aria-label="Влево">◀</button>
+    <button class="tbtn" data-k="right" aria-label="Вправо">▶</button>
+    <button class="tbtn mod" data-k="ccw" aria-label="Поворот ↺">⟲</button>
+    <button class="tbtn mod" data-k="cw"  aria-label="Поворот ↻">⟳</button>
+  </div>
+
+  <div class="touch-row">
+    <button class="tbtn drop" data-k="drop" aria-label="Сброс">⤓</button>
+    <button class="tbtn swap" data-k="hold" aria-label="Обмен">⇄</button>
+    <button class="tbtn soft" data-k="down" aria-label="Мягкий спуск">▼</button>
   </div>
 </div>
 
@@ -700,7 +753,13 @@ let clearing=null,particles=[],trails=[],shake=0,flashA=0;
 let best = 0;         // заполнится из Supabase в refreshStats()
 let worldRecord = 0;
 
+let holdPiece = null;
+let canHold = true;
+
 refreshStats();
+renderHold();
+
+//refreshStats();
 
 function emptyBoard(){return Array.from({length:ROWS},()=>Array(COLS).fill(null));}
 function refillBag(){
@@ -756,6 +815,30 @@ function spawnNext(){
   cur = makePiece(nextType);
   ensureQueue();
   dropTimer=0;lockTimer=0;lockResets=0;lastAction='spawn';
+  canHold = true;
+  if(collides(cur.m,cur.x,cur.y))gameOver();
+}
+
+function hold(){
+  if(state!=='playing'||clearing||!cur) return;
+  if(!canHold) return;
+
+  const curType = cur.type;
+  if(!holdPiece){
+    holdPiece = curType;
+    ensureQueue();
+    const nextType = queue.shift();
+    cur = makePiece(nextType);
+    ensureQueue();
+  } else {
+    const swapType = holdPiece;
+    holdPiece = curType;
+    cur = makePiece(swapType);
+  }
+  dropTimer=0;lockTimer=0;lockResets=0;lastAction='spawn';
+  canHold = false;
+  sfx.rotate();
+  renderHold();
   if(collides(cur.m,cur.x,cur.y))gameOver();
 }
 
@@ -842,6 +925,9 @@ function startGame(){
   score=0;linesCleared=0;level=1;combo=-1;b2b=false;timeMs=0;
   dropTimer=0;lockTimer=0;lockResets=0;softHeld=false;clearing=null;
   particles=[];trails=[];shake=0;flashA=0;
+  holdPiece = null;
+  canHold = true;
+  renderHold();
   $('score').textContent='0';$('lines').textContent='0';$('level').textContent='1';
   $('time').textContent='0:00';$('combo').textContent='—';$('b2b').textContent='—';
   $('lvlBar').style.width='0%';
@@ -1049,6 +1135,46 @@ function renderSide(){
   }
 }
 
+const holdDesk = $('holdDesk');
+const holdMob  = $('holdMob');
+
+function renderHold(){
+  [holdDesk, holdMob].forEach(cv => {
+    if(!cv) return;
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    if(!holdPiece) return;
+
+    const m = SHAPES[holdPiece];
+    let minX=99,maxX=-1,minY=99,maxY=-1;
+    for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++){
+      if(m[y][x]){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
+    }
+    const pw = maxX-minX+1, ph = maxY-minY+1;
+    const cx = minX+pw/2, cy = minY+ph/2;
+    const cell = Math.min(cv.width/5, cv.height/3.5);
+    const offX = cv.width/2 - cx*cell;
+    const offY = cv.height/2 - cy*cell;
+    const col = COLORS[holdPiece];
+
+    for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++){
+      if(!m[y][x])continue;
+      const bx = offX+x*cell, by = offY+y*cell;
+      const gr = ctx.createLinearGradient(bx,by,bx,by+cell);
+      gr.addColorStop(0, shade(col,.34));
+      gr.addColorStop(.5, col);
+      gr.addColorStop(1, shade(col,-.3));
+      rr(ctx, bx+1, by+1, cell-2, cell-2, cell*.16);
+      ctx.fillStyle = gr; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.22)';
+      ctx.lineWidth = 1;
+      rr(ctx, bx+2, by+2, cell-4, cell-4, cell*.14);
+      ctx.stroke();
+    }
+  });
+}
+
 const bgCv=$('bgfx'),bctx=bgCv.getContext('2d');
 let bgPieces=[];
 function bgInit(){
@@ -1093,6 +1219,7 @@ function press(code){
     case 'cw':rotate(1);break;
     case 'ccw':rotate(-1);break;
     case 'drop':hardDrop();break;
+    case 'hold':hold();break;  
   }
 }
 function release(code){
@@ -1102,7 +1229,8 @@ function release(code){
 }
 const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
   ArrowDown:'down',KeyS:'down',ArrowUp:'cw',KeyX:'cw',KeyZ:'ccw',
-  Space:'drop', KeyP:'pause',Escape:'pause',KeyR:'restart',KeyM:'sfx',KeyN:'music',Enter:'enter'};
+  Space:'drop', KeyP:'pause',Escape:'pause',KeyR:'restart',KeyM:'sfx',KeyN:'music',
+  Enter:'enter', KeyC:'hold', ShiftLeft:'hold', ShiftRight:'hold'};
 
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
