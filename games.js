@@ -21,7 +21,7 @@ window.GAMES = [
     color:       '#00f0ff',
     accent:      '#26d9f2',
     tags:        ['аркада', 'классика'],
-    preview:     { type: 'image', src: 'previews/tetris.jpg' },
+    preview:     { type: 'video', src: 'previews/tetris.mp4' },
   },
   {
     id:          '2048',
