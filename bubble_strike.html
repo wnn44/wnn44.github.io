@@ -1,722 +1,1474 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>NEON BUBBLE STRIKE — NEON ARCADE</title>
-    <link rel="stylesheet" href="common.css">
-    <script src="auth.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="leaderboard.js"></script>
-    <script src="leaderboard-ui.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
-            color: #e6f7ff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background: rgba(13, 17, 40, 0.85);
-            border-bottom: 2px solid #00f0ff;
-            box-shadow: 0 0 15px #00f0ff;
-            z-index: 10;
-        }
-        .logo {
-            font-size: clamp(1rem, 2vw, 1.2rem);
-            font-weight: bold;
-            color: #00f0ff;
-            text-shadow: 0 0 8px #00f0ff;
-            letter-spacing: 2px;
-        }
-        .header-right {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        .chip {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            border: 1px solid;
-            transition: all 0.2s;
-            touch-action: none;
-        }
-        .lb { border-color: #ffe94d; color: #ffe94d; text-shadow: 0 0 5px #ffe94d; }
-        .user { border-color: #00ff88; color: #00ff88; text-shadow: 0 0 5px #00ff88; }
-        .menu { border-color: #ff00d4; color: #ff00d4; text-shadow: 0 0 5px #ff00d4; }
-        .chip:active { transform: scale(0.95); }
-        
-        #gameContainer {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-        }
-        canvas {
-            max-width: 100%;
-            max-height: 100%;
-            touch-action: none;
-            display: block;
-        }
-        
-        #hud {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: clamp(1rem, 3vw, 1.4rem);
-            color: #ffe94d;
-            text-shadow: 0 0 8px #ffe94d;
-            z-index: 5;
-            pointer-events: none;
-        }
-        
-        .modal {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(13, 17, 40, 0.95);
-            border: 2px solid #a855ff;
-            box-shadow: 0 0 30px #a855ff;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 100;
-            display: none;
-            width: 80%;
-            max-width: 350px;
-        }
-        .modal.active { display: block; }
-        .modal h2 { margin-top: 0; color: #ff00d4; text-shadow: 0 0 10px #ff00d4; font-size: clamp(1.5rem, 5vw, 2rem); }
-        .modal button {
-            background: #00f0ff;
-            color: #05060f;
-            border: none;
-            padding: 12px 25px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 15px;
-            box-shadow: 0 0 15px #00f0ff;
-            touch-action: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ШАРИКИ: МЕТКИЙ СТРЕЛОК — NEON ARCADE</title>
+<link rel="stylesheet" href="common.css">
+<script src="auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="leaderboard.js"></script>
+<script src="leaderboard-ui.js"></script>
+<style>
+:root{
+  --cyan:#00f0ff;
+  --magenta:#ff00d4;
+  --purple:#a855ff;
+  --yellow:#ffe94d;
+  --green:#00ff88;
+  --red:#ff3355;
+  --text:#e6f7ff;
+  --panel:rgba(13,17,40,0.85);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Rajdhani','Segoe UI',system-ui,-apple-system,sans-serif;
+  background:radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
+  background-attachment:fixed;
+  color:var(--text);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;
+  user-select:none;
+  overscroll-behavior:none;
+}
+
+/* ---------- HEADER ---------- */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;padding:9px clamp(10px,3vw,22px);
+  border-bottom:1px solid rgba(0,240,255,.14);
+  box-shadow:0 2px 20px rgba(0,0,0,.4);
+  position:relative;z-index:5;flex-wrap:nowrap;flex-shrink:0;
+}
+.logo{
+  font-weight:800;letter-spacing:1.6px;
+  font-size:clamp(12px,3.1vw,18px);
+  color:#fff;
+  text-shadow:0 1px 0 rgba(0,0,0,.5), 0 0 12px rgba(0,240,255,.35);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.logo span{color:#ff77e0;}
+.header-right{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.chip{
+  font-size:clamp(9px,2.3vw,12px);
+  font-weight:700;letter-spacing:.8px;
+  padding:6px 10px;border-radius:999px;
+  cursor:pointer;white-space:nowrap;
+  border:1px solid rgba(0,240,255,.4);
+  background:linear-gradient(180deg, rgba(0,240,255,.16), rgba(0,240,255,.04));
+  color:#bff4ff;
+  text-shadow:0 1px 0 rgba(0,0,0,.4);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px rgba(0,0,0,.35);
+  transition:background .18s, box-shadow .18s, transform .12s;
+  touch-action:manipulation;
+}
+.chip:active{transform:scale(.95);}
+.chip:hover{background:linear-gradient(180deg, rgba(0,240,255,.28), rgba(0,240,255,.1));}
+.chip.lb{color:#fff3b0;border-color:rgba(255,233,77,.45);background:linear-gradient(180deg, rgba(255,233,77,.18), rgba(255,233,77,.04));}
+.chip.lb:hover{background:linear-gradient(180deg, rgba(255,233,77,.3), rgba(255,233,77,.1));}
+.chip.user{color:#e0c9ff;border-color:rgba(168,85,255,.4);background:linear-gradient(180deg, rgba(168,85,255,.16), rgba(168,85,255,.03));cursor:default;}
+.chip.user:hover{background:linear-gradient(180deg, rgba(168,85,255,.16), rgba(168,85,255,.03));}
+.chip.menu{color:#ffb0e8;border-color:rgba(255,0,212,.42);background:linear-gradient(180deg, rgba(255,0,212,.16), rgba(255,0,212,.03));}
+.chip.menu:hover{background:linear-gradient(180deg, rgba(255,0,212,.28), rgba(255,0,212,.08));}
+.chip.sound{
+  color:#a7ffe0;border-color:rgba(0,255,136,.42);
+  background:linear-gradient(180deg, rgba(0,255,136,.16), rgba(0,255,136,.03));
+  min-width:34px;text-align:center;
+}
+.chip.sound:hover{background:linear-gradient(180deg, rgba(0,255,136,.28), rgba(0,255,136,.08));}
+.chip.sound.off{
+  color:#8a97b8;border-color:rgba(120,140,180,.35);
+  background:linear-gradient(180deg, rgba(120,140,180,.12), rgba(120,140,180,.03));
+}
+
+/* ---------- MAIN ---------- */
+main{
+  flex:1;min-height:0;display:flex;flex-direction:column;
+  padding:8px clamp(6px,2vw,16px) 10px;gap:8px;
+}
+.hud{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;flex-shrink:0;}
+.stat{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 12px;border-radius:10px;
+  background:linear-gradient(180deg, rgba(30,36,66,.85), rgba(13,17,40,.9));
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 2px 8px rgba(0,0,0,.4);
+  font-size:clamp(9px,2.3vw,12px);letter-spacing:1px;
+}
+.stat .k{opacity:.55;font-weight:700;}
+.stat .v{
+  font-weight:800;font-size:clamp(12px,3.2vw,16px);
+  color:#c9f3ff;
+  text-shadow:0 1px 0 rgba(0,0,0,.5), 0 0 10px rgba(150,240,255,.5);
+  font-variant-numeric:tabular-nums;
+}
+.stat .v.yellow{color:#fff0a8;text-shadow:0 1px 0 rgba(0,0,0,.5), 0 0 10px rgba(255,233,77,.5);}
+.stat .v.magenta{color:#ffb6ee;text-shadow:0 1px 0 rgba(0,0,0,.5), 0 0 10px rgba(255,0,212,.5);}
+
+.stage{
+  flex:1;min-height:0;position:relative;border-radius:16px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 6px 30px rgba(0,0,0,.55), inset 0 0 60px rgba(0,240,255,.04);
+  background:radial-gradient(ellipse at 50% 0%, rgba(80,120,180,.10), transparent 60%),
+             linear-gradient(180deg, rgba(20,26,48,.6), rgba(8,10,24,.85));
+}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+
+.hint{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  font-size:clamp(10px,2.7vw,12px);letter-spacing:1px;
+  color:rgba(230,247,255,.85);
+  background:linear-gradient(180deg, rgba(30,36,66,.85), rgba(13,17,40,.9));
+  border:1px solid rgba(255,255,255,.1);
+  padding:6px 14px;border-radius:999px;
+  pointer-events:none;white-space:nowrap;
+  transition:opacity .7s;z-index:4;
+  box-shadow:0 2px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.hint.hide{opacity:0;}
+
+/* ---------- OVERLAY ---------- */
+.overlay{
+  position:absolute;inset:0;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(5,6,15,.82);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+  z-index:10;padding:16px;
+}
+.overlay.show{display:flex;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.panel{
+  background:linear-gradient(180deg, rgba(30,36,66,.9), rgba(13,17,40,.95));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 10px 40px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.14), 0 0 30px rgba(255,51,85,.2);
+  border-radius:18px;padding:24px 22px;text-align:center;
+  max-width:340px;width:100%;
+}
+.panel h2{
+  font-size:clamp(16px,5vw,24px);letter-spacing:2px;
+  color:#ff8ba0;text-shadow:0 1px 0 rgba(0,0,0,.5), 0 0 16px rgba(255,51,85,.6);
+  margin-bottom:10px;
+}
+.panel p{font-size:clamp(12px,3.5vw,16px);margin-bottom:18px;letter-spacing:1px;color:rgba(230,247,255,.85);}
+.panel p b{color:#fff0a8;text-shadow:0 1px 0 rgba(0,0,0,.5), 0 0 14px rgba(255,233,77,.6);font-size:1.4em;}
+.btn{
+  display:block;width:100%;margin:8px 0;padding:12px;
+  border-radius:12px;border:1px solid rgba(0,240,255,.5);
+  background:linear-gradient(180deg, rgba(0,240,255,.22), rgba(0,240,255,.06));
+  color:#d9faff;
+  font-weight:800;letter-spacing:1.5px;
+  font-size:clamp(12px,3.3vw,14px);
+  cursor:pointer;
+  text-shadow:0 1px 0 rgba(0,0,0,.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 4px 14px rgba(0,0,0,.4);
+  transition:background .18s, box-shadow .18s, transform .12s;
+  font-family:inherit;touch-action:manipulation;
+}
+.btn:hover{background:linear-gradient(180deg, rgba(0,240,255,.35), rgba(0,240,255,.12));box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 4px 20px rgba(0,240,255,.35);}
+.btn:active{transform:scale(.97);}
+.btn.ghost{
+  color:#fff0a8;border-color:rgba(255,233,77,.5);
+  background:linear-gradient(180deg, rgba(255,233,77,.18), rgba(255,233,77,.04));
+}
+.btn.ghost:hover{background:linear-gradient(180deg, rgba(255,233,77,.3), rgba(255,233,77,.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 4px 20px rgba(255,233,77,.3);}
+</style>
 </head>
 <body>
-    <header>
-        <div class="logo">NEON BUBBLE STRIKE</div>
-        <div class="header-right">
-            <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
-            <div class="chip user" id="userChip">ИГРОК</div>
-            <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
-        </div>
-    </header>
-    
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
-        <div id="hud">СЧЕТ: <span id="scoreDisplay">0</span></div>
-        
-        <div class="modal" id="endModal">
-            <h2 id="endTitle">ИГРА ОКОНЧЕНА</h2>
-            <p style="font-size: 1.2rem;">Ваш счет: <span id="finalScore" style="color: #ffe94d; text-shadow: 0 0 8px #ffe94d;">0</span></p>
-            <button id="restartBtn">ИГРАТЬ СНОВА</button>
-        </div>
-    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            'use strict';
-            
-            const currentPlayer = Auth.get();
-            const userChip = document.getElementById('userChip');
-            if (userChip) {
-                userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
-            }
-            
-            document.getElementById('lbHeaderBtn')?.addEventListener('click', () => {
-                LeaderboardUI.open('bubble_strike');
-            });
-            
-            document.getElementById('menuBtn')?.addEventListener('click', () => {
-                window.location.href = 'index.html';
-            });
-            
-            async function loadStats() {
-                try {
-                    await Promise.all([
-                        Leaderboard.getPlayerBest('bubble_strike', currentPlayer),
-                        Leaderboard.getGlobalRecord('bubble_strike')
-                    ]);
-                } catch(e) { console.error(e); }
-            }
-            
-            async function onGameOver(finalScore) {
-                if (currentPlayer && finalScore > 0) {
-                    await Leaderboard.submit('bubble_strike', currentPlayer, finalScore);
-                    loadStats(); 
-                }
-            }
-            
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            const scoreDisplay = document.getElementById('scoreDisplay');
-            const endModal = document.getElementById('endModal');
-            const endTitle = document.getElementById('endTitle');
-            const finalScoreSpan = document.getElementById('finalScore');
-            const restartBtn = document.getElementById('restartBtn');
-            
-            let score = 0;
-            let isGameOver = false;
-            
-            const ROWS = 12;
-            const COLS = 10;
-            const RADIUS = 18;
-            const DIAMETER = RADIUS * 2;
-            const ROW_HEIGHT = 32;
-            const WIDTH = 400;
-            const HEIGHT = 600;
-            const DANGER_LINE = 520;
-            const CANNON_X = 200;
-            const CANNON_Y = 560;
-            
-            let grid = [];
-            let currentBubble = null;
-            let nextBubbleColor = 0;
-            let canShoot = true;
-            let aimAngle = -Math.PI / 2;
-            let animationId;
-            
-            const COLORS = {
-                1: "#00f0ff", 
-                2: "#ff00d4", 
-                3: "#a855ff", 
-                4: "#ffe94d", 
-                5: "#00ff88"  
-            };
-            
-            function initGrid() {
-                grid = [];
-                for (let r = 0; r < ROWS; r++) {
-                    let cols = (r % 2 === 0) ? 10 : 9;
-                    let rowArr = new Array(cols).fill(0);
-                    if (r < 6) { 
-                        for (let c = 0; c < cols; c++) {
-                            rowArr[c] = Math.floor(Math.random() * 5) + 1;
-                        }
-                    }
-                    grid.push(rowArr);
-                }
-            }
-            
-            function getGridPos(row, col) {
-                let x = col * DIAMETER + RADIUS;
-                if (row % 2 !== 0) x += RADIUS;
-                let y = row * ROW_HEIGHT + RADIUS;
-                return {x, y};
-            }
-            
-            function getGridFromScreen(x, y) {
-                let row = Math.round((y - RADIUS) / ROW_HEIGHT);
-                let col;
-                if (row % 2 !== 0) {
-                    col = Math.round((x - RADIUS * 2) / DIAMETER);
-                } else {
-                    col = Math.round((x - RADIUS) / DIAMETER);
-                }
-                return {r: row, c: col};
-            }
-            
-            function getNeighbors(row, col) {
-                const even = row % 2 === 0;
-                if (even) {
-                    return [
-                        {r: row - 1, c: col - 1}, {r: row - 1, c: col},
-                        {r: row, c: col - 1}, {r: row, c: col + 1},
-                        {r: row + 1, c: col - 1}, {r: row + 1, c: col}
-                    ];
-                } else {
-                    return [
-                        {r: row - 1, c: col}, {r: row - 1, c: col + 1},
-                        {r: row, c: col - 1}, {r: row, c: col + 1},
-                        {r: row + 1, c: col}, {r: row + 1, c: col + 1}
-                    ];
-                }
-            }
-            
-            function getAvailableColors() {
-                let colors = new Set();
-                for (let r = 0; r < ROWS; r++) {
-                    for (let c = 0; c < grid[r].length; c++) {
-                        if (grid[r][c] !== 0) colors.add(grid[r][c]);
-                    }
-                }
-                return Array.from(colors);
-            }
-            
-            function checkAndPop(row, col, color) {
-                let visited = new Set();
-                let cluster = [];
-                let queue = [{r: row, c: col}];
-                
-                while (queue.length > 0) {
-                    let curr = queue.shift();
-                    let key = curr.r + "," + curr.c;
-                    if (visited.has(key)) continue;
-                    visited.add(key);
-                    
-                    if (curr.r < 0 || curr.r >= ROWS || curr.c < 0 || curr.c >= grid[curr.r].length) continue;
-                    if (grid[curr.r][curr.c] === color) {
-                        cluster.push(curr);
-                        let neighbors = getNeighbors(curr.r, curr.c);
-                        for (let n of neighbors) {
-                            if (!visited.has(n.r + "," + n.c)) {
-                                queue.push(n);
-                            }
-                        }
-                    }
-                }
-                
-                if (cluster.length >= 3) {
-                    for (let c of cluster) {
-                        grid[c.r][c.c] = 0;
-                    }
-                    score += cluster.length * 10;
-                    updateHud();
-                    checkFloating();
-                }
-            }
-            
-            function checkFloating() {
-                let connected = new Set();
-                let queue = [];
-                for (let c = 0; c < grid[0].length; c++) {
-                    if (grid[0][c] !== 0) {
-                        queue.push({r: 0, c: c});
-                        connected.add("0," + c);
-                    }
-                }
-                
-                while (queue.length > 0) {
-                    let curr = queue.shift();
-                    let neighbors = getNeighbors(curr.r, curr.c);
-                    for (let n of neighbors) {
-                        let key = n.r + "," + n.c;
-                        if (!connected.has(key)) {
-                            if (n.r >= 0 && n.r < ROWS && n.c >= 0 && n.c < grid[n.r].length) {
-                                if (grid[n.r][n.c] !== 0) {
-                                    connected.add(key);
-                                    queue.push(n);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                let floatingCount = 0;
-                for (let r = 0; r < ROWS; r++) {
-                    for (let c = 0; c < grid[r].length; c++) {
-                        if (grid[r][c] !== 0) {
-                            let key = r + "," + c;
-                            if (!connected.has(key)) {
-                                grid[r][c] = 0;
-                                floatingCount++;
-                            }
-                        }
-                    }
-                }
-                if (floatingCount > 0) {
-                    score += floatingCount * 20;
-                    updateHud();
-                }
-            }
-            
-            function checkWin() {
-                for (let r = 0; r < ROWS; r++) {
-                    for (let c = 0; c < grid[r].length; c++) {
-                        if (grid[r][c] !== 0) return false;
-                    }
-                }
-                return true;
-            }
-            
-            function checkGameOver() {
-                for (let r = 0; r < ROWS; r++) {
-                    for (let c = 0; c < grid[r].length; c++) {
-                        if (grid[r][c] !== 0) {
-                            let pos = getGridPos(r, c);
-                            if (pos.y + RADIUS >= DANGER_LINE) return true;
-                        }
-                    }
-                }
-                return false;
-            }
-            
-            function spawnBubble() {
-                let colors = getAvailableColors();
-                if (colors.length === 0) {
-                    endGame(true);
-                    return;
-                }
-                if (nextBubbleColor === 0) {
-                    nextBubbleColor = colors[Math.floor(Math.random() * colors.length)];
-                }
-                currentBubble = {
-                    x: CANNON_X, y: CANNON_Y,
-                    dx: 0, dy: 0,
-                    color: nextBubbleColor,
-                    moving: false
-                };
-                nextBubbleColor = colors[Math.floor(Math.random() * colors.length)];
-                canShoot = true;
-            }
-            
-            function snapBubble() {
-                let hitRow = -1, hitCol = -1;
-                let isTopHit = currentBubble.y - RADIUS <= 0;
-                
-                if (isTopHit) {
-                    hitRow = 0;
-                    let g = getGridFromScreen(currentBubble.x, currentBubble.y);
-                    hitCol = g.c;
-                } else {
-                    let minDist = Infinity;
-                    for (let r = 0; r < ROWS; r++) {
-                        for (let c = 0; c < grid[r].length; c++) {
-                            if (grid[r][c] !== 0) {
-                                let pos = getGridPos(r, c);
-                                let dist = Math.hypot(pos.x - currentBubble.x, pos.y - currentBubble.y);
-                                if (dist <= DIAMETER && dist < minDist) {
-                                    minDist = dist;
-                                    hitRow = r;
-                                    hitCol = c;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                let bestN = null;
-                let minSnapDist = Infinity;
-                
-                if (hitRow !== -1) {
-                    let neighbors = [];
-                    if (grid[hitRow] && grid[hitRow][hitCol] !== 0) {
-                        neighbors = getNeighbors(hitRow, hitCol);
-                    } else {
-                        let g = getGridFromScreen(currentBubble.x, currentBubble.y);
-                        if (g.r >= 0 && g.r < ROWS && g.c >= 0 && g.c < grid[g.r].length && grid[g.r][g.c] === 0) {
-                            bestN = g;
-                        } else {
-                            neighbors = getNeighbors(g.r, g.c);
-                        }
-                    }
-                    
-                    for (let n of neighbors) {
-                        if (n.r >= 0 && n.r < ROWS && n.c >= 0 && n.c < grid[n.r].length) {
-                            if (grid[n.r][n.c] === 0) {
-                                let pos = getGridPos(n.r, n.c);
-                                let dist = Math.hypot(pos.x - currentBubble.x, pos.y - currentBubble.y);
-                                if (dist < minSnapDist) {
-                                    minSnapDist = dist;
-                                    bestN = n;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if (bestN) {
-                    grid[bestN.r][bestN.c] = currentBubble.color;
-                    checkAndPop(bestN.r, bestN.c, currentBubble.color);
-                } else {
-                    let g = getGridFromScreen(currentBubble.x, currentBubble.y);
-                    if (g.r >= 0 && g.r < ROWS && g.c >= 0 && g.c < grid[g.r].length && grid[g.r][g.c] === 0) {
-                        grid[g.r][g.c] = currentBubble.color;
-                        checkAndPop(g.r, g.c, currentBubble.color);
-                    }
-                }
-            }
-            
-            function updateAim(clientX, clientY) {
-                let rect = canvas.getBoundingClientRect();
-                let scaleX = canvas.width / rect.width;
-                let scaleY = canvas.height / rect.height;
-                let x = (clientX - rect.left) * scaleX;
-                let y = (clientY - rect.top) * scaleY;
-                
-                let dx = x - CANNON_X;
-                let dy = y - CANNON_Y;
-                if (dy < -10) { 
-                    aimAngle = Math.atan2(dy, dx);
-                    if (aimAngle < -Math.PI + 0.1) aimAngle = -Math.PI + 0.1;
-                    if (aimAngle > -0.1) aimAngle = -0.1;
-                }
-            }
-            
-            function drawTrajectory() {
-                let x = CANNON_X, y = CANNON_Y;
-                let dx = Math.cos(aimAngle) * 10;
-                let dy = Math.sin(aimAngle) * 10;
-                
-                ctx.beginPath();
-                ctx.setLineDash([5, 5]);
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-                ctx.moveTo(x, y);
-                
-                for (let i = 0; i < 40; i++) {
-                    x += dx;
-                    y += dy;
-                    if (x <= RADIUS || x >= WIDTH - RADIUS) {
-                        dx = -dx;
-                    }
-                    if (y <= 0) break;
-                    
-                    let hit = false;
-                    for (let r = 0; r < ROWS; r++) {
-                        for (let c = 0; c < grid[r].length; c++) {
-                            if (grid[r][c] !== 0) {
-                                let pos = getGridPos(r, c);
-                                if (Math.hypot(pos.x - x, pos.y - y) <= DIAMETER) {
-                                    hit = true; break;
-                                }
-                            }
-                        }
-                        if (hit) break;
-                    }
-                    if (hit) break;
-                    ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
-            
-            function drawBubble(x, y, color, alpha = 1) {
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = COLORS[color];
-                ctx.shadowColor = COLORS[color];
-                ctx.shadowBlur = 15;
-                ctx.beginPath();
-                ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-                ctx.beginPath();
-                ctx.arc(x - RADIUS/3, y - RADIUS/3, RADIUS/3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.strokeStyle = "rgba(255,255,255,0.8)";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.globalAlpha = 1;
-                ctx.shadowBlur = 0;
-            }
-            
-            function drawCannon() {
-                ctx.save();
-                ctx.translate(CANNON_X, CANNON_Y);
-                ctx.rotate(aimAngle + Math.PI / 2);
-                
-                ctx.fillStyle = "#e6f7ff";
-                ctx.shadowColor = "#00f0ff";
-                ctx.shadowBlur = 15;
-                ctx.beginPath();
-                ctx.moveTo(-15, 0);
-                ctx.lineTo(15, 0);
-                ctx.lineTo(10, -40);
-                ctx.lineTo(-10, -40);
-                ctx.closePath();
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                ctx.restore();
-            }
-            
-            function update() {
-                if (currentBubble && currentBubble.moving) {
-                    currentBubble.x += currentBubble.dx;
-                    currentBubble.y += currentBubble.dy;
-                    
-                    if (currentBubble.x <= RADIUS) {
-                        currentBubble.x = RADIUS;
-                        currentBubble.dx = -currentBubble.dx;
-                    }
-                    if (currentBubble.x >= WIDTH - RADIUS) {
-                        currentBubble.x = WIDTH - RADIUS;
-                        currentBubble.dx = -currentBubble.dx;
-                    }
-                    
-                    let hit = false;
-                    
-                    if (currentBubble.y - RADIUS <= 0) {
-                        hit = true;
-                        currentBubble.y = RADIUS;
-                    }
-                    
-                    if (!hit) {
-                        for (let r = 0; r < ROWS; r++) {
-                            for (let c = 0; c < grid[r].length; c++) {
-                                if (grid[r][c] !== 0) {
-                                    let pos = getGridPos(r, c);
-                                    if (Math.hypot(pos.x - currentBubble.x, pos.y - currentBubble.y) <= DIAMETER) {
-                                        hit = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (hit) break;
-                        }
-                    }
-                    
-                    if (hit) {
-                        snapBubble();
-                        currentBubble.moving = false;
-                        currentBubble = null;
-                        
-                        if (!isGameOver) {
-                            if (checkWin()) {
-                                endGame(true);
-                            } else if (checkGameOver()) {
-                                endGame(false);
-                            } else {
-                                setTimeout(spawnBubble, 200);
-                            }
-                        }
-                    }
-                }
-            }
-            
-            function draw() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.strokeStyle = "#ff3355";
-                ctx.shadowColor = "#ff3355";
-                ctx.shadowBlur = 10;
-                ctx.setLineDash([10, 5]);
-                ctx.beginPath();
-                ctx.moveTo(0, DANGER_LINE);
-                ctx.lineTo(WIDTH, DANGER_LINE);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.shadowBlur = 0;
-                
-                for (let r = 0; r < ROWS; r++) {
-                    for (let c = 0; c < grid[r].length; c++) {
-                        if (grid[r][c] !== 0) {
-                            let pos = getGridPos(r, c);
-                            drawBubble(pos.x, pos.y, grid[r][c]);
-                        }
-                    }
-                }
-                
-                if (canShoot && currentBubble && !currentBubble.moving) {
-                    drawTrajectory();
-                    drawBubble(currentBubble.x, currentBubble.y, currentBubble.color);
-                    drawCannon();
-                    
-                    if (nextBubbleColor !== 0) {
-                        drawBubble(50, CANNON_Y, nextBubbleColor, 0.6);
-                    }
-                }
-                
-                if (currentBubble && currentBubble.moving) {
-                    drawBubble(currentBubble.x, currentBubble.y, currentBubble.color);
-                    drawCannon();
-                }
-            }
-            
-            function updateHud() {
-                scoreDisplay.textContent = score;
-            }
-            
-            function shoot() {
-                if (!canShoot || !currentBubble || currentBubble.moving || isGameOver) return;
-                currentBubble.moving = true;
-                let speed = 15;
-                currentBubble.dx = Math.cos(aimAngle) * speed;
-                currentBubble.dy = Math.sin(aimAngle) * speed;
-                canShoot = false;
-            }
-            
-            function startGame() {
-                score = 0;
-                updateHud();
-                isGameOver = false;
-                endModal.classList.remove('active');
-                initGrid();
-                nextBubbleColor = 0;
-                spawnBubble();
-                loop();
-            }
-            
-            function endGame(won) {
-                isGameOver = true;
-                cancelAnimationFrame(animationId);
-                endTitle.textContent = won ? "ПОБЕДА!" : "ИГРА ОКОНЧЕНА";
-                endTitle.style.color = won ? "#00ff88" : "#ff3355";
-                endTitle.style.textShadow = `0 0 10px ${won ? "#00ff88" : "#ff3355"}`;
-                finalScoreSpan.textContent = score;
-                endModal.classList.add('active');
-                onGameOver(score);
-            }
-            
-            function loop() {
-                if (!isGameOver) {
-                    update();
-                    draw();
-                    animationId = requestAnimationFrame(loop);
-                }
-            }
-            
-            restartBtn.addEventListener('click', startGame);
-            
-            canvas.addEventListener('mousemove', (e) => {
-                if (!isGameOver) updateAim(e.clientX, e.clientY);
-            });
-            canvas.addEventListener('click', (e) => {
-                if (!isGameOver) shoot();
-            });
-            
-            canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (!isGameOver) {
-                    let touch = e.touches[0];
-                    updateAim(touch.clientX, touch.clientY);
-                }
-            }, {passive: false});
-            
-            canvas.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                if (!isGameOver) {
-                    let touch = e.touches[0];
-                    updateAim(touch.clientX, touch.clientY);
-                }
-            }, {passive: false});
-            
-            canvas.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                if (!isGameOver) shoot();
-            }, {passive: false});
-            
-            loadStats();
-            startGame();
+<header>
+  <div class="logo">ШАРИКИ<span>·</span>МЕТКИЙ СТРЕЛОК</div>
+  <div class="header-right">
+    <div class="chip sound" id="soundBtn" title="Звук">🔊</div>
+    <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
+    <div class="chip user" id="userChip">ИГРОК</div>
+    <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
+  </div>
+</header>
+
+<main>
+  <div class="hud">
+    <div class="stat"><span class="k">СЧЁТ</span><span class="v" id="scoreVal">0</span></div>
+    <div class="stat"><span class="k">РЕКОРД</span><span class="v yellow" id="bestVal">0</span></div>
+    <div class="stat"><span class="k">МИР</span><span class="v magenta" id="worldVal">—</span></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="game"></canvas>
+    <div class="hint" id="hint">Тяни — прицелься · Отпусти — выстрел</div>
+    <div class="overlay" id="overlay">
+      <div class="panel">
+        <h2 id="ovTitle">ИГРА ОКОНЧЕНА</h2>
+        <p id="ovText">СЧЁТ: <b>0</b></p>
+        <button class="btn" id="ovRestart">ИГРАТЬ СНОВА</button>
+        <button class="btn ghost" id="ovLb">🏆 ЛИДЕРЫ</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
+  const GAME_ID = 'neon_bubble_shooter';
+
+  /* ============================ DOM ============================ */
+  const canvas   = document.getElementById('game');
+  const ctx      = canvas.getContext('2d');
+  const stage    = document.getElementById('stage');
+  const scoreEl  = document.getElementById('scoreVal');
+  const bestEl   = document.getElementById('bestVal');
+  const worldEl  = document.getElementById('worldVal');
+  const overlay  = document.getElementById('overlay');
+  const ovText   = document.getElementById('ovText');
+  const hintEl   = document.getElementById('hint');
+  const userChip = document.getElementById('userChip');
+  const soundBtn = document.getElementById('soundBtn');
+
+  /* ======================= PLATFORM API ======================== */
+  const currentPlayer = (typeof Auth !== 'undefined' && Auth && Auth.get) ? Auth.get() : null;
+
+  if (userChip) userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
+
+  document.getElementById('lbHeaderBtn')?.addEventListener('click', () => {
+    if (typeof LeaderboardUI !== 'undefined' && LeaderboardUI.open) LeaderboardUI.open(GAME_ID);
+  });
+  document.getElementById('menuBtn')?.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  let bestScore = 0;
+
+  async function loadStats() {
+    try {
+      const [myBest, globalRec] = await Promise.all([
+        Leaderboard.getPlayerBest(GAME_ID, currentPlayer),
+        Leaderboard.getGlobalRecord(GAME_ID)
+      ]);
+      if (typeof myBest === 'number') bestScore = myBest;
+      if (bestEl) bestEl.textContent = Math.max(bestScore, score);
+      if (globalRec && typeof globalRec.score === 'number' && worldEl) {
+        worldEl.textContent = globalRec.score;
+      }
+    } catch (err) { /* тихо */ }
+  }
+
+  async function submitScore(finalScore) {
+    if (currentPlayer && finalScore > 0 && typeof Leaderboard !== 'undefined') {
+      try {
+        await Leaderboard.submit(GAME_ID, currentPlayer, finalScore);
+        await loadStats();
+      } catch (err) { /* тихо */ }
+    }
+  }
+
+  /* ==========================================================
+     SOUND  —  приятные синтезированные звуки через Web Audio
+     ========================================================== */
+  const Sound = {
+    ac: null,
+    master: null,
+    muted: false,
+
+    init() {
+      if (this.ac) return;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ac = new AC();
+        this.master = this.ac.createGain();
+        this.master.gain.value = 0.32;
+        this.master.connect(this.ac.destination);
+      } catch (e) { this.ac = null; }
+    },
+
+    unlock() {
+      this.init();
+      if (this.ac && this.ac.state === 'suspended') {
+        this.ac.resume().catch(() => {});
+      }
+    },
+
+    tone(freq, dur, opts = {}) {
+      if (this.muted || !this.ac) return;
+      try {
+        const t = this.ac.currentTime;
+        const o = this.ac.createOscillator();
+        const g = this.ac.createGain();
+        o.type = opts.type || 'sine';
+        o.frequency.setValueAtTime(freq, t);
+        if (opts.slideTo) {
+          o.frequency.exponentialRampToValueAtTime(Math.max(24, opts.slideTo), t + dur);
+        }
+        const vol = opts.vol !== undefined ? opts.vol : 0.25;
+        const attack = opts.attack || 0.008;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + attack);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g);
+        g.connect(this.master);
+        o.start(t);
+        o.stop(t + dur + 0.03);
+      } catch (e) {}
+    },
+
+    // мягкий «пшик» при выстреле
+    shoot() {
+      this.tone(760, 0.10, { type: 'sine', slideTo: 280, vol: 0.20 });
+      this.tone(1500, 0.06, { type: 'triangle', slideTo: 700, vol: 0.07 });
+    },
+
+    // отражение от стенки — лёгкий «тик»
+    wall() {
+      this.tone(1400, 0.045, { type: 'sine', vol: 0.10 });
+    },
+
+    // лопание пузырей — приятная пентатоника в зависимости от комбо
+    pop(index) {
+      const notes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
+      const n = notes[Math.min(index, notes.length - 1)];
+      this.tone(n,     0.20, { type: 'triangle', vol: 0.22 });
+      this.tone(n * 2, 0.13, { type: 'sine',     vol: 0.10 });
+      // лёгкий «стеклянный» призвук
+      this.tone(n * 4, 0.09, { type: 'sine',     vol: 0.04 });
+    },
+
+    // падение «оторванных» пузырей — мягкое нисходящее глиссандо
+    fall() {
+      this.tone(900, 0.32, { type: 'sine', slideTo: 320, vol: 0.13 });
+    },
+
+    // новая строка — низкий предупредительный тон
+    addRow() {
+      this.tone(220, 0.30, { type: 'sine',     vol: 0.16 });
+      this.tone(330, 0.30, { type: 'triangle', vol: 0.09, attack: 0.05 });
+    },
+
+    // очистка поля — восходящее арпеджио
+    clear() {
+      const arp = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      arp.forEach((f, i) => {
+        setTimeout(() => this.tone(f, 0.22, { type: 'triangle', vol: 0.22 }), i * 70);
+      });
+    },
+
+    // конец игры — мягко-грустный нисходящий аккорд
+    over() {
+      const seq = [523.25, 466.16, 392.00, 311.13];
+      seq.forEach((f, i) => {
+        setTimeout(() => this.tone(f, 0.42, { type: 'triangle', vol: 0.20 }), i * 130);
+      });
+    },
+
+    // лёгкий звук приземления шара
+    place() {
+      this.tone(440, 0.06, { type: 'sine', slideTo: 620, vol: 0.10 });
+    }
+  };
+
+  // загрузка сохранённой настройки звука
+  try {
+    const saved = localStorage.getItem('neonArcadeMuted');
+    if (saved === '1') Sound.muted = true;
+  } catch (e) {}
+
+  function updateSoundBtn() {
+    if (!soundBtn) return;
+    if (Sound.muted) {
+      soundBtn.textContent = '🔇';
+      soundBtn.classList.add('off');
+      soundBtn.title = 'Включить звук';
+    } else {
+      soundBtn.textContent = '🔊';
+      soundBtn.classList.remove('off');
+      soundBtn.title = 'Отключить звук';
+    }
+  }
+  updateSoundBtn();
+
+  soundBtn?.addEventListener('click', () => {
+    Sound.muted = !Sound.muted;
+    try { localStorage.setItem('neonArcadeMuted', Sound.muted ? '1' : '0'); } catch (e) {}
+    updateSoundBtn();
+    if (!Sound.muted) {
+      Sound.unlock();
+      Sound.pop(2);
+    }
+  });
+
+  // разблокировка AudioContext по первому касанию/клику
+  function unlockAudio() {
+    Sound.unlock();
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+    window.removeEventListener('touchstart', unlockAudio);
+  }
+  window.addEventListener('pointerdown', unlockAudio);
+  window.addEventListener('keydown', unlockAudio);
+  window.addEventListener('touchstart', unlockAudio);
+
+/* ========================== CONFIG =========================== */
+const COLS = 10;
+
+const COLORS = ['#00f0ff', '#ff00d4', '#a855ff', '#ffe94d', '#00ff88', '#ff3355'];
+
+  const MAX_AIM = 1.32;
+  const ROWS_START = 5;
+  const SHOTS_PER_ROW = 7;
+
+  /* ========================== STATE ============================ */
+  let W = 360, H = 560;
+  let R = 18, rowH = 31, gridLeft = 0, gridWidth = 360;
+  let shooterY = 500, deathY = 460;
+
+  let topParity = 0;
+  let grid = [];
+
+  let bullets = [];
+  let falling = [];
+  let particles = [];
+  let shines = [];      // блики на только что вставленных шарах
+  let sparkles = [];    // звёздочки-искры при лопании
+  let glints = [];      // случайные блики на поле
+
+  let aim = 0;
+  let score = 0;
+  let combo = 0;
+  let shotsLeft = SHOTS_PER_ROW;
+  let state = 'ready';
+  let currentColor = 0;
+  let nextColor = 0;
+  let dragging = false;
+  let lastTime = performance.now();
+  let globalTime = 0;
+
+  /* ========================= LAYOUT ============================ */
+  function layout() {
+    const rect = stage.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = Math.max(240, Math.round(rect.width));
+    H = Math.max(320, Math.round(rect.height));
+
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    R = Math.min(W / (COLS * 2), H / 27);
+    rowH = R * Math.sqrt(3);
+    gridWidth = COLS * 2 * R;
+    gridLeft = (W - gridWidth) / 2;
+    shooterY = H - R * 2.4;
+    deathY = shooterY - R * 1.9;
+  }
+
+
+/* ========================= СПРАЙТЫ/ОТРИСОВКА ================= */
+function darken(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255;
+  let g = (n >> 8) & 255;
+  let b = n & 255;
+  r = Math.max(0, Math.round(r * (1 - amount)));
+  g = Math.max(0, Math.round(g * (1 - amount)));
+  b = Math.max(0, Math.round(b * (1 - amount)));
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function drawBall(x, y, rad, color) {
+  if (rad <= 0.4) return;
+  ctx.save();
+
+  // мягкое свечение
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = rad * 0.45;
+
+  const g = ctx.createRadialGradient(
+    x - rad * 0.35, y - rad * 0.38, rad * 0.06,
+    x, y, rad * 1.05
+  );
+  g.addColorStop(0,    '#f2ffff');
+  g.addColorStop(0.28, color);
+  g.addColorStop(1,    darken(color, 0.55));
+
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = Math.max(1, rad * 0.08);
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x - rad * 0.30, y - rad * 0.34, rad * 0.19, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+  /* ====================== GRID GEOMETRY ======================== */
+  function rowPar(r) { return (topParity + r) & 1; }
+  function colsInRow(r) { return rowPar(r) === 0 ? COLS : COLS - 1; }
+  function cellX(r, c) { return gridLeft + R + c * 2 * R + (rowPar(r) ? R : 0); }
+  function cellY(r) { return R + r * rowH; }
+
+  function neighborList(r, c) {
+    const par = rowPar(r);
+    const raw = par === 1
+      ? [[r, c - 1], [r, c + 1], [r - 1, c], [r - 1, c + 1], [r + 1, c], [r + 1, c + 1]]
+      : [[r, c - 1], [r, c + 1], [r - 1, c - 1], [r - 1, c], [r + 1, c - 1], [r + 1, c]];
+    const out = [];
+    for (let i = 0; i < raw.length; i++) {
+      const rr = raw[i][0], cc = raw[i][1];
+      if (rr < 0 || cc < 0) continue;
+      if (cc >= colsInRow(rr)) continue;
+      out.push([rr, cc]);
+    }
+    return out;
+  }
+
+  function occupied(r, c) {
+    const row = grid[r];
+    if (!row) return false;
+    const v = row[c];
+    return v !== null && v !== undefined;
+  }
+
+  function ensureRow(r) {
+    while (grid.length <= r) {
+      grid.push(new Array(colsInRow(grid.length)).fill(null));
+    }
+  }
+
+  function randColor() { return (Math.random() * COLORS.length) | 0; }
+
+  function randColorAvoid(a, b) {
+    let c = randColor(), guard = 0;
+    while (guard++ < 24 && c === a && c === b) c = randColor();
+    return c;
+  }
+
+  /* ========================= GAME SETUP ======================== */
+  function resetGrid() {
+    grid = [];
+    topParity = 0;
+    for (let r = 0; r < ROWS_START; r++) {
+      const n = colsInRow(r);
+      const row = new Array(n);
+      for (let c = 0; c < n; c++) row[c] = randColorAvoid(row[c - 1], row[c - 2]);
+      grid.push(row);
+    }
+  }
+
+  function reset() {
+    score = 0;
+    combo = 0;
+    shotsLeft = SHOTS_PER_ROW;
+    bullets = [];
+    falling = [];
+    particles = [];
+    shines = [];
+    sparkles = [];
+    glints = [];
+    aim = 0;
+    state = 'ready';
+    overlay.classList.remove('show');
+    resetGrid();
+    currentColor = randColor();
+    nextColor = randColor();
+    updateHUD();
+    if (hintEl) {
+      hintEl.classList.remove('hide');
+      clearTimeout(reset._hintT);
+      reset._hintT = setTimeout(() => hintEl.classList.add('hide'), 4200);
+    }
+  }
+
+  function updateHUD() {
+    if (scoreEl) scoreEl.textContent = score;
+    if (bestEl) bestEl.textContent = Math.max(bestScore, score);
+  }
+
+  /* ========================== SHOOTING ========================= */
+  function muzzlePos() {
+    return {
+      x: W / 2 + Math.sin(aim) * R * 1.9,
+      y: shooterY - Math.cos(aim) * R * 1.9
+    };
+  }
+
+  function shoot() {
+    if (state !== 'ready' || bullets.length > 0) return;
+
+    const speed = Math.max(620, R * 48);
+    const m = muzzlePos();
+
+    bullets.push({
+      x: m.x, y: m.y,
+      vx: Math.sin(aim) * speed,
+      vy: -Math.cos(aim) * speed,
+      color: currentColor,
+      lastBounce: 0
+    });
+
+    currentColor = nextColor;
+    nextColor = randColor();
+
+    Sound.shoot();
+
+    shotsLeft--;
+    if (shotsLeft <= 0) {
+      shotsLeft = SHOTS_PER_ROW;
+      addRow();
+    }
+  }
+
+  function collides(x, y) {
+    const rApprox = Math.floor((y - R) / rowH);
+    const r0 = Math.max(0, rApprox - 2);
+    const r1 = Math.min(grid.length - 1, rApprox + 2);
+    const lim = 2 * R * 0.94;
+    const lim2 = lim * lim;
+    for (let r = r0; r <= r1; r++) {
+      const row = grid[r];
+      if (!row) continue;
+      const cy = cellY(r);
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] === null || row[c] === undefined) continue;
+        const dx = cellX(r, c) - x;
+        const dy = cy - y;
+        if (dx * dx + dy * dy < lim2) return true;
+      }
+    }
+    return false;
+  }
+
+  function updateBullets(dt) {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
+      const speed = Math.hypot(b.vx, b.vy) || 1;
+      let remaining = speed * dt;
+      let ux = b.vx / speed;
+      let uy = b.vy / speed;
+      const maxStep = Math.max(2, R * 0.3);
+      let hit = false;
+      let bounced = false;
+
+      while (remaining > 0 && !hit) {
+        const step = Math.min(maxStep, remaining);
+        remaining -= step;
+
+        b.x += ux * step;
+        b.y += uy * step;
+
+        if (b.x - R < gridLeft) { b.x = gridLeft + R; ux = -ux; bounced = true; }
+        else if (b.x + R > gridLeft + gridWidth) { b.x = gridLeft + gridWidth - R; ux = -ux; bounced = true; }
+
+        if (b.y - R <= 0) { b.y = R; hit = true; break; }
+        if (collides(b.x, b.y)) { hit = true; break; }
+      }
+
+      if (bounced) {
+        const now = performance.now();
+        if (now - b.lastBounce > 90) {
+          b.lastBounce = now;
+          Sound.wall();
+        }
+      }
+
+      b.vx = ux * speed;
+      b.vy = uy * speed;
+
+      if (hit) {
+        placeBullet(b);
+        bullets.splice(i, 1);
+      } else if (b.y > H + R * 3) {
+        bullets.splice(i, 1);
+      }
+    }
+  }
+
+  function isValidCell(r, c) {
+    if (r === 0) return true;
+    const nb = neighborList(r, c);
+    for (let i = 0; i < nb.length; i++) {
+      if (occupied(nb[i][0], nb[i][1])) return true;
+    }
+    return false;
+  }
+
+  function placeBullet(b) {
+    let best = null, bestD = Infinity;
+    const maxRows = grid.length + 2;
+
+    for (let r = 0; r < maxRows; r++) {
+      const n = colsInRow(r);
+      const cy = cellY(r);
+      for (let c = 0; c < n; c++) {
+        if (occupied(r, c)) continue;
+        if (!isValidCell(r, c)) continue;
+        const dx = cellX(r, c) - b.x;
+        const dy = cy - b.y;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) { bestD = d; best = { r, c }; }
+      }
+    }
+    if (!best) return;
+
+    ensureRow(best.r);
+    grid[best.r][best.c] = b.color;
+
+    // блик приземления
+    shines.push({
+      x: cellX(best.r, best.c),
+      y: cellY(best.r),
+      t: 0,
+      life: 0.55
+    });
+
+    Sound.place();
+
+    resolve(best.r, best.c);
+  }
+
+  /* ======================= MATCH RESOLVE ======================= */
+  function findCluster(r0, c0, color) {
+    const seen = new Set([r0 + ',' + c0]);
+    const stack = [[r0, c0]];
+    const out = [];
+    while (stack.length) {
+      const cur = stack.pop();
+      out.push(cur);
+      const nb = neighborList(cur[0], cur[1]);
+      for (let i = 0; i < nb.length; i++) {
+        const rr = nb[i][0], cc = nb[i][1];
+        const k = rr + ',' + cc;
+        if (seen.has(k)) continue;
+        if (!occupied(rr, cc)) continue;
+        if (grid[rr][cc] !== color) continue;
+        seen.add(k);
+        stack.push([rr, cc]);
+      }
+    }
+    return out;
+  }
+
+  function findFloating() {
+    const reach = new Set();
+    const stack = [];
+    if (grid[0]) {
+      for (let c = 0; c < grid[0].length; c++) {
+        if (occupied(0, c)) { reach.add('0,' + c); stack.push([0, c]); }
+      }
+    }
+    while (stack.length) {
+      const cur = stack.pop();
+      const nb = neighborList(cur[0], cur[1]);
+      for (let i = 0; i < nb.length; i++) {
+        const rr = nb[i][0], cc = nb[i][1];
+        const k = rr + ',' + cc;
+        if (reach.has(k)) continue;
+        if (!occupied(rr, cc)) continue;
+        reach.add(k);
+        stack.push([rr, cc]);
+      }
+    }
+    const out = [];
+    for (let r = 0; r < grid.length; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        if (occupied(r, c) && !reach.has(r + ',' + c)) out.push([r, c]);
+      }
+    }
+    return out;
+  }
+
+    function addPop(x, y, ci) {
+	  const col = COLORS[ci];
+	  const hi  = COLORS[ci];
+
+    // цветные капли
+    for (let i = 0; i < 7; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 60 + Math.random() * 180;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 40,
+        life: 0.45 + Math.random() * 0.35,
+        t: 0,
+        c: col,
+        r: 1.5 + Math.random() * 2.8
+      });
+    }
+
+    // звёздочки-искры
+    const sparkCount = 5 + (Math.random() * 3 | 0);
+    for (let i = 0; i < sparkCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 40 + Math.random() * 120;
+      sparkles.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 60,
+        t: 0,
+        life: 0.55 + Math.random() * 0.35,
+        size: 3 + Math.random() * 4,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 6,
+        c: hi
+      });
+    }
+
+    // кольцевая вспышка
+    particles.push({
+      ring: true,
+      x, y, r0: R * 0.4, r1: R * 1.8,
+      t: 0, life: 0.35,
+      c: hi
+    });
+  }
+
+  function countBubbles() {
+    let n = 0;
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
+      for (let c = 0; c < row.length; c++) if (row[c] !== null && row[c] !== undefined) n++;
+    }
+    return n;
+  }
+
+  function resolve(r, c) {
+    const color = grid[r][c];
+    const cluster = findCluster(r, c, color);
+
+    if (cluster.length >= 3) {
+      let gained = 0;
+
+      for (let i = 0; i < cluster.length; i++) {
+        const rr = cluster[i][0], cc = cluster[i][1];
+        addPop(cellX(rr, cc), cellY(rr), grid[rr][cc]);
+        grid[rr][cc] = null;
+        gained += 10;
+      }
+
+      // приятный звук лопания — нота зависит от комбо
+      Sound.pop(combo);
+
+      const floaters = findFloating();
+      if (floaters.length) {
+        Sound.fall();
+      }
+      for (let i = 0; i < floaters.length; i++) {
+        const rr = floaters[i][0], cc = floaters[i][1];
+        const colIdx = grid[rr][cc];
+        falling.push({
+          x: cellX(rr, cc),
+          y: cellY(rr),
+          vx: (Math.random() - 0.5) * 90,
+          vy: -60 - Math.random() * 90,
+          color: colIdx,
+          spin: (Math.random() - 0.5) * 6,
+          rot: 0
         });
-    </script>
+        grid[rr][cc] = null;
+        gained += 20;
+      }
+
+      combo++;
+      const mult = 1 + Math.min(combo - 1, 4) * 0.25;
+      score += Math.round(gained * mult);
+      updateHUD();
+
+      // очистка поля — бонус и новый набор
+      if (countBubbles() === 0) {
+        score += 500;
+        updateHUD();
+        Sound.clear();
+        resetGrid();
+        return;
+      }
+    } else {
+      combo = 0;
+    }
+
+    checkGameOver();
+  }
+
+  /* ========================= ROW / OVER ======================== */
+  function addRow() {
+    topParity = (topParity + 1) & 1;
+    const n = colsInRow(0);
+    const row = new Array(n);
+    for (let c = 0; c < n; c++) row[c] = randColorAvoid(row[c - 1], row[c - 2]);
+    grid.unshift(row);
+    Sound.addRow();
+    checkGameOver();
+  }
+
+  function checkGameOver() {
+    if (state === 'over') return;
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
+      const cy = cellY(r);
+      if (cy - R > deathY) break;
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] === null || row[c] === undefined) continue;
+        if (cy + R >= deathY) { gameOver(); return; }
+      }
+    }
+  }
+
+  function gameOver() {
+    if (state === 'over') return;
+    state = 'over';
+    bullets = [];
+    if (ovText) ovText.innerHTML = 'СЧЁТ: <b>' + score + '</b>';
+    overlay.classList.add('show');
+    Sound.over();
+    submitScore(score);
+  }
+
+  /* ========================== PARTICLES ======================== */
+  function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.t += dt;
+      if (p.t >= p.life) { particles.splice(i, 1); continue; }
+      if (!p.ring) {
+        p.vy += 520 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      }
+    }
+
+    for (let i = sparkles.length - 1; i >= 0; i--) {
+      const s = sparkles[i];
+      s.t += dt;
+      if (s.t >= s.life) { sparkles.splice(i, 1); continue; }
+      s.vy += 420 * dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.rot += s.vr * dt;
+    }
+
+    for (let i = shines.length - 1; i >= 0; i--) {
+      shines[i].t += dt;
+      if (shines[i].t >= shines[i].life) shines.splice(i, 1);
+    }
+
+    // случайные блики на поле (искры)
+    if (Math.random() < 0.06 && glints.length < 6) {
+      const r = (Math.random() * Math.min(grid.length, 6)) | 0;
+      const n = colsInRow(r);
+      const c = (Math.random() * n) | 0;
+      if (occupied(r, c)) {
+        glints.push({
+          x: cellX(r, c) + (Math.random() - 0.5) * R * 0.7,
+          y: cellY(r) + (Math.random() - 0.5) * R * 0.7,
+          t: 0, life: 0.9 + Math.random() * 0.5,
+          size: 2 + Math.random() * 3
+        });
+      }
+    }
+    for (let i = glints.length - 1; i >= 0; i--) {
+      glints[i].t += dt;
+      if (glints[i].t >= glints[i].life) glints.splice(i, 1);
+    }
+  }
+
+  function updateFalling(dt) {
+    for (let i = falling.length - 1; i >= 0; i--) {
+      const f = falling[i];
+      f.vy += 1500 * dt;
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      f.rot += f.spin * dt;
+      if (f.y > H + R * 3) falling.splice(i, 1);
+    }
+  }
+
+  /* =========================== UPDATE ========================== */
+  function update(dt) {
+    globalTime += dt;
+    updateBullets(dt);
+    updateFalling(dt);
+    updateParticles(dt);
+  }
+
+  /* =========================== RENDER ========================== */
+  function drawBackground() {
+    // игровое поле — мягкий градиент
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0,   'rgba(140,190,255,0.05)');
+    grad.addColorStop(0.5, 'rgba(180,150,255,0.03)');
+    grad.addColorStop(1,   'rgba(255,190,220,0.05)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(gridLeft, 0, gridWidth, H);
+
+    // боковые рейки — мягкое свечение
+    ctx.save();
+    const sideGradL = ctx.createLinearGradient(gridLeft - 8, 0, gridLeft + 4, 0);
+    sideGradL.addColorStop(0, 'rgba(0,0,0,0)');
+    sideGradL.addColorStop(1, 'rgba(150,220,255,0.35)');
+    ctx.fillStyle = sideGradL;
+    ctx.fillRect(gridLeft - 8, 0, 12, H);
+
+    const sideGradR = ctx.createLinearGradient(gridLeft + gridWidth - 4, 0, gridLeft + gridWidth + 8, 0);
+    sideGradR.addColorStop(0, 'rgba(150,220,255,0.35)');
+    sideGradR.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sideGradR;
+    ctx.fillRect(gridLeft + gridWidth - 4, 0, 12, H);
+    ctx.restore();
+
+    // тонкие горизонтальные линии
+    ctx.strokeStyle = 'rgba(200,230,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let y = 0; y < H; y += rowH * 2) {
+      ctx.moveTo(gridLeft, y);
+      ctx.lineTo(gridLeft + gridWidth, y);
+    }
+    ctx.stroke();
+
+    // зона опасности — мягкая
+    const dz = ctx.createLinearGradient(0, deathY - R, 0, H);
+    dz.addColorStop(0, 'rgba(255,80,110,0)');
+    dz.addColorStop(1, 'rgba(255,80,110,0.14)');
+    ctx.fillStyle = dz;
+    ctx.fillRect(gridLeft, deathY - R, gridWidth, H - deathY + R);
+  }
+
+  function drawDeathLine() {
+    ctx.save();
+    ctx.setLineDash([10, 8]);
+    ctx.lineDashOffset = -((globalTime * 18) % 18);
+    ctx.strokeStyle = 'rgba(255,90,120,0.55)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(gridLeft, deathY);
+    ctx.lineTo(gridLeft + gridWidth, deathY);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function traceAim() {
+    const pts = [];
+    const m = muzzlePos();
+    let x = m.x, y = m.y;
+    let ux = Math.sin(aim), uy = -Math.cos(aim);
+    pts.push([x, y]);
+
+    const step = Math.max(4, R * 0.5);
+    const lim2 = (R * 1.86) * (R * 1.86);
+
+    for (let i = 0; i < 300; i++) {
+      x += ux * step;
+      y += uy * step;
+
+      if (x < gridLeft + R) { x = gridLeft + R; ux = -ux; pts.push([x, y]); }
+      else if (x > gridLeft + gridWidth - R) { x = gridLeft + gridWidth - R; ux = -ux; pts.push([x, y]); }
+
+      if (y <= R) break;
+
+      let hit = false;
+      const rApprox = Math.floor((y - R) / rowH);
+      const r0 = Math.max(0, rApprox - 2);
+      const r1 = Math.min(grid.length - 1, rApprox + 2);
+      for (let r = r0; r <= r1 && !hit; r++) {
+        const row = grid[r];
+        if (!row) continue;
+        const cy = cellY(r);
+        for (let c = 0; c < row.length; c++) {
+          if (row[c] === null || row[c] === undefined) continue;
+          const dx = cellX(r, c) - x;
+          const dy = cy - y;
+          if (dx * dx + dy * dy < lim2) { hit = true; break; }
+        }
+      }
+      if (hit) break;
+      if (y > H) break;
+    }
+    pts.push([x, y]);
+    return pts;
+  }
+
+  function drawAim() {
+    if (state !== 'ready' || bullets.length > 0) return;
+    const pts = traceAim();
+    if (pts.length < 2) return;
+
+    ctx.save();
+    ctx.setLineDash([6, 8]);
+    ctx.lineDashOffset = -((globalTime * 22) % 14);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = Math.max(1.2, R * 0.08);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+    ctx.restore();
+
+    // прицел на конце
+    const last = pts[pts.length - 1];
+    const t = globalTime * 3;
+    const rp = 0.85 + Math.sin(t) * 0.08;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(last[0], last[1], R * rp, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(last[0], last[1], R * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawShines() {
+    for (let i = 0; i < shines.length; i++) {
+      const sh = shines[i];
+      const p = sh.t / sh.life;
+      ctx.save();
+      ctx.translate(sh.x, sh.y);
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.94, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.rotate(-Math.PI * 0.75);
+      const offset = -R * 1.4 + p * R * 3.2;
+      const grad = ctx.createLinearGradient(offset - R * 0.35, 0, offset + R * 0.35, 0);
+      grad.addColorStop(0,   'rgba(255,255,255,0)');
+      grad.addColorStop(0.5, 'rgba(255,255,255,' + ((1 - p) * 0.85).toFixed(3) + ')');
+      grad.addColorStop(1,   'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(-R * 2, -R * 2, R * 4, R * 4);
+      ctx.restore();
+    }
+  }
+  
+  function drawBubble(x, y, ci, alpha) {
+  if (alpha !== undefined && alpha < 1) ctx.globalAlpha = alpha;
+  drawBall(x, y, R, COLORS[ci]);
+  if (alpha !== undefined && alpha < 1) ctx.globalAlpha = 1;
+  }
+
+  function drawShooter() {
+    const sx = W / 2, sy = shooterY;
+
+    // мягкое свечение базы (не неон — тёплый свет)
+    ctx.save();
+    const g = ctx.createRadialGradient(sx, sy, R * 0.15, sx, sy, R * 1.35);
+    g.addColorStop(0, 'rgba(200,235,255,0.28)');
+    g.addColorStop(1, 'rgba(200,235,255,0)');
+    ctx.beginPath();
+    ctx.arc(sx, sy, R * 1.35, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.restore();
+
+    // база — металлический диск
+    ctx.save();
+    const bg = ctx.createRadialGradient(sx - R * 0.3, sy - R * 0.35, R * 0.1, sx, sy, R * 1.1);
+    bg.addColorStop(0, 'rgba(220,240,255,0.55)');
+    bg.addColorStop(0.5, 'rgba(90,130,180,0.4)');
+    bg.addColorStop(1, 'rgba(20,30,60,0.6)');
+    ctx.beginPath();
+    ctx.arc(sx, sy, R * 1.05, 0, Math.PI * 2);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // ствол — металлический градиент
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(aim);
+    const barrelGrad = ctx.createLinearGradient(-R * 0.4, 0, R * 0.4, 0);
+    barrelGrad.addColorStop(0, 'rgba(60,90,130,0.9)');
+    barrelGrad.addColorStop(0.5, 'rgba(220,240,255,0.95)');
+    barrelGrad.addColorStop(1, 'rgba(60,90,130,0.9)');
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.44, 0);
+    ctx.lineTo(-R * 0.26, -R * 2.3);
+    ctx.lineTo(R * 0.26, -R * 2.3);
+    ctx.lineTo(R * 0.44, 0);
+    ctx.closePath();
+    ctx.fillStyle = barrelGrad;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // блик на стволе
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.1, 0);
+    ctx.lineTo(-R * 0.05, -R * 2.1);
+    ctx.lineTo(R * 0.05, -R * 2.1);
+    ctx.lineTo(R * 0.1, 0);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fill();
+    ctx.restore();
+
+    // текущий шар
+    if (state === 'ready' && bullets.length === 0) {
+      const m = muzzlePos();
+      drawBubble(m.x, m.y, currentColor);
+    }
+
+    // следующий шар
+    const nx = W - R * 2.1;
+    const ny = shooterY + R * 0.05;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(nx, ny, R * 1.2, 0, Math.PI * 2);
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+    drawBubble(nx, ny, nextColor, 0.92);
+  }
+
+  function drawSparkles() {
+    for (let i = 0; i < sparkles.length; i++) {
+      const s = sparkles[i];
+      const a = 1 - s.t / s.life;
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rot);
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+      const sz = s.size;
+      ctx.beginPath();
+      ctx.moveTo(0, -sz); ctx.lineTo(0, sz);
+      ctx.moveTo(-sz, 0); ctx.lineTo(sz, 0);
+      ctx.stroke();
+      // маленькое ядро
+      ctx.beginPath();
+      ctx.arc(0, 0, sz * 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = s.c;
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawGlints() {
+    for (let i = 0; i < glints.length; i++) {
+      const g = glints[i];
+      const p = g.t / g.life;
+      const a = Math.sin(p * Math.PI) * 0.9;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(g.x, g.y);
+      ctx.rotate(p * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.lineCap = 'round';
+      const s = g.size;
+      ctx.beginPath();
+      ctx.moveTo(0, -s); ctx.lineTo(0, s);
+      ctx.moveTo(-s, 0); ctx.lineTo(s, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawParticles() {
+    if (!particles.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const a = 1 - p.t / p.life;
+      if (p.ring) {
+        const rr = p.r0 + (p.r1 - p.r0) * (p.t / p.life);
+        ctx.globalAlpha = a * 0.7;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
+        ctx.strokeStyle = p.c;
+        ctx.lineWidth = 2.5 * a;
+        ctx.stroke();
+      } else {
+        ctx.globalAlpha = a;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * (0.5 + a * 0.8), 0, Math.PI * 2);
+        ctx.fillStyle = p.c;
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawVignette() {
+    // мягкое затемнение по краям сцены
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+
+    drawBackground();
+    drawDeathLine();
+    drawAim();
+
+    // сетка
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
+      const cy = cellY(r);
+      if (cy - R > H + R * 3) break;
+      for (let c = 0; c < row.length; c++) {
+        const v = row[c];
+        if (v === null || v === undefined) continue;
+        drawBubble(cellX(r, c), cy, v);
+      }
+    }
+
+    // блики приземления (поверх шаров)
+    drawShines();
+
+    // падающие
+    for (let i = 0; i < falling.length; i++) {
+      const f = falling[i];
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rot);
+      drawBubble(0, 0, f.color, 0.9);
+      ctx.restore();
+    }
+
+    // летящие
+    for (let i = 0; i < bullets.length; i++) {
+      drawBubble(bullets[i].x, bullets[i].y, bullets[i].color);
+    }
+
+    drawParticles();
+    drawSparkles();
+    drawGlints();
+    drawShooter();
+    drawVignette();
+  }
+
+  /* =========================== INPUT =========================== */
+  function pointerAim(e) {
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const dx = px - W / 2;
+    const dy = shooterY - py;
+    let a = Math.atan2(dx, Math.max(dy, 1));
+    if (a > MAX_AIM) a = MAX_AIM;
+    if (a < -MAX_AIM) a = -MAX_AIM;
+    aim = a;
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    Sound.unlock();
+    if (state !== 'ready') return;
+    e.preventDefault();
+    pointerAim(e);
+    dragging = true;
+    if (canvas.setPointerCapture) {
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (state !== 'ready') return;
+    if (dragging || e.pointerType === 'mouse') pointerAim(e);
+  }, { passive: true });
+
+  canvas.addEventListener('pointerup', (e) => {
+    if (state !== 'ready') { dragging = false; return; }
+    if (dragging) {
+      dragging = false;
+      pointerAim(e);
+      shoot();
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('pointercancel', () => { dragging = false; });
+
+  // Клавиатура
+  const keys = Object.create(null);
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === ' ' || k === 'spacebar' || k === 'enter') {
+      e.preventDefault();
+      Sound.unlock();
+      shoot();
+      return;
+    }
+    if (k === 'escape') {
+      window.location.href = 'index.html';
+      return;
+    }
+    if (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd' ||
+        k === 'arrowup' || k === 'w' || k === 'arrowdown' || k === 's') {
+      keys[k] = true;
+      e.preventDefault();
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  function handleKeys(dt) {
+    if (state !== 'ready') return;
+    const left  = keys['arrowleft'] || keys['a'];
+    const right = keys['arrowright'] || keys['d'];
+    if (left && !right)  aim = Math.max(-MAX_AIM, aim - 1.9 * dt);
+    if (right && !left)  aim = Math.min(MAX_AIM, aim + 1.9 * dt);
+  }
+
+  /* ========================== GAME LOOP ======================== */
+  function loop(now) {
+    const dt = Math.min(0.033, (now - lastTime) / 1000);
+    lastTime = now;
+    globalTime += dt;
+    handleKeys(dt);
+    if (state === 'ready') update(dt);
+    else { updateFalling(dt); updateParticles(dt); }
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  /* =========================== INIT ============================ */
+  document.getElementById('ovRestart')?.addEventListener('click', reset);
+  document.getElementById('ovLb')?.addEventListener('click', () => {
+    if (typeof LeaderboardUI !== 'undefined' && LeaderboardUI.open) LeaderboardUI.open(GAME_ID);
+  });
+
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', () => setTimeout(layout, 160));
+
+  layout();
+  reset();
+  loadStats();
+  lastTime = performance.now();
+  requestAnimationFrame(loop);
+});
+</script>
 </body>
 </html>
