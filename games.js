@@ -52,16 +52,16 @@ window.GAMES = [
     icon:        '🫧',
     color:       '#00f0ff',
     tags:        ['arcade', 'puzzle', 'classic'],
-    preview:     { type: 'image', src: 'previews/bubble_strike.jpg' }
+    preview:     { type: 'image', src: 'previews/bubble_strike.mp4' }
   },
   {
-    id:          'bubble_strike',
-    title:       'NEON BUBBLE STRIKE',
-    description: 'Классический шутер шариков: сбивай группы из 3+ одинаковых неоновых пузырей, чтобы очистить поле.',
-    url:         'bubble_strike2.html',
-    icon:        '🫧',
-    color:       '#00f0ff',
-    tags:        ['arcade', 'puzzle', 'classic'],
-    preview:     { type: 'image', src: 'previews/bubble_strike.jpg' }
+	id:          'neon-shooter',
+	title:       'NEON SHOOTER',
+	description: 'Неоновый тир — сбивайте светящиеся шары, собирайте серии и устанавливайте мировые рекорды!',
+	url:         'neon-shooter.html',
+	icon:        '🎯',
+	color:       '#00f0ff',
+	tags:        ['shooter', 'arcade', 'neon', 'skill'],
+	preview:     { type: 'image', src: 'previews/neon-shooter.mp4' }
   },
 ];
