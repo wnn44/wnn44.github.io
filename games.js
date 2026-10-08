@@ -42,16 +42,7 @@ window.GAMES = [
 	icon:        '🔮',
 	color:       '#00f0ff',
 	tags:        ['головоломка', 'три-в-ряд'],
-	preview:     { type: 'image', src: 'previews/neon-match3.jpg' }
+	preview:     { type: 'image', src: 'previews/neon-match3.mp4' }
   },
-  {
-    id:          'neon-match3',
-	title:       'NEON MATCH-3',
-	description: 'Классическая головоломка «три в ряд» с неоновыми шариками, каскадными комбо и киберпанк-эстетикой.',
-	url:         'match3.html',
-	icon:        '🔮',
-	color:       '#00f0ff',
-	tags:        ['головоломка', 'три-в-ряд'],
-	preview:     { type: 'image', src: 'previews/match3.jpg' }
-  },
+
 ];

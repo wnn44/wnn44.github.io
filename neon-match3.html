@@ -41,33 +41,33 @@
     gap:10px;padding:10px 14px;
     padding-top:calc(10px + env(safe-area-inset-top));
     background:rgba(8,10,24,.78);
-    border-bottom:1px solid rgba(0,240,255,.22);
-    box-shadow:0 0 20px rgba(0,240,255,.15);
+    border-bottom:1px solid rgba(0,240,255,.18);
+    box-shadow:0 0 10px rgba(0,240,255,.07);
     backdrop-filter:blur(8px);
     position:sticky;top:0;z-index:10;
   }
   .logo{
     font-weight:800;letter-spacing:.14em;font-size:clamp(12px,3.4vw,18px);
     color:var(--cyan);
-    text-shadow:0 0 8px var(--cyan),0 0 20px rgba(0,240,255,.5);
+    text-shadow:0 0 5px rgba(0,240,255,.65);
     white-space:nowrap;
   }
   .header-right{display:flex;align-items:center;gap:8px;}
   .chip{
     font-size:clamp(10px,2.6vw,13px);
     padding:7px 11px;border-radius:999px;
-    border:1px solid rgba(0,240,255,.4);
-    background:rgba(0,240,255,.08);
+    border:1px solid rgba(0,240,255,.32);
+    background:rgba(0,240,255,.06);
     color:var(--text);cursor:pointer;white-space:nowrap;
     transition:background .18s, box-shadow .18s, transform .12s;
   }
   .chip:active{transform:scale(.94);}
-  .chip:hover{background:rgba(0,240,255,.18);box-shadow:0 0 14px rgba(0,240,255,.5);}
-  .chip.lb{border-color:rgba(255,233,77,.45);background:rgba(255,233,77,.08);color:var(--gold);}
-  .chip.lb:hover{background:rgba(255,233,77,.16);box-shadow:0 0 14px rgba(255,233,77,.5);}
-  .chip.user{border-color:rgba(168,85,255,.45);background:rgba(168,85,255,.1);color:#d9bcff;}
-  .chip.menu{border-color:rgba(255,0,212,.4);background:rgba(255,0,212,.08);color:#ffa8ee;}
-  .chip.menu:hover{background:rgba(255,0,212,.16);box-shadow:0 0 14px rgba(255,0,212,.5);}
+  .chip:hover{background:rgba(0,240,255,.14);box-shadow:0 0 7px rgba(0,240,255,.35);}
+  .chip.lb{border-color:rgba(255,233,77,.35);background:rgba(255,233,77,.06);color:var(--gold);}
+  .chip.lb:hover{background:rgba(255,233,77,.13);box-shadow:0 0 7px rgba(255,233,77,.35);}
+  .chip.user{border-color:rgba(168,85,255,.35);background:rgba(168,85,255,.08);color:#d9bcff;}
+  .chip.menu{border-color:rgba(255,0,212,.32);background:rgba(255,0,212,.06);color:#ffa8ee;}
+  .chip.menu:hover{background:rgba(255,0,212,.13);box-shadow:0 0 7px rgba(255,0,212,.35);}
 
   /* ---------- Layout ---------- */
   main{
@@ -79,18 +79,31 @@
   }
   .stat{
     flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
-    padding:8px 6px;border-radius:12px;
+    padding:8px 6px 9px;border-radius:12px;
     background:var(--panel);
-    border:1px solid rgba(0,240,255,.2);
-    box-shadow:inset 0 0 18px rgba(0,240,255,.07);
+    border:1px solid rgba(0,240,255,.16);
+    box-shadow:inset 0 0 12px rgba(0,240,255,.04);
   }
   .stat .lbl{font-size:clamp(9px,2.3vw,11px);letter-spacing:.12em;color:#7fa6c9;}
   .stat .val{font-size:clamp(15px,4.6vw,22px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15;}
-  .val.cyan{color:var(--cyan);text-shadow:0 0 10px var(--cyan);}
-  .val.gold{color:var(--gold);text-shadow:0 0 10px rgba(255,233,77,.8);}
-  #timeVal{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,.8);}
-  #timeVal.danger{color:var(--red);text-shadow:0 0 12px var(--red);animation:tpulse .7s infinite;}
-  @keyframes tpulse{50%{opacity:.4;}}
+  .val.cyan{color:var(--cyan);text-shadow:0 0 6px rgba(0,240,255,.6);}
+  .val.gold{color:var(--gold);text-shadow:0 0 6px rgba(255,233,77,.55);}
+  #timeVal{color:var(--green);text-shadow:0 0 6px rgba(0,255,136,.55);}
+  #timeVal.danger{color:var(--red);text-shadow:0 0 7px rgba(255,51,85,.7);animation:tpulse .7s infinite;}
+  #timeVal.bump{animation:bump .32s ease;}
+  @keyframes tpulse{50%{opacity:.45;}}
+  @keyframes bump{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
+
+  .tbar{
+    width:100%;height:4px;margin-top:4px;border-radius:3px;
+    background:rgba(255,255,255,.07);overflow:hidden;
+  }
+  .tfill{
+    height:100%;width:100%;border-radius:3px;
+    background:linear-gradient(90deg,#00ff88,#26d9f2);
+    transition:background .25s;
+  }
+  .tfill.danger{background:linear-gradient(90deg,#ff3355,#ff5c6a);}
 
   /* ---------- Board ---------- */
   #boardWrap{
@@ -99,8 +112,8 @@
     aspect-ratio:1 / 1;
     border-radius:20px;
     background:rgba(13,17,40,.85);
-    border:1px solid rgba(0,240,255,.35);
-    box-shadow:0 0 26px rgba(0,240,255,.25), inset 0 0 46px rgba(0,240,255,.06);
+    border:1px solid rgba(0,240,255,.22);
+    box-shadow:0 0 14px rgba(0,240,255,.12), inset 0 0 30px rgba(0,240,255,.03);
     padding:6px;
     touch-action:none;
     overflow:hidden;
@@ -120,22 +133,22 @@
   .ov-title{
     font-size:clamp(19px,6vw,30px);font-weight:900;letter-spacing:.08em;
     color:var(--magenta);
-    text-shadow:0 0 14px var(--magenta),0 0 34px rgba(255,0,212,.6);
+    text-shadow:0 0 8px rgba(255,0,212,.7),0 0 20px rgba(255,0,212,.35);
     line-height:1.2;
   }
   .ov-text{
     font-size:clamp(12px,3.4vw,15px);color:#b9d6ea;
-    max-width:30ch;line-height:1.5;
+    max-width:32ch;line-height:1.5;
   }
   .btn{
     font:inherit;font-weight:800;letter-spacing:.14em;
     font-size:clamp(13px,3.6vw,15px);
     padding:12px 30px;border-radius:999px;cursor:pointer;
     color:#04121a;background:linear-gradient(135deg,var(--cyan),#8ef9ff);
-    border:none;box-shadow:0 0 22px rgba(0,240,255,.65);
+    border:none;box-shadow:0 0 12px rgba(0,240,255,.45);
     transition:transform .12s, box-shadow .18s;
   }
-  .btn:hover{box-shadow:0 0 34px rgba(0,240,255,.95);}
+  .btn:hover{box-shadow:0 0 20px rgba(0,240,255,.7);}
   .btn:active{transform:scale(.94);}
 
   .hint{
@@ -163,19 +176,23 @@
   <div class="hud">
     <div class="stat"><span class="lbl">ОЧКИ</span><span class="val cyan" id="scoreVal">0</span></div>
     <div class="stat"><span class="lbl">РЕКОРД</span><span class="val gold" id="bestVal">0</span></div>
-    <div class="stat"><span class="lbl">ВРЕМЯ</span><span class="val" id="timeVal">60</span></div>
+    <div class="stat">
+      <span class="lbl">ВРЕМЯ</span>
+      <span class="val" id="timeVal">5.0</span>
+      <div class="tbar"><div class="tfill" id="timeBar"></div></div>
+    </div>
   </div>
 
   <div id="boardWrap">
     <canvas id="game"></canvas>
     <div class="overlay" id="overlay">
       <div class="ov-title" id="ovTitle">NEON ШАРИКИ</div>
-      <div class="ov-text" id="ovText">Меняй местами соседние шарики, собирай 3 и более в линию и набери максимум очков за 60 секунд!</div>
+      <div class="ov-text" id="ovText">Меняй местами соседние шарики, собирай 3 и более в линию. На каждый ход — 5 секунд: успел раньше — остаток переносится на следующий ход!</div>
       <button class="btn" id="ovBtn">ИГРАТЬ</button>
     </div>
   </div>
 
-  <div class="hint">Тап по двум соседним шарикам или свайп · 3+ в линию — взрыв · Esc — пауза</div>
+  <div class="hint">Тап по двум соседним шарикам или свайп · 5 сек на ход · Esc — пауза</div>
 </main>
 
 <script>
@@ -207,17 +224,118 @@ document.addEventListener('DOMContentLoaded', () => {
      ========================================================= */
   const canvas   = document.getElementById('game');
   const ctx      = canvas.getContext('2d');
-  const wrap     = document.getElementById('boardWrap');
   const scoreEl  = document.getElementById('scoreVal');
   const bestEl   = document.getElementById('bestVal');
   const timeEl   = document.getElementById('timeVal');
+  const timeBar  = document.getElementById('timeBar');
   const overlay  = document.getElementById('overlay');
   const ovTitle  = document.getElementById('ovTitle');
   const ovText   = document.getElementById('ovText');
   const ovBtn    = document.getElementById('ovBtn');
 
   /* =========================================================
-     3. Рекорды
+     3. ЗВУК (Web Audio, без внешних файлов)
+     ========================================================= */
+  const Sound = {
+    ctx: null,
+    ready: false,
+
+    init() {
+      if (this.ctx) {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        return;
+      }
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ctx = new AC();
+        this.ready = true;
+      } catch (e) { this.ready = false; }
+    },
+
+    tone(freq, dur, opts) {
+      if (!this.ctx || this.ctx.state !== 'running') return;
+      opts = opts || {};
+      const type  = opts.type  || 'sine';
+      const vol   = opts.vol   != null ? opts.vol : 0.07;
+      const delay = opts.delay || 0;
+      const slide = opts.slide || null;
+
+      const t0 = this.ctx.currentTime + delay;
+      const osc = this.ctx.createOscillator();
+      const g   = this.ctx.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (slide) osc.frequency.exponentialRampToValueAtTime(slide, t0 + dur);
+
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.010);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+      osc.connect(g);
+      g.connect(this.ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.03);
+    },
+
+    noise(dur, vol) {
+      if (!this.ctx || this.ctx.state !== 'running') return;
+      const len = Math.floor(this.ctx.sampleRate * dur);
+      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d   = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = this.ctx.createBufferSource();
+      const g   = this.ctx.createGain();
+      const f   = this.ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 1800;
+      g.gain.value = vol || 0.05;
+      src.buffer = buf;
+      src.connect(f); f.connect(g); g.connect(this.ctx.destination);
+      src.start();
+    },
+
+    select()  { this.tone(720, 0.06, { type: 'triangle', vol: 0.05 }); },
+    deselect(){ this.tone(420, 0.05, { type: 'triangle', vol: 0.035 }); },
+    swap()    { this.tone(300, 0.09, { type: 'sine', vol: 0.055, slide: 620 }); },
+    invalid() { this.tone(170, 0.14, { type: 'sawtooth', vol: 0.045, slide: 105 }); },
+
+    match(combo) {
+      const c    = Math.min(combo, 6);
+      const base = 520 + (c - 1) * 95;
+      this.tone(base,       0.09, { type: 'square',   vol: 0.040 });
+      this.tone(base * 1.26, 0.11, { type: 'square',   vol: 0.034, delay: 0.045 });
+      this.tone(base * 1.50, 0.15, { type: 'triangle', vol: 0.042, delay: 0.090 });
+      this.noise(0.10, 0.035);
+    },
+
+    tick()   { this.tone(1180, 0.035, { type: 'square', vol: 0.030 }); },
+
+    bonus()  {
+      this.tone(880, 0.08, { type: 'triangle', vol: 0.045 });
+      this.tone(1320, 0.10, { type: 'triangle', vol: 0.038, delay: 0.05 });
+    },
+
+    over()   {
+      this.tone(440, 0.32, { type: 'sawtooth', vol: 0.055, slide: 120 });
+      this.tone(330, 0.50, { type: 'sine',     vol: 0.045, delay: 0.10, slide: 80 });
+    },
+
+    record() {
+      [523, 659, 784, 1047].forEach((f, i) => {
+        this.tone(f, 0.18, { type: 'triangle', vol: 0.05, delay: i * 0.09 });
+      });
+    }
+  };
+
+  // Разблокировка аудио по первому действию пользователя
+  function unlockAudio() { Sound.init(); }
+  window.addEventListener('pointerdown', unlockAudio, { once: false });
+  window.addEventListener('keydown',    unlockAudio, { once: false });
+
+  /* =========================================================
+     4. Рекорды
      ========================================================= */
   let myBest = 0;
 
@@ -233,9 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (globalRec && globalRec.score) {
         bestEl.title = `Мировой рекорд: ${globalRec.username} — ${globalRec.score}`;
       }
-    } catch (e) {
-      /* офлайн или нет Supabase — играем без статистики */
-    }
+    } catch (e) { /* офлайн — играем без статистики */ }
   }
 
   async function onGameOver(finalScore) {
@@ -248,40 +364,42 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     4. Конфигурация игры
+     5. Конфигурация
      ========================================================= */
   const COLS = 8;
   const ROWS = 8;
   const COLORS = ['#00f0ff', '#ff00d4', '#a855ff', '#ffe94d', '#00ff88', '#ff3355'];
-  const START_TIME     = 60;    // секунд на партию
-  const MAX_TIME       = 99;    // максимум времени
-  const TIME_PER_BALL  = 0.22;  // бонус времени за каждый лопнувший шарик
+
+  const MOVE_TIME  = 5;    // базовые секунды на один ход
+  const MAX_TIME   = 30;   // максимум накопленного времени
+  const BAR_SCALE  = 12;   // шкала бара (сек -> 100%)
 
   /* =========================================================
-     5. Состояние
+     6. Состояние
      ========================================================= */
-  let grid        = [];        // grid[r][c] = { color, px, py, sc, tsc } | null
-  let particles   = [];
-  let floaters    = [];
-  let score       = 0;
-  let timeLeft    = START_TIME;
-  let running     = false;
-  let paused      = false;
-  let finished    = false;
-  let state       = 'idle';    // 'idle' | 'busy' | 'over'
-  let selected    = null;
-  let cursor      = { r: ROWS >> 1, c: COLS >> 1 };
-  let showCursor  = false;
-  let shake       = 0;
-  let gen         = 0;         // поколение партии (для отмены асинхронных цепочек)
+  let grid      = [];
+  let particles = [];
+  let floaters  = [];
+  let score     = 0;
+  let timeLeft  = MOVE_TIME;
+  let running   = false;
+  let paused    = false;
+  let finished  = false;
+  let state     = 'idle';       // 'idle' | 'busy' | 'over'
+  let selected  = null;
+  let cursor    = { r: ROWS >> 1, c: COLS >> 1 };
+  let showCursor = false;
+  let shake     = 0;
+  let gen       = 0;
   let settleWaiters = [];
-  let lastTs      = 0;
-  let cell        = 64;
-  let boardSize   = 512;
+  let lastTs    = 0;
+  let cell      = 64;
+  let boardSize = 512;
   let overlayMode = 'start';
+  let lastTickSec = -1;
 
   /* =========================================================
-     6. Утилиты
+     7. Утилиты
      ========================================================= */
   const rnd       = n => Math.floor(Math.random() * n);
   const randColor = () => COLORS[rnd(COLORS.length)];
@@ -307,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     7. Логика поля
+     8. Логика поля
      ========================================================= */
   function createBoard() {
     let guard = 0;
@@ -337,7 +455,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mark = [];
     for (let r = 0; r < ROWS; r++) mark.push(new Array(COLS).fill(false));
 
-    // горизонтали
     for (let r = 0; r < ROWS; r++) {
       let run = 1;
       for (let c = 1; c <= COLS; c++) {
@@ -352,7 +469,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // вертикали
     for (let c = 0; c < COLS; c++) {
       let run = 1;
       for (let r = 1; r <= ROWS; r++) {
@@ -413,13 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       let n = 0;
       for (let r = write; r >= 0; r--) {
-        grid[r][c] = {
-          color: randColor(),
-          px: c,
-          py: -1 - n,
-          sc: 1,
-          tsc: 1
-        };
+        grid[r][c] = { color: randColor(), px: c, py: -1 - n, sc: 1, tsc: 1 };
         n++;
       }
     }
@@ -440,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     8. Анимация / ожидание остановки
+     9. Ожидание остановки анимации
      ========================================================= */
   function isSettled() {
     for (let r = 0; r < ROWS; r++) {
@@ -469,27 +579,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     9. Эффекты
+     10. Эффекты
      ========================================================= */
   function spawnParticles(x, y, color) {
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 8; i++) {
       const a  = Math.random() * Math.PI * 2;
-      const sp = 60 + Math.random() * 200;
-      const life = 0.4 + Math.random() * 0.4;
+      const sp = 55 + Math.random() * 175;
+      const life = 0.35 + Math.random() * 0.35;
       particles.push({
         x, y,
         vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp - 50,
+        vy: Math.sin(a) * sp - 45,
         life,
         maxLife: life,
-        size: cell * (0.055 + Math.random() * 0.075),
+        size: cell * (0.05 + Math.random() * 0.07),
         color
       });
     }
   }
 
   /* =========================================================
-     10. Разрешение совпадений (каскады)
+     11. Разрешение совпадений
      ========================================================= */
   async function resolveBoard(myGen) {
     let combo = 0;
@@ -503,8 +613,9 @@ document.addEventListener('DOMContentLoaded', () => {
       combo++;
       const gain = matched.length * 10 * combo;
       score += gain;
-      timeLeft = Math.min(MAX_TIME, timeLeft + matched.length * TIME_PER_BALL);
       if (!finished) updateHud();
+
+      Sound.match(combo);
 
       let sumC = 0, sumR = 0;
       for (const { r, c } of matched) {
@@ -523,9 +634,9 @@ document.addEventListener('DOMContentLoaded', () => {
         life: 0.95
       });
 
-      shake = Math.min(0.4, 0.14 + matched.length * 0.012);
+      shake = Math.min(0.25, 0.08 + matched.length * 0.008);
 
-      await delay(combo > 1 ? 70 : 110);
+      await delay(combo > 1 ? 70 : 105);
       if (myGen !== gen) return;
 
       applyGravity();
@@ -535,6 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!finished && !hasMove()) {
       shuffleBoard();
+      Sound.bonus();
       floaters.push({
         x: boardSize / 2,
         y: boardSize / 2,
@@ -552,27 +664,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const myGen = gen;
     state = 'busy';
 
+    Sound.swap();
+
     swapCells(a, b);
     await settle();
     if (myGen !== gen) return;
 
     if (findMatches().length === 0) {
-      // откат
+      Sound.invalid();
       swapCells(a, b);
-      shake = 0.12;
+      shake = 0.10;
       await settle();
       if (myGen !== gen) return;
       state = 'idle';
       return;
     }
 
+    // ---- УСПЕШНЫЙ ХОД: +5 сек к бюджету ----
+    timeLeft = Math.min(MAX_TIME, timeLeft + MOVE_TIME);
+    updateHud();
+    bumpTimer();
+
     await resolveBoard(myGen);
     if (myGen !== gen) return;
     state = 'idle';
+    lastTickSec = -1;
   }
 
   /* =========================================================
-     11. Ввод
+     12. Ввод
      ========================================================= */
   function cellFromPoint(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
@@ -584,9 +704,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handlePick(p) {
+    Sound.init();
     if (selected) {
       if (selected.r === p.r && selected.c === p.c) {
         selected = null;
+        Sound.deselect();
         return;
       }
       if (isAdjacent(selected, p)) {
@@ -597,6 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     selected = { r: p.r, c: p.c };
+    Sound.select();
   }
 
   let pointerActive = false;
@@ -661,21 +784,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* =========================================================
-     12. Отрисовка
+     13. Отрисовка (умеренное свечение)
      ========================================================= */
   function drawBall(x, y, rad, color) {
     if (rad <= 0.4) return;
     ctx.save();
 
+    // мягкое, но не «слепящее» свечение
     ctx.shadowColor = color;
-    ctx.shadowBlur  = rad * 1.15;
+    ctx.shadowBlur  = rad * 0.45;
 
     const g = ctx.createRadialGradient(
       x - rad * 0.35, y - rad * 0.38, rad * 0.06,
       x, y, rad * 1.05
     );
-    g.addColorStop(0,    '#ffffff');
-    g.addColorStop(0.26, color);
+    g.addColorStop(0,    '#f2ffff');
+    g.addColorStop(0.28, color);
     g.addColorStop(1,    darken(color, 0.55));
 
     ctx.fillStyle = g;
@@ -684,13 +808,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fill();
 
     ctx.shadowBlur = 0;
-    ctx.lineWidth = Math.max(1, rad * 0.09);
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = Math.max(1, rad * 0.08);
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(x - rad * 0.30, y - rad * 0.34, rad * 0.21, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.arc(x - rad * 0.30, y - rad * 0.34, rad * 0.19, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.fill();
 
     ctx.restore();
@@ -700,11 +824,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const t = performance.now() / 1000;
     const pulse = 0.5 + 0.5 * Math.sin(t * 7);
     ctx.save();
-    ctx.globalAlpha = 0.45 + 0.55 * pulse;
+    ctx.globalAlpha = 0.5 + 0.5 * pulse;
     ctx.strokeStyle = '#00f0ff';
     ctx.shadowColor = '#00f0ff';
-    ctx.shadowBlur = 18;
-    ctx.lineWidth = Math.max(2, cell * 0.05);
+    ctx.shadowBlur = 7;
+    ctx.lineWidth = Math.max(2, cell * 0.045);
     roundRect(c * cell + 3, r * cell + 3, cell - 6, cell - 6, cell * 0.24);
     ctx.stroke();
     ctx.restore();
@@ -716,14 +840,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.save();
     ctx.strokeStyle = '#ffe94d';
     ctx.shadowColor = '#ffe94d';
-    ctx.shadowBlur = 14;
-    ctx.lineWidth = Math.max(2, cell * 0.055);
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = Math.max(2, cell * 0.05);
     ctx.lineCap = 'round';
     const corners = [
-      [x + o,               y + o,               1,  1],
-      [x + cell - o,        y + o,              -1,  1],
-      [x + o,               y + cell - o,        1, -1],
-      [x + cell - o,        y + cell - o,       -1, -1]
+      [x + o,        y + o,         1,  1],
+      [x + cell - o, y + o,        -1,  1],
+      [x + o,        y + cell - o,  1, -1],
+      [x + cell - o, y + cell - o, -1, -1]
     ];
     for (const [px, py, sx, sy] of corners) {
       ctx.beginPath();
@@ -741,26 +865,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ctx.save();
     if (shake > 0) {
-      const m = shake * 10;
+      const m = shake * 8;
       ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
     }
 
-    // фон-сетка
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         ctx.fillStyle = ((r + c) % 2 === 0)
-          ? 'rgba(0,240,255,0.030)'
-          : 'rgba(255,255,255,0.014)';
+          ? 'rgba(0,240,255,0.022)'
+          : 'rgba(255,255,255,0.010)';
         roundRect(c * cell + 2, r * cell + 2, cell - 4, cell - 4, cell * 0.24);
         ctx.fill();
       }
     }
 
-    // выделение
     if (selected) drawSelect(selected.r, selected.c);
     if (showCursor && !selected) drawCursor(cursor.r, cursor.c);
 
-    // шарики
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const t = grid[r][c];
@@ -774,21 +895,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // частицы
-    ctx.globalCompositeOperation = 'lighter';
+    // частицы — умеренное свечение, без аддитивного «ожога»
     for (const p of particles) {
       const a = Math.max(0, p.life / p.maxLife);
-      ctx.globalAlpha = a;
+      ctx.globalAlpha = a * 0.9;
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 5;
       ctx.beginPath();
       ctx.arc(p.x, p.y, Math.max(0.5, p.size * a), 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
-    ctx.globalCompositeOperation = 'source-over';
 
     // всплывающие очки
     if (floaters.length) {
@@ -800,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.globalAlpha = a;
         ctx.fillStyle = f.color;
         ctx.shadowColor = f.color;
-        ctx.shadowBlur = 16;
+        ctx.shadowBlur = 6;
         ctx.fillText(f.text, f.x, f.y);
       }
       ctx.globalAlpha = 1;
@@ -811,16 +930,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     13. Главный цикл
+     14. Главный цикл
      ========================================================= */
   function update(dt) {
-    // таймер
-    if (running && !paused && !finished) {
+    // --- АКТИВНЫЙ ТАЙМЕР: тикает, пока игрок думает ---
+    if (running && !paused && !finished && state === 'idle') {
       timeLeft -= dt;
+
+      // тик-звук на последних секундах
+      const sec = Math.ceil(timeLeft);
+      if (sec !== lastTickSec) {
+        lastTickSec = sec;
+        if (sec > 0 && sec <= 3) Sound.tick();
+      }
+
       if (timeLeft <= 0) {
         timeLeft = 0;
         updateHud();
         endGame();
+      } else {
+        updateTimerHud();
       }
     }
 
@@ -839,7 +968,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // частицы
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.life -= dt;
@@ -850,7 +978,6 @@ document.addEventListener('DOMContentLoaded', () => {
       p.vx *= 0.98;
     }
 
-    // всплывающий текст
     for (let i = floaters.length - 1; i >= 0; i--) {
       const f = floaters[i];
       f.life -= dt;
@@ -860,7 +987,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (shake > 0) shake = Math.max(0, shake - dt);
 
-    // ожидание остановки анимаций
     if (settleWaiters.length && isSettled()) flushSettle();
   }
 
@@ -877,18 +1003,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     14. HUD / оверлеи / партия
+     15. HUD / оверлеи / партия
      ========================================================= */
+  function updateTimerHud() {
+    timeEl.textContent = timeLeft.toFixed(1);
+    const danger = timeLeft <= 3;
+    timeEl.classList.toggle('danger', danger && running);
+    timeBar.classList.toggle('danger', danger);
+    timeBar.style.width = Math.max(0, Math.min(100, (timeLeft / BAR_SCALE) * 100)) + '%';
+  }
+
   function updateHud() {
     scoreEl.textContent = score;
-    timeEl.textContent  = Math.ceil(timeLeft);
-    timeEl.classList.toggle('danger', timeLeft <= 10 && running);
+    updateTimerHud();
+  }
+
+  function bumpTimer() {
+    timeEl.classList.remove('bump');
+    // форсируем перезапуск анимации
+    void timeEl.offsetWidth;
+    timeEl.classList.add('bump');
+    setTimeout(() => timeEl.classList.remove('bump'), 340);
   }
 
   function showOverlay(title, text, btn, color) {
     ovTitle.textContent = title;
     ovTitle.style.color = color;
-    ovTitle.style.textShadow = `0 0 14px ${color}, 0 0 34px ${color}`;
+    ovTitle.style.textShadow = `0 0 8px ${color}, 0 0 20px ${color}`;
     ovText.innerHTML = text;
     ovBtn.textContent = btn;
     overlay.classList.remove('hidden');
@@ -899,11 +1040,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function startGame() {
+    Sound.init();
     gen++;
     flushSettle();
 
     score     = 0;
-    timeLeft  = START_TIME;
+    timeLeft  = MOVE_TIME;
     particles = [];
     floaters  = [];
     selected  = null;
@@ -914,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
     shake     = 0;
     lastTs    = 0;
     showCursor = false;
+    lastTickSec = -1;
     cursor    = { r: ROWS >> 1, c: COLS >> 1 };
 
     createBoard();
@@ -932,6 +1075,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const isRecord = score > myBest;
     if (isRecord) myBest = score;
     bestEl.textContent = myBest;
+
+    if (isRecord) Sound.record();
+    else          Sound.over();
 
     overlayMode = 'over';
     showOverlay(
@@ -952,20 +1098,23 @@ document.addEventListener('DOMContentLoaded', () => {
       showOverlay('ПАУЗА', 'Игра приостановлена', 'ПРОДОЛЖИТЬ', '#00f0ff');
     } else {
       hideOverlay();
+      lastTickSec = -1;
     }
   }
 
   ovBtn.addEventListener('click', () => {
+    Sound.init();
     if (overlayMode === 'pause') {
       paused = false;
       hideOverlay();
+      lastTickSec = -1;
     } else {
       startGame();
     }
   });
 
   /* =========================================================
-     15. Адаптация размеров
+     16. Адаптация размеров
      ========================================================= */
   function resize() {
     const rect = canvas.getBoundingClientRect();
@@ -987,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     16. Инициализация
+     17. Инициализация
      ========================================================= */
   resize();
   createBoard();
@@ -999,7 +1148,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   showOverlay(
     'NEON ШАРИКИ',
-    'Меняй местами соседние шарики, собирай 3 и более в линию и набери максимум очков за 60 секунд!<br><br>Каждый лопнувший шарик добавляет немного времени.',
+    'Меняй местами соседние шарики, собирай 3 и более в линию.<br><br>' +
+    '<b style="color:#00f0ff">5 секунд на ход.</b> Успел раньше — остаток переносится на следующий ход. Время вышло — игра окончена!',
     'ИГРАТЬ',
     '#ff00d4'
   );
