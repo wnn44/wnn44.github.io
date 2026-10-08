@@ -42,7 +42,7 @@ window.GAMES = [
 	icon:        '🔮',
 	color:       '#00f0ff',
 	tags:        ['головоломка', 'три-в-ряд'],
-	preview:     { type: 'image', src: 'previews/neon-match3.mp4' }
+	preview:     { type: 'video', src: 'previews/neon-match3.mp4' }
   },
   {
     id:          'bubble_strike',
@@ -51,8 +51,8 @@ window.GAMES = [
     url:         'bubble_strike.html',
     icon:        '🫧',
     color:       '#00f0ff',
-    tags:        ['arcade', 'puzzle', 'classic'],
-    preview:     { type: 'image', src: 'previews/bubble_strike.mp4' }
+    tags:        ['аркада', 'классика'],
+    preview:     { type: 'video', src: 'previews/bubble_strike.mp4' }
   },
   {
 	id:          'neon-shooter',
@@ -61,7 +61,7 @@ window.GAMES = [
 	url:         'neon-shooter.html',
 	icon:        '🎯',
 	color:       '#00f0ff',
-	tags:        ['shooter', 'arcade', 'neon', 'skill'],
-	preview:     { type: 'image', src: 'previews/neon-shooter.mp4' }
+	tags:        ['шутер', 'аркада'],
+	preview:     { type: 'video', src: 'previews/neon-shooter.mp4' }
   },
 ];
