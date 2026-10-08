@@ -3,1006 +3,548 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>NEON ШАРИКИ 3 В РЯД — NEON ARCADE</title>
+<title>NEON MATCH-3 — NEON ARCADE</title>
 <link rel="stylesheet" href="common.css">
+<style>
+    :root {
+        --c-bg: #05060f;
+        --c-panel: rgba(13, 17, 40, 0.85);
+        --c-cyan: #00f0ff;
+        --c-magenta: #ff00d4;
+        --c-purple: #a855ff;
+        --c-yellow: #ffe94d;
+        --c-green: #00ff88;
+        --c-red: #ff3355;
+        --c-text: #e6f7ff;
+    }
+
+    body {
+        margin: 0;
+        background: radial-gradient(ellipse at top, #0b0d1f, var(--c-bg) 75%);
+        color: var(--c-text);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+        font-size: 1.2rem;
+        font-weight: 700;
+        text-shadow: 0 0 8px var(--c-cyan);
+    }
+
+    .header-right {
+        display: flex;
+        gap: 8px;
+    }
+
+    .chip {
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        user-select: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.2s ease;
+    }
+
+    .chip:hover {
+        box-shadow: 0 0 15px var(--c-cyan);
+        transform: translateY(-2px);
+    }
+
+    .chip.lb { background: var(--c-panel); border-color: var(--c-yellow); color: var(--c-yellow); }
+    .chip.user { background: var(--c-panel); border-color: var(--c-purple); color: var(--c-purple); }
+    .chip.menu { background: var(--c-panel); border-color: var(--c-red); color: var(--c-red); }
+
+    .game-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .game-board {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+        background: var(--c-panel);
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ball {
+        width: 100%;
+        padding-top: 100%;
+        position: relative;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.1s ease;
+        border: 2px solid transparent;
+    }
+
+    .ball.cyan { background: var(--c-cyan); box-shadow: 0 0 15px var(--c-cyan); }
+    .ball.magenta { background: var(--c-magenta); box-shadow: 0 0 15px var(--c-magenta); }
+    .ball.purple { background: var(--c-purple); box-shadow: 0 0 15px var(--c-purple); }
+    .ball.yellow { background: var(--c-yellow); box-shadow: 0 0 15px var(--c-yellow); }
+    .ball.green { background: var(--c-green); box-shadow: 0 0 15px var(--c-green); }
+
+    .ball.selected { border-color: var(--c-yellow); transform: scale(1.1); }
+    .ball.swapping { transition: transform 0.2s ease; }
+    .ball.falling { transition: transform 0.3s ease; }
+
+    .game-ui {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 200px;
+        background: var(--c-panel);
+        padding: 20px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ui-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ui-label {
+        font-size: 0.85rem;
+        opacity: 0.8;
+    }
+
+    .ui-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        text-shadow: 0 0 6px var(--c-yellow);
+    }
+
+    .btn {
+        padding: 12px;
+        background: var(--c-panel);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+
+    .btn:hover { box-shadow: 0 0 15px var(--c-cyan); transform: translateY(-2px); }
+    .btn-primary { background: linear-gradient(45deg, var(--c-cyan), var(--c-magenta)); color: #000; }
+    .btn-danger { background: var(--c-red); color: #fff; }
+
+    .game-over {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 10;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .game-over.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .game-over h2 {
+        text-shadow: 0 0 10px var(--c-red);
+    }
+
+    @media (max-width: 768px) {
+        .game-container { flex-direction: column; }
+        .game-board { width: 100%; max-width: 400px; }
+        .game-ui { width: 100%; min-width: auto; }
+        .game-board { grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px; }
+    }
+</style>
 <script src="auth.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="leaderboard.js"></script>
 <script src="leaderboard-ui.js"></script>
-<style>
-  :root{
-    --cyan:#00f0ff;
-    --magenta:#ff00d4;
-    --violet:#a855ff;
-    --gold:#ffe94d;
-    --green:#00ff88;
-    --red:#ff3355;
-    --text:#e6f7ff;
-    --panel:rgba(13,17,40,.85);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;}
-  body{
-    min-height:100dvh;
-    background:radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
-    background-attachment:fixed;
-    color:var(--text);
-    font-family:"Segoe UI",Roboto,system-ui,-apple-system,sans-serif;
-    display:flex;flex-direction:column;
-    overflow-x:hidden;
-    overscroll-behavior:none;
-    -webkit-tap-highlight-color:transparent;
-    user-select:none;-webkit-user-select:none;
-  }
-
-  /* ---------- Header ---------- */
-  header{
-    display:flex;align-items:center;justify-content:space-between;
-    gap:10px;padding:10px 14px;
-    padding-top:calc(10px + env(safe-area-inset-top));
-    background:rgba(8,10,24,.78);
-    border-bottom:1px solid rgba(0,240,255,.22);
-    box-shadow:0 0 20px rgba(0,240,255,.15);
-    backdrop-filter:blur(8px);
-    position:sticky;top:0;z-index:10;
-  }
-  .logo{
-    font-weight:800;letter-spacing:.14em;font-size:clamp(12px,3.4vw,18px);
-    color:var(--cyan);
-    text-shadow:0 0 8px var(--cyan),0 0 20px rgba(0,240,255,.5);
-    white-space:nowrap;
-  }
-  .header-right{display:flex;align-items:center;gap:8px;}
-  .chip{
-    font-size:clamp(10px,2.6vw,13px);
-    padding:7px 11px;border-radius:999px;
-    border:1px solid rgba(0,240,255,.4);
-    background:rgba(0,240,255,.08);
-    color:var(--text);cursor:pointer;white-space:nowrap;
-    transition:background .18s, box-shadow .18s, transform .12s;
-  }
-  .chip:active{transform:scale(.94);}
-  .chip:hover{background:rgba(0,240,255,.18);box-shadow:0 0 14px rgba(0,240,255,.5);}
-  .chip.lb{border-color:rgba(255,233,77,.45);background:rgba(255,233,77,.08);color:var(--gold);}
-  .chip.lb:hover{background:rgba(255,233,77,.16);box-shadow:0 0 14px rgba(255,233,77,.5);}
-  .chip.user{border-color:rgba(168,85,255,.45);background:rgba(168,85,255,.1);color:#d9bcff;}
-  .chip.menu{border-color:rgba(255,0,212,.4);background:rgba(255,0,212,.08);color:#ffa8ee;}
-  .chip.menu:hover{background:rgba(255,0,212,.16);box-shadow:0 0 14px rgba(255,0,212,.5);}
-
-  /* ---------- Layout ---------- */
-  main{
-    flex:1;display:flex;flex-direction:column;align-items:center;
-    gap:12px;padding:14px 12px calc(16px + env(safe-area-inset-bottom));
-  }
-  .hud{
-    display:flex;gap:10px;width:min(92vw,560px);
-  }
-  .stat{
-    flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
-    padding:8px 6px;border-radius:12px;
-    background:var(--panel);
-    border:1px solid rgba(0,240,255,.2);
-    box-shadow:inset 0 0 18px rgba(0,240,255,.07);
-  }
-  .stat .lbl{font-size:clamp(9px,2.3vw,11px);letter-spacing:.12em;color:#7fa6c9;}
-  .stat .val{font-size:clamp(15px,4.6vw,22px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15;}
-  .val.cyan{color:var(--cyan);text-shadow:0 0 10px var(--cyan);}
-  .val.gold{color:var(--gold);text-shadow:0 0 10px rgba(255,233,77,.8);}
-  #timeVal{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,.8);}
-  #timeVal.danger{color:var(--red);text-shadow:0 0 12px var(--red);animation:tpulse .7s infinite;}
-  @keyframes tpulse{50%{opacity:.4;}}
-
-  /* ---------- Board ---------- */
-  #boardWrap{
-    position:relative;
-    width:min(92vw, 56vh, 540px);
-    aspect-ratio:1 / 1;
-    border-radius:20px;
-    background:rgba(13,17,40,.85);
-    border:1px solid rgba(0,240,255,.35);
-    box-shadow:0 0 26px rgba(0,240,255,.25), inset 0 0 46px rgba(0,240,255,.06);
-    padding:6px;
-    touch-action:none;
-    overflow:hidden;
-  }
-  #game{width:100%;height:100%;display:block;border-radius:14px;touch-action:none;}
-
-  /* ---------- Overlay ---------- */
-  .overlay{
-    position:absolute;inset:0;z-index:5;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-    padding:22px;text-align:center;
-    background:rgba(5,6,15,.88);
-    backdrop-filter:blur(7px);
-    border-radius:20px;
-  }
-  .overlay.hidden{display:none;}
-  .ov-title{
-    font-size:clamp(19px,6vw,30px);font-weight:900;letter-spacing:.08em;
-    color:var(--magenta);
-    text-shadow:0 0 14px var(--magenta),0 0 34px rgba(255,0,212,.6);
-    line-height:1.2;
-  }
-  .ov-text{
-    font-size:clamp(12px,3.4vw,15px);color:#b9d6ea;
-    max-width:30ch;line-height:1.5;
-  }
-  .btn{
-    font:inherit;font-weight:800;letter-spacing:.14em;
-    font-size:clamp(13px,3.6vw,15px);
-    padding:12px 30px;border-radius:999px;cursor:pointer;
-    color:#04121a;background:linear-gradient(135deg,var(--cyan),#8ef9ff);
-    border:none;box-shadow:0 0 22px rgba(0,240,255,.65);
-    transition:transform .12s, box-shadow .18s;
-  }
-  .btn:hover{box-shadow:0 0 34px rgba(0,240,255,.95);}
-  .btn:active{transform:scale(.94);}
-
-  .hint{
-    font-size:clamp(10px,2.8vw,12px);color:#6f8fa8;
-    text-align:center;max-width:46ch;line-height:1.55;
-  }
-  @media (max-height:620px){
-    #boardWrap{width:min(92vw, 48vh, 460px);}
-    .hint{display:none;}
-  }
-</style>
 </head>
 <body>
 
 <header>
-  <div class="logo">NEON ШАРИКИ</div>
-  <div class="header-right">
-    <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
-    <div class="chip user" id="userChip">ИГРОК</div>
-    <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
-  </div>
+    <div class="logo">NEON MATCH-3</div>
+    <div class="header-right">
+        <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
+        <div class="chip user" id="userChip">ИГРОК</div>
+        <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
+    </div>
 </header>
 
-<main>
-  <div class="hud">
-    <div class="stat"><span class="lbl">ОЧКИ</span><span class="val cyan" id="scoreVal">0</span></div>
-    <div class="stat"><span class="lbl">РЕКОРД</span><span class="val gold" id="bestVal">0</span></div>
-    <div class="stat"><span class="lbl">ВРЕМЯ</span><span class="val" id="timeVal">60</span></div>
-  </div>
-
-  <div id="boardWrap">
-    <canvas id="game"></canvas>
-    <div class="overlay" id="overlay">
-      <div class="ov-title" id="ovTitle">NEON ШАРИКИ</div>
-      <div class="ov-text" id="ovText">Меняй местами соседние шарики, собирай 3 и более в линию и набери максимум очков за 60 секунд!</div>
-      <button class="btn" id="ovBtn">ИГРАТЬ</button>
+<div class="game-container">
+    <div class="game-ui">
+        <div class="ui-row">
+            <span class="ui-label">СЧЁТ</span>
+            <span class="ui-value" id="score">0</span>
+        </div>
+        <div class="ui-row">
+            <span class="ui-label">ХОДЫ</span>
+            <span class="ui-value" id="moves">20</span>
+        </div>
+        <div class="ui-row">
+            <span class="ui-label">РЕКОРД</span>
+            <span class="ui-value" id="best">0</span>
+        </div>
+        <div class="ui-row">
+            <button class="btn btn-primary" id="hintBtn">💡 ПОДСКАЗКА</button>
+        </div>
+        <div class="ui-row">
+            <button class="btn btn-danger" id="restartBtn">🔄 ЗАНОВО</button>
+        </div>
     </div>
-  </div>
 
-  <div class="hint">Тап по двум соседним шарикам или свайп · 3+ в линию — взрыв · Esc — пауза</div>
-</main>
+    <div class="game-board" id="gameBoard"></div>
+</div>
+
+<div class="game-over" id="gameOver">
+    <h2>ИГРА ОКОНЧЕНА</h2>
+    <div style="font-size: 1.2rem;">Твой счёт: <span id="finalScore">0</span></div>
+    <button class="btn btn-primary" id="submitScoreBtn">ЗАГРУЗИТЬ РЕКОРД</button>
+    <button class="btn" id="playAgainBtn">ИГРАТЬ ЕЩЁ</button>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  'use strict';
+    'use strict';
+    const GAME_ID = 'neon-match3';
+    const COLORS = ['cyan', 'magenta', 'purple', 'yellow', 'green'];
+    const ROWS = 8;
+    const COLS = 8;
+    const START_MOVES = 20;
 
-  /* =========================================================
-     1. ПЛАТФОРМА: игрок, лидерборд, навигация
-     ========================================================= */
-  const GAME_ID = 'neon-balls3';
-
-  const currentPlayer = (typeof Auth !== 'undefined' && Auth && Auth.get) ? Auth.get() : null;
-
-  const userChip = document.getElementById('userChip');
-  if (userChip) {
-    userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
-  }
-
-  document.getElementById('lbHeaderBtn')?.addEventListener('click', () => {
-    if (window.LeaderboardUI && LeaderboardUI.open) LeaderboardUI.open(GAME_ID);
-  });
-
-  document.getElementById('menuBtn')?.addEventListener('click', () => {
-    window.location.href = 'index.html';
-  });
-
-  /* =========================================================
-     2. DOM-ссылки
-     ========================================================= */
-  const canvas   = document.getElementById('game');
-  const ctx      = canvas.getContext('2d');
-  const wrap     = document.getElementById('boardWrap');
-  const scoreEl  = document.getElementById('scoreVal');
-  const bestEl   = document.getElementById('bestVal');
-  const timeEl   = document.getElementById('timeVal');
-  const overlay  = document.getElementById('overlay');
-  const ovTitle  = document.getElementById('ovTitle');
-  const ovText   = document.getElementById('ovText');
-  const ovBtn    = document.getElementById('ovBtn');
-
-  /* =========================================================
-     3. Рекорды
-     ========================================================= */
-  let myBest = 0;
-
-  async function loadStats() {
-    if (!window.Leaderboard) return;
-    try {
-      const [myBestVal, globalRec] = await Promise.all([
-        Leaderboard.getPlayerBest(GAME_ID, currentPlayer),
-        Leaderboard.getGlobalRecord(GAME_ID)
-      ]);
-      myBest = Number(myBestVal) || 0;
-      bestEl.textContent = myBest;
-      if (globalRec && globalRec.score) {
-        bestEl.title = `Мировой рекорд: ${globalRec.username} — ${globalRec.score}`;
-      }
-    } catch (e) {
-      /* офлайн или нет Supabase — играем без статистики */
-    }
-  }
-
-  async function onGameOver(finalScore) {
-    if (currentPlayer && finalScore > 0 && window.Leaderboard) {
-      try {
-        await Leaderboard.submit(GAME_ID, currentPlayer, finalScore);
-        await loadStats();
-      } catch (e) { /* тихо игнорируем */ }
-    }
-  }
-
-  /* =========================================================
-     4. Конфигурация игры
-     ========================================================= */
-  const COLS = 8;
-  const ROWS = 8;
-  const COLORS = ['#00f0ff', '#ff00d4', '#a855ff', '#ffe94d', '#00ff88', '#ff3355'];
-  const START_TIME     = 60;    // секунд на партию
-  const MAX_TIME       = 99;    // максимум времени
-  const TIME_PER_BALL  = 0.22;  // бонус времени за каждый лопнувший шарик
-
-  /* =========================================================
-     5. Состояние
-     ========================================================= */
-  let grid        = [];        // grid[r][c] = { color, px, py, sc, tsc } | null
-  let particles   = [];
-  let floaters    = [];
-  let score       = 0;
-  let timeLeft    = START_TIME;
-  let running     = false;
-  let paused      = false;
-  let finished    = false;
-  let state       = 'idle';    // 'idle' | 'busy' | 'over'
-  let selected    = null;
-  let cursor      = { r: ROWS >> 1, c: COLS >> 1 };
-  let showCursor  = false;
-  let shake       = 0;
-  let gen         = 0;         // поколение партии (для отмены асинхронных цепочек)
-  let settleWaiters = [];
-  let lastTs      = 0;
-  let cell        = 64;
-  let boardSize   = 512;
-  let overlayMode = 'start';
-
-  /* =========================================================
-     6. Утилиты
-     ========================================================= */
-  const rnd       = n => Math.floor(Math.random() * n);
-  const randColor = () => COLORS[rnd(COLORS.length)];
-  const delay     = ms => new Promise(res => setTimeout(res, ms));
-  const isAdjacent = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
-
-  function darken(hex, amt) {
-    const n = parseInt(hex.slice(1), 16);
-    const r = Math.round(((n >> 16) & 255) * (1 - amt));
-    const g = Math.round(((n >> 8) & 255) * (1 - amt));
-    const b = Math.round((n & 255) * (1 - amt));
-    return `rgb(${r},${g},${b})`;
-  }
-
-  function roundRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  /* =========================================================
-     7. Логика поля
-     ========================================================= */
-  function createBoard() {
-    let guard = 0;
-    do {
-      grid = [];
-      for (let r = 0; r < ROWS; r++) {
-        const row = [];
-        for (let c = 0; c < COLS; c++) {
-          let color;
-          let g2 = 0;
-          do {
-            color = randColor();
-            g2++;
-          } while (g2 < 60 && (
-            (c >= 2 && row[c - 1].color === color && row[c - 2].color === color) ||
-            (r >= 2 && grid[r - 1][c].color === color && grid[r - 2][c].color === color)
-          ));
-          row.push({ color, px: c, py: r, sc: 1, tsc: 1 });
-        }
-        grid.push(row);
-      }
-      guard++;
-    } while (guard < 60 && !hasMove());
-  }
-
-  function findMatches() {
-    const mark = [];
-    for (let r = 0; r < ROWS; r++) mark.push(new Array(COLS).fill(false));
-
-    // горизонтали
-    for (let r = 0; r < ROWS; r++) {
-      let run = 1;
-      for (let c = 1; c <= COLS; c++) {
-        const cur  = c < COLS ? grid[r][c] : null;
-        const prev = grid[r][c - 1];
-        if (cur && prev && cur.color === prev.color) {
-          run++;
-        } else {
-          if (run >= 3) for (let k = c - run; k < c; k++) mark[r][k] = true;
-          run = 1;
-        }
-      }
+    const currentPlayer = Auth.get();
+    const userChip = document.getElementById('userChip');
+    if (userChip) {
+        userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
     }
 
-    // вертикали
-    for (let c = 0; c < COLS; c++) {
-      let run = 1;
-      for (let r = 1; r <= ROWS; r++) {
-        const cur  = r < ROWS ? grid[r][c] : null;
-        const prev = grid[r - 1][c];
-        if (cur && prev && cur.color === prev.color) {
-          run++;
-        } else {
-          if (run >= 3) for (let k = r - run; k < r; k++) mark[k][c] = true;
-          run = 1;
-        }
-      }
-    }
-
-    const out = [];
-    for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++)
-        if (mark[r][c]) out.push({ r, c });
-    return out;
-  }
-
-  function hasMove() {
-    const test = (r1, c1, r2, c2) => {
-      const a = grid[r1][c1], b = grid[r2][c2];
-      if (!a || !b) return false;
-      const t = a.color; a.color = b.color; b.color = t;
-      const ok = findMatches().length > 0;
-      const t2 = a.color; a.color = b.color; b.color = t2;
-      return ok;
-    };
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (c + 1 < COLS && test(r, c, r, c + 1)) return true;
-        if (r + 1 < ROWS && test(r, c, r + 1, c)) return true;
-      }
-    }
-    return false;
-  }
-
-  function swapCells(a, b) {
-    const ta = grid[a.r][a.c];
-    const tb = grid[b.r][b.c];
-    grid[a.r][a.c] = tb;
-    grid[b.r][b.c] = ta;
-  }
-
-  function applyGravity() {
-    for (let c = 0; c < COLS; c++) {
-      let write = ROWS - 1;
-      for (let r = ROWS - 1; r >= 0; r--) {
-        if (grid[r][c]) {
-          if (write !== r) {
-            grid[write][c] = grid[r][c];
-            grid[r][c] = null;
-          }
-          write--;
-        }
-      }
-      let n = 0;
-      for (let r = write; r >= 0; r--) {
-        grid[r][c] = {
-          color: randColor(),
-          px: c,
-          py: -1 - n,
-          sc: 1,
-          tsc: 1
-        };
-        n++;
-      }
-    }
-  }
-
-  function shuffleBoard() {
-    let guard = 0;
-    do {
-      for (let r = 0; r < ROWS; r++)
-        for (let c = 0; c < COLS; c++)
-          if (grid[r][c]) grid[r][c].color = randColor();
-      guard++;
-    } while (guard < 300 && (findMatches().length > 0 || !hasMove()));
-
-    for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++)
-        if (grid[r][c]) { grid[r][c].sc = 0.15; grid[r][c].tsc = 1; }
-  }
-
-  /* =========================================================
-     8. Анимация / ожидание остановки
-     ========================================================= */
-  function isSettled() {
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const t = grid[r][c];
-        if (!t) continue;
-        if (Math.abs(t.px - c) > 0.004) return false;
-        if (Math.abs(t.py - r) > 0.004) return false;
-        if (Math.abs(t.sc - t.tsc) > 0.004) return false;
-      }
-    }
-    return true;
-  }
-
-  function settle() {
-    return new Promise(res => {
-      if (isSettled()) { res(); return; }
-      settleWaiters.push(res);
+    document.getElementById('lbHeaderBtn')?.addEventListener('click', () => {
+        LeaderboardUI.open(GAME_ID);
     });
-  }
+    document.getElementById('menuBtn')?.addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
 
-  function flushSettle() {
-    const w = settleWaiters;
-    settleWaiters = [];
-    w.forEach(fn => fn());
-  }
+    let board = [];
+    let score = 0;
+    let movesLeft = START_MOVES;
+    let selected = null;
+    let isBusy = false;
 
-  /* =========================================================
-     9. Эффекты
-     ========================================================= */
-  function spawnParticles(x, y, color) {
-    for (let i = 0; i < 9; i++) {
-      const a  = Math.random() * Math.PI * 2;
-      const sp = 60 + Math.random() * 200;
-      const life = 0.4 + Math.random() * 0.4;
-      particles.push({
-        x, y,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp - 50,
-        life,
-        maxLife: life,
-        size: cell * (0.055 + Math.random() * 0.075),
-        color
-      });
-    }
-  }
+    const scoreEl = document.getElementById('score');
+    const movesEl = document.getElementById('moves');
+    const bestEl = document.getElementById('best');
+    const gameOverEl = document.getElementById('gameOver');
+    const finalScoreEl = document.getElementById('finalScore');
+    const gameBoard = document.getElementById('gameBoard');
+    const restartBtn = document.getElementById('restartBtn');
+    const hintBtn = document.getElementById('hintBtn');
+    const submitScoreBtn = document.getElementById('submitScoreBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
 
-  /* =========================================================
-     10. Разрешение совпадений (каскады)
-     ========================================================= */
-  async function resolveBoard(myGen) {
-    let combo = 0;
-
-    while (true) {
-      if (finished) break;
-
-      const matched = findMatches();
-      if (!matched.length) break;
-
-      combo++;
-      const gain = matched.length * 10 * combo;
-      score += gain;
-      timeLeft = Math.min(MAX_TIME, timeLeft + matched.length * TIME_PER_BALL);
-      if (!finished) updateHud();
-
-      let sumC = 0, sumR = 0;
-      for (const { r, c } of matched) {
-        const t = grid[r][c];
-        if (!t) continue;
-        spawnParticles((c + 0.5) * cell, (r + 0.5) * cell, t.color);
-        sumC += c; sumR += r;
-        grid[r][c] = null;
-      }
-
-      floaters.push({
-        x: (sumC / matched.length + 0.5) * cell,
-        y: (sumR / matched.length + 0.5) * cell,
-        text: `+${gain}`,
-        color: combo > 1 ? '#ff00d4' : '#ffe94d',
-        life: 0.95
-      });
-
-      shake = Math.min(0.4, 0.14 + matched.length * 0.012);
-
-      await delay(combo > 1 ? 70 : 110);
-      if (myGen !== gen) return;
-
-      applyGravity();
-      await settle();
-      if (myGen !== gen) return;
+    function createBoard() {
+        board = [];
+        gameBoard.innerHTML = '';
+        gameBoard.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+        gameBoard.style.gap = `${Math.max(2, Math.floor((window.innerWidth * 0.6) / COLS / 20))}px`;
+        
+        for (let r = 0; r < ROWS; r++) {
+            board[r] = [];
+            for (let c = 0; c < COLS; c++) {
+                let color;
+                do {
+                    color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                } while (
+                    (r > 1 && board[r-1][c] === color && board[r-2][c] === color) || 
+                    (c > 1 && board[r][c-1] === color && board[r][c-2] === color)
+                );
+                
+                const ball = document.createElement('div');
+                ball.classList.add('ball', color);
+                ball.dataset.r = r;
+                ball.dataset.c = c;
+                ball.addEventListener('click', onBallClick);
+                gameBoard.appendChild(ball);
+                board[r][c] = { color, el: ball };
+            }
+        }
     }
 
-    if (!finished && !hasMove()) {
-      shuffleBoard();
-      floaters.push({
-        x: boardSize / 2,
-        y: boardSize / 2,
-        text: 'ПЕРЕМЕШКА!',
-        color: '#a855ff',
-        life: 1.1
-      });
-      await settle();
-    }
-  }
-
-  async function trySwap(a, b) {
-    if (state !== 'idle' || finished || !running || paused) return;
-
-    const myGen = gen;
-    state = 'busy';
-
-    swapCells(a, b);
-    await settle();
-    if (myGen !== gen) return;
-
-    if (findMatches().length === 0) {
-      // откат
-      swapCells(a, b);
-      shake = 0.12;
-      await settle();
-      if (myGen !== gen) return;
-      state = 'idle';
-      return;
+    function onBallClick(e) {
+        if (isBusy) return;
+        const ball = e.currentTarget;
+        if (selected === ball) {
+            selected.classList.remove('selected');
+            selected = null;
+            return;
+        }
+        if (selected) {
+            const r1 = parseInt(selected.dataset.r);
+            const c1 = parseInt(selected.dataset.c);
+            const r2 = parseInt(ball.dataset.r);
+            const c2 = parseInt(ball.dataset.c);
+            
+            if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
+                swapBalls(selected, ball, true);
+            } else {
+                selected.classList.remove('selected');
+                selected = ball;
+                selected.classList.add('selected');
+            }
+        } else {
+            selected = ball;
+            selected.classList.add('selected');
+        }
     }
 
-    await resolveBoard(myGen);
-    if (myGen !== gen) return;
-    state = 'idle';
-  }
+    async function swapBalls(a, b, isPlayerMove) {
+        isBusy = true;
+        a.classList.add('swapping');
+        b.classList.add('swapping');
 
-  /* =========================================================
-     11. Ввод
-     ========================================================= */
-  function cellFromPoint(clientX, clientY) {
-    const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return null;
-    const c = Math.floor((clientX - rect.left) / rect.width * COLS);
-    const r = Math.floor((clientY - rect.top) / rect.height * ROWS);
-    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
-    return { r, c };
-  }
+        const r1 = parseInt(a.dataset.r), c1 = parseInt(a.dataset.c);
+        const r2 = parseInt(b.dataset.r), c2 = parseInt(b.dataset.c);
 
-  function handlePick(p) {
-    if (selected) {
-      if (selected.r === p.r && selected.c === p.c) {
+        [board[r1][c1], board[r2][c2]] = [board[r2][c2], board[r1][c1]];
+        [a.dataset.r, b.dataset.r] = [r2, r1];
+        [a.dataset.c, b.dataset.c] = [c2, c1];
+
+        await new Promise(res => setTimeout(res, 200));
+
+        a.classList.remove('swapping');
+        b.classList.remove('swapping');
+
+        if (findMatches().length > 0) {
+            if (isPlayerMove) {
+                movesLeft--;
+                movesEl.textContent = movesLeft;
+            }
+            selected = null;
+            await resolveBoard();
+        } else {
+            [board[r1][c1], board[r2][c2]] = [board[r2][c2], board[r1][c1]];
+            [a.dataset.r, b.dataset.r] = [r1, r2];
+            [a.dataset.c, b.dataset.c] = [c1, c2];
+            a.classList.add('swapping');
+            b.classList.add('swapping');
+            await new Promise(res => setTimeout(res, 200));
+            a.classList.remove('swapping');
+            b.classList.remove('swapping');
+            if (isPlayerMove) selected = null;
+        }
+
+        if (isPlayerMove && movesLeft <= 0) {
+            endGame();
+        }
+        isBusy = false;
+    }
+
+    function findMatches() {
+        const matches = [];
+        const checked = Array(ROWS).fill().map(() => Array(COLS).fill(false));
+
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (checked[r][c]) continue;
+                const color = board[r][c].color;
+                const vert = [];
+                for (let i = r; i < ROWS && board[i][c].color === color; i++) {
+                    vert.push({r: i, c});
+                    checked[i][c] = true;
+                }
+                if (vert.length >= 3) matches.push(vert);
+
+                const horz = [];
+                for (let i = c; i < COLS && board[r][i].color === color; i++) {
+                    horz.push({r, c: i});
+                    checked[r][i] = true;
+                }
+                if (horz.length >= 3) matches.push(horz);
+            }
+        }
+        return matches;
+    }
+
+    async function resolveBoard() {
+        let totalScoreGain = 0;
+        let hasAction = true;
+
+        while (hasAction) {
+            const matches = findMatches();
+            if (matches.length === 0) break;
+
+            hasAction = true;
+            const removed = new Set();
+            for (const chain of matches) {
+                for (const cell of chain) {
+                    removed.add(`${cell.r}-${cell.c}`);
+                    score += 10;
+                    totalScoreGain += 10;
+                    board[cell.r][cell.c].el.remove();
+                    board[cell.r][cell.c] = null;
+                }
+            }
+            scoreEl.textContent = score;
+
+            await new Promise(res => setTimeout(res, 250));
+
+            for (let c = 0; c < COLS; c++) {
+                let emptyRow = ROWS - 1;
+                for (let r = ROWS - 1; r >= 0; r--) {
+                    if (board[r][c]) {
+                        if (r !== emptyRow) {
+                            board[emptyRow][c] = board[r][c];
+                            board[r][c] = null;
+                            board[emptyRow][c].el.dataset.r = emptyRow;
+                            board[emptyRow][c].el.classList.add('falling');
+                            board[emptyRow][c].el.style.transform = `translateY(${(emptyRow - r) * 100}%)`;
+                        }
+                        emptyRow--;
+                    }
+                }
+
+                for (let r = emptyRow; r >= 0; r--) {
+                    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                    const ball = document.createElement('div');
+                    ball.classList.add('ball', color);
+                    ball.dataset.r = r;
+                    ball.dataset.c = c;
+                    ball.addEventListener('click', onBallClick);
+                    ball.style.transform = 'translateY(-400px)';
+                    gameBoard.appendChild(ball);
+                    board[r][c] = { color, el: ball };
+                    
+                    await new Promise(res => setTimeout(res, 40));
+                    
+                    ball.classList.add('falling');
+                    ball.style.transform = 'translateY(0)';
+                }
+            }
+
+            await new Promise(res => setTimeout(res, 300));
+        }
+
+        if (totalScoreGain > 0 && findMatches().length === 0) {
+            hintBtn.disabled = false;
+        }
+    }
+
+    function endGame() {
+        isBusy = true;
+        finalScoreEl.textContent = score;
+        gameOverEl.classList.add('active');
+        onGameOver(score);
+    }
+
+    async function onGameOver(finalScore) {
+        if (currentPlayer && finalScore > 0) {
+            await Leaderboard.submit(GAME_ID, currentPlayer, finalScore);
+            loadStats();
+        }
+    }
+
+    async function loadStats() {
+        const [myBest, globalRec] = await Promise.all([
+            Leaderboard.getPlayerBest(GAME_ID, currentPlayer),
+            Leaderboard.getGlobalRecord(GAME_ID)
+        ]);
+        bestEl.textContent = myBest || 0;
+    }
+
+    restartBtn.addEventListener('click', () => {
+        score = 0;
+        movesLeft = START_MOVES;
+        scoreEl.textContent = score;
+        movesEl.textContent = movesLeft;
+        gameOverEl.classList.remove('active');
+        createBoard();
+        isBusy = false;
         selected = null;
-        return;
-      }
-      if (isAdjacent(selected, p)) {
-        const a = selected;
+        loadStats();
+    });
+
+    playAgainBtn.addEventListener('click', () => {
+        score = 0;
+        movesLeft = START_MOVES;
+        scoreEl.textContent = score;
+        movesEl.textContent = movesLeft;
+        gameOverEl.classList.remove('active');
+        createBoard();
+        isBusy = false;
         selected = null;
-        trySwap(a, p);
-        return;
-      }
-    }
-    selected = { r: p.r, c: p.c };
-  }
+        loadStats();
+    });
 
-  let pointerActive = false;
+    hintBtn.addEventListener('click', () => {
+        const swaps = findPossibleSwaps();
+        if (swaps.length > 0) {
+            const [a, b] = swaps[0];
+            selected = a;
+            a.classList.add('selected');
+            setTimeout(() => swapBalls(a, b, false), 500);
+        }
+        hintBtn.disabled = true;
+    });
 
-  canvas.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    if (!running || finished || paused || state !== 'idle') return;
-    const p = cellFromPoint(e.clientX, e.clientY);
-    if (!p) return;
-    pointerActive = true;
-    showCursor = false;
-    cursor = { r: p.r, c: p.c };
-    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-    handlePick(p);
-  }, { passive: false });
-
-  canvas.addEventListener('pointermove', e => {
-    if (!pointerActive || !selected || state !== 'idle' || !running || paused) return;
-    const p = cellFromPoint(e.clientX, e.clientY);
-    if (!p) return;
-    if (p.r === selected.r && p.c === selected.c) return;
-    if (isAdjacent(selected, p)) {
-      const a = selected;
-      selected = null;
-      pointerActive = false;
-      trySwap(a, p);
-    }
-  }, { passive: false });
-
-  const endPointer = () => { pointerActive = false; };
-  canvas.addEventListener('pointerup', endPointer);
-  canvas.addEventListener('pointercancel', endPointer);
-  canvas.addEventListener('pointerleave', endPointer);
-  canvas.addEventListener('contextmenu', e => e.preventDefault());
-
-  window.addEventListener('keydown', e => {
-    if (e.code === 'Escape') {
-      if (running && !finished) togglePause();
-      return;
-    }
-    if (!running || finished || paused || state !== 'idle') return;
-
-    let dr = 0, dc = 0;
-    switch (e.code) {
-      case 'ArrowUp':    case 'KeyW': dr = -1; break;
-      case 'ArrowDown':  case 'KeyS': dr =  1; break;
-      case 'ArrowLeft':  case 'KeyA': dc = -1; break;
-      case 'ArrowRight': case 'KeyD': dc =  1; break;
-      case 'Space': case 'Enter': case 'NumpadEnter':
-        e.preventDefault();
-        showCursor = true;
-        handlePick({ r: cursor.r, c: cursor.c });
-        return;
-      default:
-        return;
+    function findPossibleSwaps() {
+        const swaps = [];
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const cell = board[r][c];
+                if (c < COLS - 1) {
+                    swapTemp(cell, board[r][c+1]);
+                    if (findMatches().length > 0) swaps.push([cell.el, board[r][c+1].el]);
+                    swapTemp(cell, board[r][c+1]);
+                }
+                if (r < ROWS - 1) {
+                    swapTemp(cell, board[r+1][c]);
+                    if (findMatches().length > 0) swaps.push([cell.el, board[r+1][c].el]);
+                    swapTemp(cell, board[r+1][c]);
+                }
+            }
+        }
+        return swaps;
     }
 
-    e.preventDefault();
-    showCursor = true;
-    cursor.r = Math.max(0, Math.min(ROWS - 1, cursor.r + dr));
-    cursor.c = Math.max(0, Math.min(COLS - 1, cursor.c + dc));
-  });
-
-  /* =========================================================
-     12. Отрисовка
-     ========================================================= */
-  function drawBall(x, y, rad, color) {
-    if (rad <= 0.4) return;
-    ctx.save();
-
-    ctx.shadowColor = color;
-    ctx.shadowBlur  = rad * 1.15;
-
-    const g = ctx.createRadialGradient(
-      x - rad * 0.35, y - rad * 0.38, rad * 0.06,
-      x, y, rad * 1.05
-    );
-    g.addColorStop(0,    '#ffffff');
-    g.addColorStop(0.26, color);
-    g.addColorStop(1,    darken(color, 0.55));
-
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, rad, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = Math.max(1, rad * 0.09);
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(x - rad * 0.30, y - rad * 0.34, rad * 0.21, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.78)';
-    ctx.fill();
-
-    ctx.restore();
-  }
-
-  function drawSelect(r, c) {
-    const t = performance.now() / 1000;
-    const pulse = 0.5 + 0.5 * Math.sin(t * 7);
-    ctx.save();
-    ctx.globalAlpha = 0.45 + 0.55 * pulse;
-    ctx.strokeStyle = '#00f0ff';
-    ctx.shadowColor = '#00f0ff';
-    ctx.shadowBlur = 18;
-    ctx.lineWidth = Math.max(2, cell * 0.05);
-    roundRect(c * cell + 3, r * cell + 3, cell - 6, cell - 6, cell * 0.24);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawCursor(r, c) {
-    const x = c * cell, y = r * cell;
-    const L = cell * 0.26, o = cell * 0.13;
-    ctx.save();
-    ctx.strokeStyle = '#ffe94d';
-    ctx.shadowColor = '#ffe94d';
-    ctx.shadowBlur = 14;
-    ctx.lineWidth = Math.max(2, cell * 0.055);
-    ctx.lineCap = 'round';
-    const corners = [
-      [x + o,               y + o,               1,  1],
-      [x + cell - o,        y + o,              -1,  1],
-      [x + o,               y + cell - o,        1, -1],
-      [x + cell - o,        y + cell - o,       -1, -1]
-    ];
-    for (const [px, py, sx, sy] of corners) {
-      ctx.beginPath();
-      ctx.moveTo(px, py + sy * L);
-      ctx.lineTo(px, py);
-      ctx.lineTo(px + sx * L, py);
-      ctx.stroke();
+    function swapTemp(a, b) {
+        const temp = a.color;
+        a.color = b.color;
+        b.color = temp;
+        a.el.className = 'ball ' + a.color;
+        b.el.className = 'ball ' + b.color;
     }
-    ctx.restore();
-  }
-
-  function render() {
-    const W = boardSize;
-    ctx.clearRect(0, 0, W, W);
-
-    ctx.save();
-    if (shake > 0) {
-      const m = shake * 10;
-      ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
-    }
-
-    // фон-сетка
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        ctx.fillStyle = ((r + c) % 2 === 0)
-          ? 'rgba(0,240,255,0.030)'
-          : 'rgba(255,255,255,0.014)';
-        roundRect(c * cell + 2, r * cell + 2, cell - 4, cell - 4, cell * 0.24);
-        ctx.fill();
-      }
-    }
-
-    // выделение
-    if (selected) drawSelect(selected.r, selected.c);
-    if (showCursor && !selected) drawCursor(cursor.r, cursor.c);
-
-    // шарики
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const t = grid[r][c];
-        if (!t) continue;
-        drawBall(
-          (t.px + 0.5) * cell,
-          (t.py + 0.5) * cell,
-          cell * 0.40 * t.sc,
-          t.color
-        );
-      }
-    }
-
-    // частицы
-    ctx.globalCompositeOperation = 'lighter';
-    for (const p of particles) {
-      const a = Math.max(0, p.life / p.maxLife);
-      ctx.globalAlpha = a;
-      ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 14;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(0.5, p.size * a), 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
-    ctx.globalCompositeOperation = 'source-over';
-
-    // всплывающие очки
-    if (floaters.length) {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = `800 ${Math.round(cell * 0.46)}px "Segoe UI", system-ui, sans-serif`;
-      for (const f of floaters) {
-        const a = Math.min(1, f.life * 2.2);
-        ctx.globalAlpha = a;
-        ctx.fillStyle = f.color;
-        ctx.shadowColor = f.color;
-        ctx.shadowBlur = 16;
-        ctx.fillText(f.text, f.x, f.y);
-      }
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-    }
-
-    ctx.restore();
-  }
-
-  /* =========================================================
-     13. Главный цикл
-     ========================================================= */
-  function update(dt) {
-    // таймер
-    if (running && !paused && !finished) {
-      timeLeft -= dt;
-      if (timeLeft <= 0) {
-        timeLeft = 0;
-        updateHud();
-        endGame();
-      }
-    }
-
-    // плавное движение шариков
-    const k = Math.min(1, dt * 16);
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const t = grid[r][c];
-        if (!t) continue;
-        t.px += (c - t.px) * k;
-        t.py += (r - t.py) * k;
-        t.sc += (t.tsc - t.sc) * k;
-        if (Math.abs(c - t.px) < 0.002) t.px = c;
-        if (Math.abs(r - t.py) < 0.002) t.py = r;
-        if (Math.abs(t.tsc - t.sc) < 0.002) t.sc = t.tsc;
-      }
-    }
-
-    // частицы
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.life -= dt;
-      if (p.life <= 0) { particles.splice(i, 1); continue; }
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 420 * dt;
-      p.vx *= 0.98;
-    }
-
-    // всплывающий текст
-    for (let i = floaters.length - 1; i >= 0; i--) {
-      const f = floaters[i];
-      f.life -= dt;
-      f.y -= 48 * dt;
-      if (f.life <= 0) floaters.splice(i, 1);
-    }
-
-    if (shake > 0) shake = Math.max(0, shake - dt);
-
-    // ожидание остановки анимаций
-    if (settleWaiters.length && isSettled()) flushSettle();
-  }
-
-  function tick(ts) {
-    requestAnimationFrame(tick);
-    if (!lastTs) lastTs = ts;
-    let dt = (ts - lastTs) / 1000;
-    lastTs = ts;
-    if (dt > 0.06) dt = 0.06;
-    if (dt < 0) dt = 0;
-
-    update(dt);
-    render();
-  }
-
-  /* =========================================================
-     14. HUD / оверлеи / партия
-     ========================================================= */
-  function updateHud() {
-    scoreEl.textContent = score;
-    timeEl.textContent  = Math.ceil(timeLeft);
-    timeEl.classList.toggle('danger', timeLeft <= 10 && running);
-  }
-
-  function showOverlay(title, text, btn, color) {
-    ovTitle.textContent = title;
-    ovTitle.style.color = color;
-    ovTitle.style.textShadow = `0 0 14px ${color}, 0 0 34px ${color}`;
-    ovText.innerHTML = text;
-    ovBtn.textContent = btn;
-    overlay.classList.remove('hidden');
-  }
-
-  function hideOverlay() {
-    overlay.classList.add('hidden');
-  }
-
-  function startGame() {
-    gen++;
-    flushSettle();
-
-    score     = 0;
-    timeLeft  = START_TIME;
-    particles = [];
-    floaters  = [];
-    selected  = null;
-    state     = 'idle';
-    finished  = false;
-    running   = true;
-    paused    = false;
-    shake     = 0;
-    lastTs    = 0;
-    showCursor = false;
-    cursor    = { r: ROWS >> 1, c: COLS >> 1 };
 
     createBoard();
-    updateHud();
-    hideOverlay();
-    overlayMode = 'play';
-  }
-
-  function endGame() {
-    if (finished) return;
-    finished = true;
-    running  = false;
-    state    = 'over';
-    selected = null;
-
-    const isRecord = score > myBest;
-    if (isRecord) myBest = score;
-    bestEl.textContent = myBest;
-
-    overlayMode = 'over';
-    showOverlay(
-      isRecord ? '🏆 НОВЫЙ РЕКОРД!' : 'ВРЕМЯ ВЫШЛО',
-      `Твой счёт: <b style="color:#ffe94d">${score}</b><br>Рекорд: ${myBest}`,
-      'ЕЩЁ РАЗ',
-      isRecord ? '#ffe94d' : '#ff00d4'
-    );
-
-    onGameOver(score);
-  }
-
-  function togglePause() {
-    if (!running || finished) return;
-    paused = !paused;
-    if (paused) {
-      overlayMode = 'pause';
-      showOverlay('ПАУЗА', 'Игра приостановлена', 'ПРОДОЛЖИТЬ', '#00f0ff');
-    } else {
-      hideOverlay();
-    }
-  }
-
-  ovBtn.addEventListener('click', () => {
-    if (overlayMode === 'pause') {
-      paused = false;
-      hideOverlay();
-    } else {
-      startGame();
-    }
-  });
-
-  /* =========================================================
-     15. Адаптация размеров
-     ========================================================= */
-  function resize() {
-    const rect = canvas.getBoundingClientRect();
-    const size = Math.max(160, Math.min(rect.width, rect.height) || 320);
-    const dpr  = Math.min(window.devicePixelRatio || 1, 2);
-
-    canvas.width  = Math.round(size * dpr);
-    canvas.height = Math.round(size * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    boardSize = size;
-    cell = size / COLS;
-  }
-
-  window.addEventListener('resize', resize);
-  window.addEventListener('orientationchange', () => setTimeout(resize, 150));
-  if (window.ResizeObserver) {
-    try { new ResizeObserver(resize).observe(canvas); } catch (_) {}
-  }
-
-  /* =========================================================
-     16. Инициализация
-     ========================================================= */
-  resize();
-  createBoard();
-  updateHud();
-
-  requestAnimationFrame(tick);
-
-  loadStats();
-
-  showOverlay(
-    'NEON ШАРИКИ',
-    'Меняй местами соседние шарики, собирай 3 и более в линию и набери максимум очков за 60 секунд!<br><br>Каждый лопнувший шарик добавляет немного времени.',
-    'ИГРАТЬ',
-    '#ff00d4'
-  );
+    loadStats();
 });
 </script>
 </body>
