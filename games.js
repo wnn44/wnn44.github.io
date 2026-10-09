@@ -64,4 +64,14 @@ window.GAMES = [
 	tags:        ['шутер', 'аркада'],
 	preview:     { type: 'video', src: 'previews/neon-shooter.mp4' }
   },
+  {
+	id:          'ether-blocks',
+	title:       'NEON ETHER BLOCKS',
+	description: 'Тетрис нового поколения с фазой перекладывания, комбо-системой и неоновой эстетикой',
+	url:         'ether-blocks.html',
+	icon:        '🧊',	
+	color:       '#00f0ff',
+	tags:        ['puzzle', 'arcade', 'tetris'],
+	preview:     { type: 'video', src: 'previews/ether-blocks.mp4' }
+  },
 ];
