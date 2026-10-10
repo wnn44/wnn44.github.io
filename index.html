@@ -577,32 +577,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
       gamesGrid.appendChild(card);
 
-      // Асинхронно подгружаем статистику для каждой карточки из Supabase
-      loadCardStats(game.id, player);
-    }
+    // Загружаем ВСЕ рекроды игрока 1 ПАКЕТНЫМ запросом сразу по всем играм
+    loadAllStatsBatch(games, player);
   }
 
-  async function loadCardStats(gameId, player) {
-    const bestEl = document.getElementById(`best-${gameId}`);
-    const rankEl = document.getElementById(`rank-${gameId}`);
-
+  async function loadAllStatsBatch(games, player) {
     if (!player) {
-      if (bestEl) bestEl.textContent = '—';
-      if (rankEl) rankEl.textContent = '—';
+      games.forEach(g => {
+        const b = document.getElementById(`best-${g.id}`);
+        const r = document.getElementById(`rank-${g.id}`);
+        if (b) b.textContent = '—';
+        if (r) r.textContent = '—';
+      });
       return;
     }
 
     try {
-      const [best, rank] = await Promise.all([
-        Leaderboard.getPlayerBest(gameId, player),
-        Leaderboard.getPlayerRank(gameId, player)
-      ]);
+      // 1 ЕДИНСТВЕННЫЙ пакетный запрос к Supabase на все игры разом
+      const bestsMap = await Leaderboard.getAllPlayerBests(player);
 
-      if (bestEl) bestEl.textContent = best > 0 ? Number(best).toLocaleString() : '—';
-      if (rankEl) rankEl.textContent = rank ? `#${rank}` : '—';
+      games.forEach(g => {
+        const bestEl = document.getElementById(`best-${g.id}`);
+        const rankEl = document.getElementById(`rank-${g.id}`);
+        const score = bestsMap[g.id] || 0;
+        if (bestEl) bestEl.textContent = score > 0 ? Number(score).toLocaleString() : '—';
+        if (rankEl) rankEl.textContent = '—'; // Загружается по клику на Топ
+      });
     } catch (e) {
-      if (bestEl) bestEl.textContent = '—';
-      if (rankEl) rankEl.textContent = '—';
+      games.forEach(g => {
+        const b = document.getElementById(`best-${g.id}`);
+        if (b) b.textContent = '—';
+      });
     }
   }
 
