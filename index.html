@@ -269,10 +269,10 @@
   /* Блок статов на карточке */
   .game-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
     background: rgba(0,0,0,0.3);
-    padding: 10px 14px;
+    padding: 10px 10px;
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.06);
     margin-bottom: 18px;
@@ -281,21 +281,31 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
   }
   .stat-label {
-    font-size: 10px;
-    letter-spacing: 1px;
+    font-size: 9px;
+    letter-spacing: 0.5px;
     color: var(--muted);
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .stat-val {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .stat-val.rank {
     color: var(--yellow);
   }
+  .stat-val.world {
+    color: var(--accent2);
+
 
   /* Действия на карточке */
   .game-actions {
@@ -503,6 +513,12 @@ document.addEventListener('DOMContentLoaded', () => {
           video.loop = true;
           video.muted = true;
           video.playsInline = true;
+          video.onerror = () => {
+            mediaWrap.innerHTML = '';
+            const canvas = document.createElement('canvas');
+            mediaWrap.appendChild(canvas);
+            renderFallbackPreview(canvas, game.id);
+          };
           mediaWrap.appendChild(video);
         } else {
           const img = document.createElement('img');
@@ -538,17 +554,21 @@ document.addEventListener('DOMContentLoaded', () => {
       desc.className = 'game-desc';
       desc.textContent = game.description;
 
-      // Статистика (Личный рекорд и Ранг в мире)
+      // Статистика (Рекорд, Ранг в мире, Мировой рекорд)
       const statsBox = document.createElement('div');
       statsBox.className = 'game-stats';
       statsBox.innerHTML = `
         <div class="stat-item">
           <span class="stat-label">Ваш рекорд</span>
-          <span class="stat-val" id="best-${game.id}">…</span>
+          <span class="stat-val" id="best-${game.id}">—</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">Рейтинг</span>
-          <span class="stat-val rank" id="rank-${game.id}">…</span>
+          <span class="stat-val rank" id="rank-${game.id}">—</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Мировой</span>
+          <span class="stat-val world" id="world-${game.id}">—</span>
         </div>
       `;
 
@@ -578,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
       gamesGrid.appendChild(card);
     }
 
-    // После создания всех карточек загружаем рекорды 1 пакетным запросом
+    // После создания всех карточек загружаем рекорды
     loadAllStatsBatch(games, player);
   }
 
@@ -586,7 +606,20 @@ document.addEventListener('DOMContentLoaded', () => {
     games.forEach(g => {
       const bestEl = document.getElementById(`best-${g.id}`);
       const rankEl = document.getElementById(`rank-${g.id}`);
+      const worldEl = document.getElementById(`world-${g.id}`);
 
+      // 1. Мировой рекорд (виден всем)
+      const worldRec = Leaderboard.getGlobalRecord(g.id);
+      if (worldEl) {
+        if (worldRec && worldRec.score > 0) {
+          worldEl.textContent = Number(worldRec.score).toLocaleString();
+          worldEl.title = `Мировой рекорд: ${worldRec.username} (${Number(worldRec.score).toLocaleString()})`;
+        } else {
+          worldEl.textContent = '—';
+        }
+      }
+
+      // 2. Личный рекорд и рейтинг
       if (!player) {
         if (bestEl) bestEl.textContent = '—';
         if (rankEl) rankEl.textContent = '—';
@@ -609,6 +642,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderProfile();
   renderGames();
+
+  // Автоматически обновлять рекорды на карточках, как только данные пришли из сети
+  window.addEventListener('leaderboard-updated', () => {
+    loadAllStatsBatch(window.GAMES || [], Auth.get());
+  });
 });
 </script>
 

@@ -498,15 +498,11 @@ function rotateM(m,dir){const n=m.length,res=Array.from({length:n},()=>Array(n).
     if(dir>0)res[y][x]=m[n-1-x][y]; else res[y][x]=m[x][n-1-y];}
   return res;}
 
-async function refreshStats(){
+function refreshStats(){
   const bsEl = $('bestScore');
   const wrEl = $('worldRec');
-  if (bsEl) bsEl.textContent = '…';
-  if (wrEl) wrEl.textContent = '…';
-  const [pb, wr] = await Promise.all([
-    Leaderboard.getPlayerBest('tetris', currentPlayer),
-    Leaderboard.getGlobalRecord('tetris')
-  ]);
+  const pb = Leaderboard.getPlayerBest('tetris', currentPlayer);
+  const wr = Leaderboard.getGlobalRecord('tetris');
   best = pb || 0;
   worldRecord = wr.score || 0;
   if (bsEl) bsEl.textContent = Number(best).toLocaleString();
@@ -515,6 +511,7 @@ async function refreshStats(){
     wrEl.title = wr.username && wr.username !== '—' ? `Рекорд: ${wr.username}` : '';
   }
 }
+window.addEventListener('leaderboard-updated', refreshStats);
 
 function updateUserChip(){
   const chip = $('userChip');

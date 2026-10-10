@@ -3,18 +3,34 @@
 /**
  * Leaderboard — Централизованное локальное хранилище рекордов NEON ARCADE.
  *
- * Принцип работы:
- * 1. При запуске подтягивает 1 ЕДИНСТВЕННЫЙ слепок базы Supabase и сохраняет в localStorage.
- * 2. Все игры и UI мгновенно (0 мс) читают топы, рекорды и ранги из локального хранилища.
- * 3. При установке нового рекорда очки мгновенно пишутся локально, а фоном отправляются в Supabase.
- * 4. Никаких сетевых задержек в играх и на главной странице!
+ * Архитектура:
+ * 1. Скачивает ВСЮ таблицу рекордов с Supabase ровно 1 запросом.
+ * 2. Раскладывает данные по местам в localStorage.
+ * 3. Поддерживает алиасы названий игр (например, neon-match3 = neon-balls3).
+ * 4. Все игры и экраны читают данные МГНОВЕННО (0 мс) из локального хранилища.
+ * 5. При обновлении данных отправляет событие 'leaderboard-updated',
+ *    чтобы все карточки и экраны обновились автоматически.
  */
 const Leaderboard = (() => {
   const SUPABASE_URL = 'https://ovoacfpdgupfdrdmomgp.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_wt0MIOGgL0V_qbOCOudyJw_CiG19rO1';
   const DB_CACHE_KEY = 'neon_arcade_db_v1';
   const LAST_SYNC_KEY = 'neon_arcade_last_sync';
-  const SYNC_INTERVAL_MS = 180000; // 3 минуты фонового синка
+  const SYNC_INTERVAL_MS = 120000;
+
+  // Алиасы для игр с разными вариантами ID
+  const ALIAS_MAP = {
+    'neon-match3': 'neon-balls3',
+    'neon-balls3': 'neon-match3',
+    'bubble_strike': 'neon_bubble_shooter',
+    'neon_bubble_shooter': 'bubble_strike'
+  };
+
+  function isSameGame(id1, id2) {
+    if (!id1 || !id2) return false;
+    if (id1 === id2) return true;
+    return ALIAS_MAP[id1] === id2 || ALIAS_MAP[id2] === id1;
+  }
 
   let _sb = null;
   function sb() {
@@ -28,7 +44,6 @@ const Leaderboard = (() => {
     return _sb;
   }
 
-  // Загрузить локальный слепок из localStorage
   function loadLocalDb() {
     try {
       const data = localStorage.getItem(DB_CACHE_KEY);
@@ -38,7 +53,6 @@ const Leaderboard = (() => {
     }
   }
 
-  // Сохранить локальный слепок в localStorage
   function saveLocalDb(records) {
     try {
       localStorage.setItem(DB_CACHE_KEY, JSON.stringify(records));
@@ -46,16 +60,22 @@ const Leaderboard = (() => {
     } catch {}
   }
 
-  let db = loadLocalDb(); // Внутреннее локальное хранилище записей [{game_id, username, score}, ...]
+  let db = loadLocalDb();
   let isSyncing = false;
 
-  /**
-   * Скачать свежий слепок всей таблицы leaderboards с Supabase за 1 запрос
-   */
+  function notifyUpdated() {
+    try {
+      window.dispatchEvent(new CustomEvent('leaderboard-updated', { detail: db }));
+    } catch {}
+  }
+
   async function sync(force = false) {
     const lastSync = Number(localStorage.getItem(LAST_SYNC_KEY) || 0);
-    if (!force && Date.now() - lastSync < SYNC_INTERVAL_MS && db.length > 0) {
-      return db; // Данные свежие, сеть не мучаем
+    const isFresh = (Date.now() - lastSync < SYNC_INTERVAL_MS) && db.length > 0;
+
+    if (!force && isFresh) {
+      notifyUpdated();
+      return db;
     }
 
     if (isSyncing) return db;
@@ -72,61 +92,72 @@ const Leaderboard = (() => {
 
       if (error) throw error;
 
-      if (data) {
+      if (data && Array.isArray(data)) {
         db = data;
         saveLocalDb(db);
+        notifyUpdated();
       }
     } catch (e) {
-      console.warn('⚠️ Leaderboard background sync warn:', e.message);
+      console.warn('⚠️ Leaderboard sync warn:', e.message);
     } finally {
       isSyncing = false;
     }
     return db;
   }
 
-  // Запускаем фоновую синхронизацию при подключении скрипта
-  setTimeout(() => sync(), 100);
+  if (db.length === 0) {
+    sync(true);
+  } else {
+    setTimeout(() => sync(false), 300);
+  }
 
   return {
-    /** Сделать синхронизацию с сетью (по кнопке или принудительно) */
     sync,
 
-    /** Топ игроков для игры (мгновенно 0 мс из локальной БД) */
+    /** Топ игроков для игры */
     getTop(gameId, limit = 50) {
-      const filtered = db.filter(r => r.game_id === gameId);
+      const filtered = db.filter(r => isSameGame(r.game_id, gameId));
       filtered.sort((a, b) => b.score - a.score);
       return filtered.slice(0, limit);
     },
 
-    /** Все рекорды данного игрока по всем играм (мгновенно 0 мс из локальной БД) */
+    /** Все рекорды игрока по всем играм */
     getAllPlayerBests(username) {
       if (!username) return {};
       const uLower = username.toLowerCase();
       const map = {};
       for (const item of db) {
         if (item.username && item.username.toLowerCase() === uLower) {
-          if (!map[item.game_id] || item.score > map[item.game_id]) {
-            map[item.game_id] = item.score;
+          const gId = item.game_id;
+          if (!map[gId] || item.score > map[gId]) {
+            map[gId] = item.score;
+          }
+          // Также записываем в алиас
+          if (ALIAS_MAP[gId]) {
+            const alias = ALIAS_MAP[gId];
+            if (!map[alias] || item.score > map[alias]) {
+              map[alias] = item.score;
+            }
           }
         }
       }
       return map;
     },
 
-    /** Лучший результат игрока в конкретной игре (мгновенно 0 мс из локальной БД) */
+    /** Личный рекорд игрока */
     getPlayerBest(gameId, username) {
       if (!username) return 0;
       const uLower = username.toLowerCase();
       let best = 0;
       for (const item of db) {
-        if (item.game_id === gameId && item.username && item.username.toLowerCase() === uLower) {
+        if (isSameGame(item.game_id, gameId) && item.username && item.username.toLowerCase() === uLower) {
           if (item.score > best) best = item.score;
         }
       }
       return best;
     },
 
-    /** Мировой рекорд для игры (мгновенно 0 мс из локальной БД) */
+    /** Мировой рекорд для игры */
     getGlobalRecord(gameId) {
       const top = this.getTop(gameId, 1);
       return top.length > 0
@@ -134,7 +165,7 @@ const Leaderboard = (() => {
         : { username: '—', score: 0 };
     },
 
-    /** Позиция игрока в рейтинге (1-based) или null (мгновенно 0 мс) */
+    /** Позиция игрока в рейтинге */
     getPlayerRank(gameId, username) {
       if (!username) return null;
       const top = this.getTop(gameId, 500);
@@ -143,23 +174,20 @@ const Leaderboard = (() => {
       return idx >= 0 ? idx + 1 : null;
     },
 
-    /** Отправить результат (мгновенно обновляет локально, фоном отправляет на Supabase) */
+    /** Отправить результат */
     async submit(gameId, username, score) {
       if (!username || !score || score <= 0) return false;
 
-      // 1. Мгновенно обновляем локальный слепок
       const uLower = username.toLowerCase();
-      let existing = db.find(r => r.game_id === gameId && r.username.toLowerCase() === uLower);
+      let existing = db.find(r => isSameGame(r.game_id, gameId) && r.username.toLowerCase() === uLower);
       if (existing) {
-        if (score > existing.score) {
-          existing.score = score;
-        }
+        if (score > existing.score) existing.score = score;
       } else {
         db.push({ game_id: gameId, username, score });
       }
       saveLocalDb(db);
+      notifyUpdated();
 
-      // 2. Фоном отправляем запрос на Supabase
       try {
         const client = sb();
         if (!client) return true;
@@ -186,12 +214,11 @@ const Leaderboard = (() => {
             .insert({ game_id: gameId, username, score });
         }
 
-        // Обновляем базу принудительно фоном после записи
-        setTimeout(() => sync(true), 500);
+        setTimeout(() => sync(true), 600);
         return true;
       } catch (e) {
         console.warn('⚠️ Background score submit warn:', e.message);
-        return true; // Локально всё равно сохранилось
+        return true;
       }
     },
   };

@@ -392,13 +392,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const rcEl = document.getElementById('rc');
 
-async function loadBest() {
-  bsEl.textContent = '…';
-  rcEl.textContent = '…';
-  const [playerBest, globalRec] = await Promise.all([
-    Leaderboard.getPlayerBest('2048', currentPlayer),
-    Leaderboard.getGlobalRecord('2048')
-  ]);
+function loadBest() {
+  const playerBest = Leaderboard.getPlayerBest('2048', currentPlayer);
+  const globalRec = Leaderboard.getGlobalRecord('2048');
   best = playerBest || 0;
   bsEl.textContent = best;
   rcEl.textContent = Number(globalRec.score).toLocaleString();
@@ -406,6 +402,7 @@ async function loadBest() {
     ? `Рекорд: ${globalRec.username}`
     : '';
 }
+window.addEventListener('leaderboard-updated', loadBest);
 
 function checkAndSaveBest() {
   if (score > best) {
