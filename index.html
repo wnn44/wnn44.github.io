@@ -576,8 +576,9 @@ document.addEventListener('DOMContentLoaded', () => {
       card.appendChild(actions);
 
       gamesGrid.appendChild(card);
+    }
 
-    // Загружаем ВСЕ рекроды игрока 1 ПАКЕТНЫМ запросом сразу по всем играм
+    // После создания всех карточек загружаем рекорды 1 пакетным запросом
     loadAllStatsBatch(games, player);
   }
 
