@@ -2,14 +2,14 @@
 
 /**
  * Leaderboard — единый модуль для работы с таблицей рекордов (Supabase).
- * Содержит:
- *  - Таймауты запросов (макс 3.5 сек), чтобы UI не зависал при лагах сети
- *  - Стратегию Stale-While-Revalidate (кэширование в localStorage для мгновенного отклика 0 мс)
+ *  - Корректное выполнение асинхронных вызовов через анонимные функции
+ *  - Кэширование успешных результатов в localStorage
+ *  - Достаточный таймаут (10с) на случай медленной сети / Cold Start у Supabase
  */
 const Leaderboard = (() => {
   const SUPABASE_URL = 'https://ovoacfpdgupfdrdmomgp.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_wt0MIOGgL0V_qbOCOudyJw_CiG19rO1';
-  const REQUEST_TIMEOUT_MS = 3500; // 3.5 секунды максимум на сетевой запрос
+  const NETWORK_TIMEOUT_MS = 10000;
 
   let _sb = null;
   function sb() {
@@ -23,25 +23,10 @@ const Leaderboard = (() => {
     return _sb;
   }
 
-  /**
-   * Обертка над асинхронной функцией с таймаутом
-   */
-  function withTimeout(promise, ms = REQUEST_TIMEOUT_MS) {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`Timeout: Supabase didn't respond in ${ms}ms`)), ms)
-      )
-    ]);
-  }
-
-  /**
-   * Помощники локального кэша (localStorage)
-   */
   function getCache(key) {
     try {
       const item = localStorage.getItem(`neon_cache_${key}`);
-      return item ? JSON.parse(item) : null;
+      return item !== null ? JSON.parse(item) : null;
     } catch { return null; }
   }
 
@@ -51,6 +36,22 @@ const Leaderboard = (() => {
     } catch {}
   }
 
+  /** Выполнить асинхронную функцию с таймаутом сети */
+  async function fetchWithTimeout(asyncFn, ms = NETWORK_TIMEOUT_MS) {
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
+    });
+    try {
+      const res = await Promise.race([asyncFn(), timeoutPromise]);
+      clearTimeout(timer);
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
   return {
     /** Топ игроков для игры. Возвращает [{username, score}, ...] */
     async getTop(gameId, limit = 50) {
@@ -58,20 +59,21 @@ const Leaderboard = (() => {
       const cached = getCache(cacheKey);
 
       try {
-        const queryPromise = sb()
-          .from('leaderboards')
-          .select('username, score')
-          .eq('game_id', gameId)
-          .order('score', { ascending: false })
-          .limit(limit);
+        const res = await fetchWithTimeout(async () => {
+          return await sb()
+            .from('leaderboards')
+            .select('username, score')
+            .eq('game_id', gameId)
+            .order('score', { ascending: false })
+            .limit(limit);
+        });
 
-        const { data, error } = await withTimeout(queryPromise);
-        if (error) throw error;
-        const result = data || [];
+        if (res.error) throw res.error;
+        const result = res.data || [];
         setCache(cacheKey, result);
         return result;
       } catch (e) {
-        console.warn(`⚠️ Leaderboard getTop fetch failed (${e.message}), using cache.`);
+        console.warn(`⚠️ getTop fetch failed (${e.message}).`);
         return cached || [];
       }
     },
@@ -83,20 +85,21 @@ const Leaderboard = (() => {
       const cached = getCache(cacheKey);
 
       try {
-        const queryPromise = sb()
-          .from('leaderboards')
-          .select('score')
-          .eq('game_id', gameId)
-          .eq('username', username)
-          .maybeSingle();
+        const res = await fetchWithTimeout(async () => {
+          return await sb()
+            .from('leaderboards')
+            .select('score')
+            .eq('game_id', gameId)
+            .eq('username', username)
+            .maybeSingle();
+        });
 
-        const { data, error } = await withTimeout(queryPromise);
-        if (error) throw error;
-        const score = (data && typeof data.score === 'number') ? data.score : 0;
+        if (res.error) throw res.error;
+        const score = (res.data && typeof res.data.score === 'number') ? res.data.score : 0;
         setCache(cacheKey, score);
         return score;
       } catch (e) {
-        console.warn(`⚠️ getPlayerBest fetch failed (${e.message}), using cache.`);
+        console.warn(`⚠️ getPlayerBest fetch failed (${e.message}).`);
         return typeof cached === 'number' ? cached : 0;
       }
     },
@@ -107,22 +110,23 @@ const Leaderboard = (() => {
       const cached = getCache(cacheKey);
 
       try {
-        const queryPromise = sb()
-          .from('leaderboards')
-          .select('username, score')
-          .eq('game_id', gameId)
-          .order('score', { ascending: false })
-          .limit(1);
+        const res = await fetchWithTimeout(async () => {
+          return await sb()
+            .from('leaderboards')
+            .select('username, score')
+            .eq('game_id', gameId)
+            .order('score', { ascending: false })
+            .limit(1);
+        });
 
-        const { data, error } = await withTimeout(queryPromise);
-        if (error) throw error;
-        const res = (data && data[0])
-          ? { username: data[0].username, score: data[0].score }
+        if (res.error) throw res.error;
+        const result = (res.data && res.data[0])
+          ? { username: res.data[0].username, score: res.data[0].score }
           : { username: '—', score: 0 };
-        setCache(cacheKey, res);
-        return res;
+        setCache(cacheKey, result);
+        return result;
       } catch (e) {
-        console.warn(`⚠️ getGlobalRecord fetch failed (${e.message}), using cache.`);
+        console.warn(`⚠️ getGlobalRecord fetch failed (${e.message}).`);
         return cached || { username: '—', score: 0 };
       }
     },
@@ -139,7 +143,7 @@ const Leaderboard = (() => {
       }
 
       try {
-        const queryPromise = (async () => {
+        const res = await fetchWithTimeout(async () => {
           const { data: existing, error: selErr } = await sb()
             .from('leaderboards')
             .select('id, score')
@@ -163,9 +167,9 @@ const Leaderboard = (() => {
             if (error) throw error;
           }
           return true;
-        })();
+        }, 12000);
 
-        return await withTimeout(queryPromise, 5000); // 5 сек на отправку
+        return res === true;
       } catch (e) {
         console.error('❌ Score submit error:', e.message);
         return false;
