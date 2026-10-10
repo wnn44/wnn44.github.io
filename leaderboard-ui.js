@@ -33,8 +33,12 @@ const LeaderboardUI = (() => {
     document.body.appendChild(modal);
 
     modal.querySelector('.lb-modal-close').addEventListener('click', close);
-    modal.querySelector('.lb-modal-refresh').addEventListener('click', () => {
-      if (currentGameId) open(currentGameId);
+    modal.querySelector('.lb-modal-refresh').addEventListener('click', async () => {
+      if (currentGameId) {
+        modal.querySelector('.lb-modal-list').innerHTML = '<div class="lb-modal-loading">⏳ Синхронизация с сервером...</div>';
+        await Leaderboard.sync(true);
+        open(currentGameId);
+      }
     });
     modal.addEventListener('click', (e) => {
       if (e.target === modal) close();

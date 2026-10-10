@@ -582,34 +582,23 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllStatsBatch(games, player);
   }
 
-  async function loadAllStatsBatch(games, player) {
-    if (!player) {
-      games.forEach(g => {
-        const b = document.getElementById(`best-${g.id}`);
-        const r = document.getElementById(`rank-${g.id}`);
-        if (b) b.textContent = '—';
-        if (r) r.textContent = '—';
-      });
-      return;
-    }
+  function loadAllStatsBatch(games, player) {
+    games.forEach(g => {
+      const bestEl = document.getElementById(`best-${g.id}`);
+      const rankEl = document.getElementById(`rank-${g.id}`);
 
-    try {
-      // 1 ЕДИНСТВЕННЫЙ пакетный запрос к Supabase на все игры разом
-      const bestsMap = await Leaderboard.getAllPlayerBests(player);
+      if (!player) {
+        if (bestEl) bestEl.textContent = '—';
+        if (rankEl) rankEl.textContent = '—';
+        return;
+      }
 
-      games.forEach(g => {
-        const bestEl = document.getElementById(`best-${g.id}`);
-        const rankEl = document.getElementById(`rank-${g.id}`);
-        const score = bestsMap[g.id] || 0;
-        if (bestEl) bestEl.textContent = score > 0 ? Number(score).toLocaleString() : '—';
-        if (rankEl) rankEl.textContent = '—'; // Загружается по клику на Топ
-      });
-    } catch (e) {
-      games.forEach(g => {
-        const b = document.getElementById(`best-${g.id}`);
-        if (b) b.textContent = '—';
-      });
-    }
+      const score = Leaderboard.getPlayerBest(g.id, player);
+      const rank = Leaderboard.getPlayerRank(g.id, player);
+
+      if (bestEl) bestEl.textContent = score > 0 ? Number(score).toLocaleString() : '—';
+      if (rankEl) rankEl.textContent = rank ? `#${rank}` : '—';
+    });
   }
 
   function escapeHtml(str) {

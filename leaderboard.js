@@ -1,17 +1,20 @@
 'use strict';
 
 /**
- * Leaderboard — единый модуль для работы с таблицей рекордов (Supabase).
- * Оптимизирован против шторма сетевых запросов:
- *  - 1 пакетный запрос getAllPlayerBests() вместо N отдельных вызовов для каждой игры
- *  - In-memory & LocalStorage кэширование повторных вызовов getTop (кеш 60 секунд)
- *  - Безопасные асинхронные вызовы с таймаутом
+ * Leaderboard — Централизованное локальное хранилище рекордов NEON ARCADE.
+ *
+ * Принцип работы:
+ * 1. При запуске подтягивает 1 ЕДИНСТВЕННЫЙ слепок базы Supabase и сохраняет в localStorage.
+ * 2. Все игры и UI мгновенно (0 мс) читают топы, рекорды и ранги из локального хранилища.
+ * 3. При установке нового рекорда очки мгновенно пишутся локально, а фоном отправляются в Supabase.
+ * 4. Никаких сетевых задержек в играх и на главной странице!
  */
 const Leaderboard = (() => {
   const SUPABASE_URL = 'https://ovoacfpdgupfdrdmomgp.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_wt0MIOGgL0V_qbOCOudyJw_CiG19rO1';
-  const NETWORK_TIMEOUT_MS = 8000;
-  const CACHE_TTL_MS = 60000; // 1 минута жизни кэша для топов
+  const DB_CACHE_KEY = 'neon_arcade_db_v1';
+  const LAST_SYNC_KEY = 'neon_arcade_last_sync';
+  const SYNC_INTERVAL_MS = 180000; // 3 минуты фонового синка
 
   let _sb = null;
   function sb() {
@@ -25,219 +28,170 @@ const Leaderboard = (() => {
     return _sb;
   }
 
-  // Кэш в памяти браузера для убирания спама повторных запросов
-  const memCache = new Map();
-
-  function getCache(key) {
-    // 1. Проверяем быструю память
-    if (memCache.has(key)) {
-      const entry = memCache.get(key);
-      if (Date.now() - entry.time < CACHE_TTL_MS) {
-        return entry.value;
-      }
-    }
-    // 2. Проверяем localStorage
+  // Загрузить локальный слепок из localStorage
+  function loadLocalDb() {
     try {
-      const item = localStorage.getItem(`neon_cache_${key}`);
-      if (item !== null) {
-        const parsed = JSON.parse(item);
-        memCache.set(key, { value: parsed, time: Date.now() });
-        return parsed;
-      }
-    } catch {}
-    return null;
+      const data = localStorage.getItem(DB_CACHE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
   }
 
-  function setCache(key, value) {
-    memCache.set(key, { value, time: Date.now() });
+  // Сохранить локальный слепок в localStorage
+  function saveLocalDb(records) {
     try {
-      localStorage.setItem(`neon_cache_${key}`, JSON.stringify(value));
+      localStorage.setItem(DB_CACHE_KEY, JSON.stringify(records));
+      localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
     } catch {}
   }
 
-  /** Выполнить асинхронную функцию с таймаутом сети */
-  async function fetchWithTimeout(asyncFn, ms = NETWORK_TIMEOUT_MS) {
-    let timer;
-    const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
-    });
-    try {
-      const res = await Promise.race([asyncFn(), timeoutPromise]);
-      clearTimeout(timer);
-      return res;
-    } catch (err) {
-      clearTimeout(timer);
-      throw err;
+  let db = loadLocalDb(); // Внутреннее локальное хранилище записей [{game_id, username, score}, ...]
+  let isSyncing = false;
+
+  /**
+   * Скачать свежий слепок всей таблицы leaderboards с Supabase за 1 запрос
+   */
+  async function sync(force = false) {
+    const lastSync = Number(localStorage.getItem(LAST_SYNC_KEY) || 0);
+    if (!force && Date.now() - lastSync < SYNC_INTERVAL_MS && db.length > 0) {
+      return db; // Данные свежие, сеть не мучаем
     }
+
+    if (isSyncing) return db;
+    isSyncing = true;
+
+    try {
+      const client = sb();
+      if (!client) return db;
+
+      const { data, error } = await client
+        .from('leaderboards')
+        .select('game_id, username, score')
+        .order('score', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        db = data;
+        saveLocalDb(db);
+      }
+    } catch (e) {
+      console.warn('⚠️ Leaderboard background sync warn:', e.message);
+    } finally {
+      isSyncing = false;
+    }
+    return db;
   }
+
+  // Запускаем фоновую синхронизацию при подключении скрипта
+  setTimeout(() => sync(), 100);
 
   return {
-    /** Топ игроков для игры. Возвращает [{username, score}, ...] */
-    async getTop(gameId, limit = 50) {
-      const cacheKey = `top_${gameId}_${limit}`;
-      const cached = getCache(cacheKey);
-      if (cached) return cached; // Отдаем мгновенно если кэшировано
+    /** Сделать синхронизацию с сетью (по кнопке или принудительно) */
+    sync,
 
-      try {
-        const res = await fetchWithTimeout(async () => {
-          return await sb()
-            .from('leaderboards')
-            .select('username, score')
-            .eq('game_id', gameId)
-            .order('score', { ascending: false })
-            .limit(limit);
-        });
-
-        if (res.error) throw res.error;
-        const result = res.data || [];
-        setCache(cacheKey, result);
-        return result;
-      } catch (e) {
-        console.warn(`⚠️ getTop fetch failed (${e.message}).`);
-        return cached || [];
-      }
+    /** Топ игроков для игры (мгновенно 0 мс из локальной БД) */
+    getTop(gameId, limit = 50) {
+      const filtered = db.filter(r => r.game_id === gameId);
+      filtered.sort((a, b) => b.score - a.score);
+      return filtered.slice(0, limit);
     },
 
-    /** ОДИН пакетный запрос для получения всех рекордов игрока по всем играм сразу! */
-    async getAllPlayerBests(username) {
+    /** Все рекорды данного игрока по всем играм (мгновенно 0 мс из локальной БД) */
+    getAllPlayerBests(username) {
       if (!username) return {};
-      const cacheKey = `all_bests_${username.toLowerCase()}`;
-      const cached = getCache(cacheKey);
-
-      try {
-        const res = await fetchWithTimeout(async () => {
-          return await sb()
-            .from('leaderboards')
-            .select('game_id, score')
-            .eq('username', username);
-        });
-
-        if (res.error) throw res.error;
-        const map = {};
-        if (res.data) {
-          for (const item of res.data) {
-            if (!map[item.game_id] || item.score > map[item.game_id]) {
-              map[item.game_id] = item.score;
-            }
+      const uLower = username.toLowerCase();
+      const map = {};
+      for (const item of db) {
+        if (item.username && item.username.toLowerCase() === uLower) {
+          if (!map[item.game_id] || item.score > map[item.game_id]) {
+            map[item.game_id] = item.score;
           }
         }
-        setCache(cacheKey, map);
-        return map;
-      } catch (e) {
-        console.warn(`⚠️ getAllPlayerBests network failed (${e.message}).`);
-        return cached || {};
       }
+      return map;
     },
 
-    /** Лучший результат игрока. Возвращает число. */
-    async getPlayerBest(gameId, username) {
+    /** Лучший результат игрока в конкретной игре (мгновенно 0 мс из локальной БД) */
+    getPlayerBest(gameId, username) {
       if (!username) return 0;
-      const cacheKey = `best_${gameId}_${username.toLowerCase()}`;
-      const cached = getCache(cacheKey);
-      if (typeof cached === 'number') return cached;
-
-      try {
-        const res = await fetchWithTimeout(async () => {
-          return await sb()
-            .from('leaderboards')
-            .select('score')
-            .eq('game_id', gameId)
-            .eq('username', username)
-            .maybeSingle();
-        });
-
-        if (res.error) throw res.error;
-        const score = (res.data && typeof res.data.score === 'number') ? res.data.score : 0;
-        setCache(cacheKey, score);
-        return score;
-      } catch (e) {
-        console.warn(`⚠️ getPlayerBest fetch failed (${e.message}).`);
-        return typeof cached === 'number' ? cached : 0;
+      const uLower = username.toLowerCase();
+      let best = 0;
+      for (const item of db) {
+        if (item.game_id === gameId && item.username && item.username.toLowerCase() === uLower) {
+          if (item.score > best) best = item.score;
+        }
       }
+      return best;
     },
 
-    /** Мировой рекорд. Возвращает {username, score}. */
-    async getGlobalRecord(gameId) {
-      const cacheKey = `global_${gameId}`;
-      const cached = getCache(cacheKey);
-      if (cached) return cached;
-
-      try {
-        const res = await fetchWithTimeout(async () => {
-          return await sb()
-            .from('leaderboards')
-            .select('username, score')
-            .eq('game_id', gameId)
-            .order('score', { ascending: false })
-            .limit(1);
-        });
-
-        if (res.error) throw res.error;
-        const result = (res.data && res.data[0])
-          ? { username: res.data[0].username, score: res.data[0].score }
-          : { username: '—', score: 0 };
-        setCache(cacheKey, result);
-        return result;
-      } catch (e) {
-        console.warn(`⚠️ getGlobalRecord fetch failed (${e.message}).`);
-        return cached || { username: '—', score: 0 };
-      }
+    /** Мировой рекорд для игры (мгновенно 0 мс из локальной БД) */
+    getGlobalRecord(gameId) {
+      const top = this.getTop(gameId, 1);
+      return top.length > 0
+        ? { username: top[0].username, score: top[0].score }
+        : { username: '—', score: 0 };
     },
 
-    /** Отправить результат (upsert). */
+    /** Позиция игрока в рейтинге (1-based) или null (мгновенно 0 мс) */
+    getPlayerRank(gameId, username) {
+      if (!username) return null;
+      const top = this.getTop(gameId, 500);
+      const uLower = username.toLowerCase();
+      const idx = top.findIndex(e => e.username && e.username.toLowerCase() === uLower);
+      return idx >= 0 ? idx + 1 : null;
+    },
+
+    /** Отправить результат (мгновенно обновляет локально, фоном отправляет на Supabase) */
     async submit(gameId, username, score) {
       if (!username || !score || score <= 0) return false;
 
-      // Сбрасываем кэш для этой игры
-      memCache.delete(`best_${gameId}_${username.toLowerCase()}`);
-      memCache.delete(`top_${gameId}_50`);
-      memCache.delete(`top_${gameId}_100`);
-
-      try {
-        const res = await fetchWithTimeout(async () => {
-          const { data: existing, error: selErr } = await sb()
-            .from('leaderboards')
-            .select('id, score')
-            .eq('game_id', gameId)
-            .eq('username', username)
-            .maybeSingle();
-          if (selErr) throw selErr;
-
-          if (existing) {
-            if (score > existing.score) {
-              const { error } = await sb()
-                .from('leaderboards')
-                .update({ score, date: new Date().toISOString() })
-                .eq('id', existing.id);
-              if (error) throw error;
-            }
-          } else {
-            const { error } = await sb()
-              .from('leaderboards')
-              .insert({ game_id: gameId, username, score });
-            if (error) throw error;
-          }
-          return true;
-        }, 10000);
-
-        return res === true;
-      } catch (e) {
-        console.error('❌ Score submit error:', e.message);
-        return false;
+      // 1. Мгновенно обновляем локальный слепок
+      const uLower = username.toLowerCase();
+      let existing = db.find(r => r.game_id === gameId && r.username.toLowerCase() === uLower);
+      if (existing) {
+        if (score > existing.score) {
+          existing.score = score;
+        }
+      } else {
+        db.push({ game_id: gameId, username, score });
       }
-    },
+      saveLocalDb(db);
 
-    /** Позиция игрока в рейтинге (1-based) или null если не в топе. */
-    async getPlayerRank(gameId, username) {
-      if (!username) return null;
+      // 2. Фоном отправляем запрос на Supabase
       try {
-        const top = await this.getTop(gameId, 50);
-        const idx = top.findIndex(
-          e => e.username.toLowerCase() === username.toLowerCase()
-        );
-        return idx >= 0 ? idx + 1 : null;
+        const client = sb();
+        if (!client) return true;
+
+        const { data: remoteData, error: selErr } = await client
+          .from('leaderboards')
+          .select('id, score')
+          .eq('game_id', gameId)
+          .eq('username', username)
+          .maybeSingle();
+
+        if (selErr) throw selErr;
+
+        if (remoteData) {
+          if (score > remoteData.score) {
+            await client
+              .from('leaderboards')
+              .update({ score, date: new Date().toISOString() })
+              .eq('id', remoteData.id);
+          }
+        } else {
+          await client
+            .from('leaderboards')
+            .insert({ game_id: gameId, username, score });
+        }
+
+        // Обновляем базу принудительно фоном после записи
+        setTimeout(() => sync(true), 500);
+        return true;
       } catch (e) {
-        return null;
+        console.warn('⚠️ Background score submit warn:', e.message);
+        return true; // Локально всё равно сохранилось
       }
     },
   };
