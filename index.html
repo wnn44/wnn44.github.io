@@ -194,21 +194,43 @@
 
   /* Карточка игры */
   .game-card {
-    background: linear-gradient(180deg, rgba(11,13,31,0.9), rgba(5,6,15,0.95));
+    background: linear-gradient(180deg, rgba(11,13,31,0.92), rgba(5,6,15,0.96));
     border: 1px solid rgba(0,240,255,0.25);
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 20px;
     display: flex;
     flex-direction: column;
-    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
     position: relative;
     overflow: hidden;
     box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8);
+    z-index: 1;
   }
+  
+  /* Неоновый переливающийся луч/контур карточки при ховере */
+  .game-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 19px;
+    background: linear-gradient(135deg, #00f0ff, #ff00d4, #7928ca, #00f0ff);
+    background-size: 300% 300%;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
   .game-card:hover {
-    transform: translateY(-6px);
-    border-color: var(--accent);
-    box-shadow: 0 16px 40px -10px rgba(0,240,255,0.25);
+    transform: translateY(-8px);
+    border-color: transparent;
+    box-shadow: 
+      0 20px 50px -10px rgba(0, 240, 255, 0.4),
+      0 0 35px rgba(255, 0, 212, 0.25);
+  }
+
+  .game-card:hover::before {
+    opacity: 1;
+    animation: cardGlowFlow 3s ease infinite;
   }
 
   /* Медиа превью */
@@ -229,6 +251,13 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: transform 0.4s ease, filter 0.4s ease;
+  }
+  .game-card:hover .game-media img,
+  .game-card:hover .game-media video,
+  .game-card:hover .game-media canvas {
+    transform: scale(1.05);
+    filter: brightness(1.1) contrast(1.05);
   }
 
   .game-header-row {
@@ -242,6 +271,18 @@
     letter-spacing: 2px;
     font-weight: 800;
     color: var(--text);
+    transition: all 0.3s ease;
+  }
+  
+  /* Переливающийся заголовок при наведении на карточку */
+  .game-card:hover .game-title {
+    background: linear-gradient(90deg, #00f0ff, #ff00d4, #ffe94d, #00f0ff);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: textShimmer 2s linear infinite;
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.8));
   }
   .game-tags {
     display: flex;
@@ -305,55 +346,96 @@
   }
   .stat-val.world {
     color: var(--accent2);
-
+  }
 
   /* Действия на карточке */
   .game-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    align-items: stretch;
+    margin-top: 4px;
   }
+  
+  /* Крупная, заметная неоновая кнопка Играть */
   .play-btn {
-    flex: 2;
-    padding: 11px;
-    background: transparent;
-    color: var(--accent);
-    border: 1.5px solid var(--accent);
-    font-size: 12px;
+    flex: 2.2;
+    padding: 13px 18px;
+    background: linear-gradient(135deg, #00f0ff 0%, #0099ff 100%);
+    color: #05060f;
+    border: none;
+    font-size: 14px;
     letter-spacing: 3px;
-    font-weight: 700;
+    font-weight: 900;
     text-transform: uppercase;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     text-align: center;
     text-decoration: none;
-    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
   }
-  .game-card:hover .play-btn {
-    background: var(--accent);
-    color: #000;
-    box-shadow: 0 0 20px rgba(0,240,255,0.4);
+  .play-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s ease;
   }
+  .play-btn:hover {
+    background: linear-gradient(135deg, #00f0ff 0%, #ff00d4 100%);
+    color: #ffffff;
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.8), 0 0 50px rgba(255, 0, 212, 0.5);
+    transform: translateY(-2px) scale(1.03);
+  }
+  .play-btn:hover::before {
+    left: 100%;
+  }
+  .play-btn:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
   .lb-btn {
     flex: 1;
-    padding: 11px;
+    padding: 13px 10px;
     background: rgba(255, 210, 63, 0.08);
     color: var(--yellow);
-    border: 1.5px solid rgba(255, 210, 63, 0.3);
+    border: 1.5px solid rgba(255, 210, 63, 0.35);
     font-size: 11px;
-    letter-spacing: 1px;
-    font-weight: 700;
+    letter-spacing: 1.5px;
+    font-weight: 800;
     text-transform: uppercase;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
+    white-space: nowrap;
   }
   .lb-btn:hover {
-    background: rgba(255, 210, 63, 0.2);
+    background: rgba(255, 210, 63, 0.25);
     border-color: var(--yellow);
+    color: #fff;
+    box-shadow: 0 0 16px rgba(255, 210, 63, 0.4);
+    transform: translateY(-2px);
+  }
+
+  /* Анимации переливания для заголовка и рамки при ховере */
+  @keyframes textShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  @keyframes cardGlowFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 
   footer {
@@ -579,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const playBtn = document.createElement('a');
       playBtn.className = 'play-btn';
       playBtn.href = game.url;
-      playBtn.textContent = 'Играть';
+      playBtn.innerHTML = '▶ ИГРАТЬ';
 
       const lbBtn = document.createElement('button');
       lbBtn.className = 'lb-btn';
