@@ -74,4 +74,14 @@ window.GAMES = [
 	tags:        ['puzzle', 'arcade', 'tetris'],
 	preview:     { type: 'video', src: 'previews/ether-blocks.mp4' }
   },
+  {
+    id:          'neon-lines5',
+	title:       'NEON MATCH-3',
+	description: 'Классическая головоломка «пять в ряд» с неоновыми шариками.',
+	url:         'neon-lines5.html',
+	icon:        '🔮',
+	color:       '#00f0ff',
+	tags:        ['головоломка', 'пять-в-ряд'],
+	preview:     { type: 'video', src: 'previews/neon-lines5.mp4' }
+  },
 ];

@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NEON LINES — NEON ARCADE</title>
+<link rel="stylesheet" href="common.css">
+<script src="auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="leaderboard.js"></script>
+<script src="leaderboard-ui.js"></script>
+<style>
+  :root{
+    --cyan:#00f0ff;
+    --magenta:#ff00d4;
+    --violet:#a855ff;
+    --gold:#ffe94d;
+    --green:#00ff88;
+    --danger:#ff3355;
+    --text:#e6f7ff;
+    --panel:rgba(13,17,40,.85);
+    --board: min(94vw, 58vh, 620px);
+  }
+  @supports (height: 100svh){
+    :root{ --board: min(94vw, 58svh, 620px); }
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    background: radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
+    background-attachment: fixed;
+    color:var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    display:flex; flex-direction:column;
+    min-height:100vh; min-height:100svh;
+    overflow-x:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px;
+    padding: 8px clamp(8px, 2.6vw, 22px);
+    background: var(--panel);
+    border-bottom: 1px solid rgba(0,240,255,.25);
+    box-shadow: 0 0 22px rgba(0,240,255,.18);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    position:relative; z-index:20;
+    flex: 0 0 auto;
+  }
+  .logo{
+    font-weight:800; letter-spacing:2px;
+    font-size: clamp(13px, 3.4vw, 20px);
+    color:var(--cyan);
+    text-shadow: 0 0 10px var(--cyan), 0 0 26px rgba(0,240,255,.55);
+    white-space:nowrap;
+  }
+  .header-right{ display:flex; align-items:center; gap:6px; }
+  .chip{
+    font-size: clamp(9px, 2.4vw, 13px);
+    font-weight:600; letter-spacing:.5px;
+    padding: 6px 10px; border-radius:999px;
+    border:1px solid rgba(0,240,255,.45);
+    background: rgba(0,240,255,.08);
+    color:var(--text);
+    cursor:pointer; white-space:nowrap;
+    transition: background .18s, box-shadow .18s, transform .18s;
+  }
+  .chip:hover{ background: rgba(0,240,255,.2); box-shadow:0 0 14px rgba(0,240,255,.55); }
+  .chip:active{ transform: scale(.96); }
+  .chip.lb{ border-color: rgba(255,233,77,.5); background: rgba(255,233,77,.08); color:var(--gold); }
+  .chip.lb:hover{ box-shadow:0 0 14px rgba(255,233,77,.6); background: rgba(255,233,77,.18); }
+  .chip.user{ border-color: rgba(168,85,255,.5); background: rgba(168,85,255,.08); color:#c79bff; cursor:default; }
+  .chip.user:hover{ box-shadow:none; background: rgba(168,85,255,.08); }
+  .chip.menu{ border-color: rgba(255,0,212,.5); background: rgba(255,0,212,.08); color:#ff6ee0; }
+  .chip.menu:hover{ box-shadow:0 0 14px rgba(255,0,212,.6); background: rgba(255,0,212,.18); }
+
+  main{
+    flex:1 1 auto; min-height:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap: clamp(6px, 1.3vh, 14px);
+    padding: clamp(6px,1.5vh,14px) clamp(6px,2vw,18px) clamp(8px,2vh,16px);
+  }
+
+  .hud{
+    width: var(--board);
+    display:flex; gap: clamp(5px,1.6vw,12px);
+  }
+  .stat{
+    flex:1 1 0; min-width:0;
+    text-align:center;
+    background: var(--panel);
+    border:1px solid rgba(0,240,255,.22);
+    border-radius:10px;
+    padding: 3px 4px 5px;
+    box-shadow: inset 0 0 18px rgba(0,240,255,.06);
+    transition: box-shadow .35s, border-color .35s;
+  }
+  .stat.flash{
+    border-color: rgba(255,233,77,.9);
+    box-shadow: 0 0 22px rgba(255,233,77,.75), inset 0 0 26px rgba(255,233,77,.25);
+  }
+  .stat .lbl{
+    display:block;
+    font-size: clamp(7px, 1.9vw, 10px);
+    letter-spacing:1.4px; opacity:.62; font-weight:700;
+  }
+  .stat .val{
+    display:block;
+    font-size: clamp(13px, 3.6vw, 20px);
+    font-weight:800; line-height:1.15;
+    color:var(--cyan);
+    text-shadow: 0 0 10px rgba(0,240,255,.75);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    transition: transform .25s;
+  }
+  .stat .val.gold{ color:var(--gold); text-shadow:0 0 10px rgba(255,233,77,.8); }
+  .stat .val.mag{ color:var(--magenta); text-shadow:0 0 10px rgba(255,0,212,.8); }
+  .stat .val.bump{ transform: scale(1.22); }
+
+  .stage{
+    position:relative;
+    width: var(--board);
+    height: var(--board);
+    flex: 0 0 auto;
+  }
+  canvas{
+    display:block; width:100%; height:100%;
+    border-radius:16px;
+    background:#05060f;
+    border:1px solid rgba(0,240,255,.35);
+    box-shadow: 0 0 26px rgba(0,240,255,.25), inset 0 0 46px rgba(0,240,255,.06);
+    touch-action:none;
+  }
+
+  .overlay{
+    position:absolute; inset:0; z-index:6;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap: clamp(8px,2vh,16px);
+    padding:16px; text-align:center;
+    border-radius:16px;
+    background: rgba(5,6,15,.85);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    animation: fade .28s ease;
+  }
+  @keyframes fade{ from{opacity:0} to{opacity:1} }
+  .overlay.hidden{ display:none; }
+  .overlay h2{
+    margin:0;
+    font-size: clamp(18px, 5.2vw, 32px);
+    letter-spacing:2px;
+    color:var(--magenta);
+    text-shadow: 0 0 12px var(--magenta), 0 0 34px rgba(255,0,212,.6);
+  }
+  .overlay p{
+    margin:0;
+    font-size: clamp(12px, 3.4vw, 17px);
+    opacity:.9;
+  }
+  .overlay p b{
+    color:var(--gold);
+    text-shadow: 0 0 10px rgba(255,233,77,.8);
+    font-size:1.25em;
+  }
+
+  .bottom{
+    width: var(--board);
+    display:flex; align-items:center; justify-content:space-between;
+    gap: clamp(5px,1.8vw,12px);
+  }
+  .nextBox{
+    display:flex; align-items:center; gap:8px;
+    background: var(--panel);
+    border:1px solid rgba(0,240,255,.22);
+    border-radius:10px;
+    padding: 5px 10px;
+  }
+  .nextBox .lbl{
+    font-size: clamp(7px, 1.9vw, 10px);
+    letter-spacing:1.4px; opacity:.62; font-weight:700;
+  }
+  .nextDots{ display:flex; gap:6px; }
+  .dot{
+    width: clamp(12px, 3.4vw, 18px);
+    height: clamp(12px, 3.4vw, 18px);
+    border-radius:50%;
+    animation: pop .28s ease;
+    position:relative;
+  }
+  .dot::after{
+    content:'';
+    position:absolute;
+    top:12%; left:18%;
+    width:38%; height:32%;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0));
+    pointer-events:none;
+  }
+  @keyframes pop{ from{ transform:scale(.2); opacity:.2 } to{ transform:scale(1); opacity:1 } }
+
+  .btn{
+    font-family:inherit;
+    font-weight:700; letter-spacing:1px;
+    font-size: clamp(10px, 2.7vw, 13px);
+    padding: 8px 12px;
+    border-radius:10px;
+    border:1px solid rgba(0,240,255,.55);
+    background: rgba(0,240,255,.12);
+    color:var(--cyan);
+    cursor:pointer;
+    text-shadow: 0 0 8px rgba(0,240,255,.8);
+    box-shadow: 0 0 14px rgba(0,240,255,.22);
+    transition: background .18s, box-shadow .18s, transform .12s;
+    white-space:nowrap;
+  }
+  .btn:hover{ background: rgba(0,240,255,.25); box-shadow:0 0 22px rgba(0,240,255,.55); }
+  .btn:active{ transform: scale(.95); }
+  .btn.magenta{
+    border-color: rgba(255,0,212,.6);
+    background: rgba(255,0,212,.12);
+    color:#ff6ee0;
+    text-shadow: 0 0 8px rgba(255,0,212,.8);
+    box-shadow: 0 0 14px rgba(255,0,212,.25);
+  }
+  .btn.magenta:hover{ background: rgba(255,0,212,.25); box-shadow: 0 0 22px rgba(255,0,212,.55); }
+  .btn.big{ padding: 11px 22px; font-size: clamp(12px,3.2vw,15px); }
+
+  .btnRow{ display:flex; gap: clamp(5px,1.6vw,10px); }
+
+  @media (max-width: 420px){
+    .nextBox{ padding: 4px 7px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NEON LINES</div>
+  <div class="header-right">
+    <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
+    <div class="chip user" id="userChip">ИГРОК</div>
+    <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
+  </div>
+</header>
+
+<main>
+  <div class="hud">
+    <div class="stat" id="statScore"><span class="lbl">СЧЁТ</span><span class="val" id="scoreVal">0</span></div>
+    <div class="stat" id="statBest"><span class="lbl">РЕКОРД</span><span class="val gold" id="bestVal">0</span></div>
+    <div class="stat" id="statGlobal"><span class="lbl">МИР</span><span class="val mag" id="globalVal">—</span></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="game"></canvas>
+    <div class="overlay hidden" id="overlay">
+      <h2 id="ovTitle">ИГРА ОКОНЧЕНА</h2>
+      <p id="ovText">Ваш счёт: <b>0</b></p>
+      <button class="btn big magenta" id="ovBtn">НОВАЯ ИГРА</button>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="nextBox">
+      <span class="lbl">ДАЛЕЕ</span>
+      <div class="nextDots" id="nextDots"></div>
+    </div>
+    <div class="btnRow">
+      <button class="btn" id="soundBtn">🔊 ЗВУК</button>
+      <button class="btn" id="newBtn">⟳ ЗАНОВО</button>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
+  /* =========================================================
+     1. ПЛАТФОРМА
+     ========================================================= */
+  const GAME_ID = 'neon-lines';
+  const BEST_KEY = 'neon_lines_best';
+  const MUTE_KEY = 'neon_lines_muted';
+
+  let currentPlayer = null;
+  try {
+    currentPlayer = (typeof Auth !== 'undefined' && Auth && typeof Auth.get === 'function')
+      ? Auth.get() : null;
+  } catch (e) { currentPlayer = null; }
+
+  const userChip = document.getElementById('userChip');
+  if (userChip) userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
+
+  document.getElementById('lbHeaderBtn')?.addEventListener('click', () => {
+    try { if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.open(GAME_ID); } catch (e) {}
+  });
+  document.getElementById('menuBtn')?.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  const scoreVal   = document.getElementById('scoreVal');
+  const bestVal    = document.getElementById('bestVal');
+  const globalVal  = document.getElementById('globalVal');
+  const statScore  = document.getElementById('statScore');
+  const statBest   = document.getElementById('statBest');
+  const overlay    = document.getElementById('overlay');
+  const ovTitle    = document.getElementById('ovTitle');
+  const ovText     = document.getElementById('ovText');
+  const ovBtn      = document.getElementById('ovBtn');
+  const nextDotsEl = document.getElementById('nextDots');
+  const soundBtn   = document.getElementById('soundBtn');
+  const newBtn     = document.getElementById('newBtn');
+
+  /* =========================================================
+     2. ЗВУК
+     ========================================================= */
+  let actx = null;
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+
+  function audio() {
+    if (!actx) {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) actx = new Ctx();
+      } catch (e) { actx = null; }
+    }
+    if (actx && actx.state === 'suspended') { actx.resume().catch(() => {}); }
+    return actx;
+  }
+
+  function tone(freq, dur, type, vol, delay, slideTo) {
+    if (muted) return;
+    const a = audio();
+    if (!a) return;
+    try {
+      const t0 = a.currentTime + (delay || 0);
+      const osc = a.createOscillator();
+      const gain = a.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(Math.max(20, freq), t0);
+      if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol || 0.06), t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(gain); gain.connect(a.destination);
+      osc.start(t0); osc.stop(t0 + dur + 0.03);
+    } catch (e) {}
+  }
+
+  function playSound(kind) {
+    if (muted) return;
+    switch (kind) {
+      case 'select':  tone(680, 0.07, 'sine', 0.05); break;
+      case 'deselect':tone(420, 0.06, 'sine', 0.04); break;
+      case 'move':    tone(500, 0.10, 'triangle', 0.06, 0, 820); break;
+      case 'invalid': tone(140, 0.13, 'sawtooth', 0.045); break;
+      case 'spawn':   tone(280, 0.09, 'sine', 0.04, 0, 430); break;
+      case 'clear':
+        tone(520, 0.15, 'triangle', 0.07, 0.00);
+        tone(660, 0.15, 'triangle', 0.07, 0.05);
+        tone(830, 0.16, 'triangle', 0.07, 0.10);
+        tone(1050, 0.20, 'triangle', 0.06, 0.15);
+        break;
+      case 'milestone':
+        tone(660, 0.14, 'triangle', 0.08, 0.00);
+        tone(880, 0.14, 'triangle', 0.08, 0.08);
+        tone(1320, 0.24, 'triangle', 0.09, 0.16);
+        tone(1760, 0.32, 'sine', 0.06, 0.28);
+        break;
+      case 'record':
+        tone(880, 0.14, 'triangle', 0.09, 0.00);
+        tone(1100, 0.14, 'triangle', 0.09, 0.09);
+        tone(1320, 0.16, 'triangle', 0.09, 0.18);
+        tone(1760, 0.22, 'triangle', 0.09, 0.28);
+        tone(2200, 0.40, 'sine', 0.07, 0.42, 2640);
+        break;
+      case 'over':
+        tone(400, 0.35, 'sawtooth', 0.07, 0, 110);
+        tone(200, 0.55, 'sine', 0.05, 0.16, 70);
+        break;
+    }
+  }
+
+  function updateSoundBtn() {
+    if (soundBtn) soundBtn.textContent = muted ? '🔇 ЗВУК' : '🔊 ЗВУК';
+  }
+  updateSoundBtn();
+  soundBtn?.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    updateSoundBtn();
+    if (!muted) playSound('select');
+  });
+
+  /* =========================================================
+     3. КОНСТАНТЫ
+     ========================================================= */
+  const COLS = 9, ROWS = 9, N = COLS * ROWS;
+  const TAU = Math.PI * 2;
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const DIRS4 = [[1, 0], [0, 1], [1, 1], [1, -1]];
+
+  const PALETTE = [
+    { main: '#00f0ff', dark: '#004e5c' },
+    { main: '#ff00d4', dark: '#5c004d' },
+    { main: '#ffe94d', dark: '#5c4e08' },
+    { main: '#00ff88', dark: '#005c30' },
+    { main: '#a855ff', dark: '#3a1870' }
+  ];
+  const NCOLORS = PALETTE.length;
+
+  /* =========================================================
+     4. СПРАЙТЫ
+     ========================================================= */
+  function hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
+  // Базовый спрайт шара (БЕЗ блика — блик рисуется отдельно, чтобы двигаться)
+  function makeBaseSprite(main, dark) {
+    const S = 160;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    const g = cv.getContext('2d');
+    const cx = S / 2, cy = S / 2, r = S * 0.30;
+
+    // Внешнее свечение
+    const glow = g.createRadialGradient(cx, cy, r * 0.55, cx, cy, S * 0.5);
+    glow.addColorStop(0, hexA(main, 0.70));
+    glow.addColorStop(0.45, hexA(main, 0.20));
+    glow.addColorStop(1, hexA(main, 0));
+    g.fillStyle = glow;
+    g.beginPath(); g.arc(cx, cy, S * 0.5, 0, TAU); g.fill();
+
+    // Тело — равномерное, без белого (белое даёт блик-оверлей)
+    const body = g.createRadialGradient(cx - r * 0.10, cy - r * 0.15, r * 0.05, cx, cy, r * 1.16);
+    body.addColorStop(0.00, main);
+    body.addColorStop(0.55, main);
+    body.addColorStop(1.00, dark);
+    g.fillStyle = body;
+    g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill();
+
+    // Контровой свет снизу-справа
+    const rim = g.createRadialGradient(cx + r * 0.55, cy + r * 0.55, r * 0.05, cx + r * 0.5, cy + r * 0.5, r * 1.0);
+    rim.addColorStop(0, hexA(main, 0.85));
+    rim.addColorStop(0.5, hexA(main, 0.22));
+    rim.addColorStop(1, hexA(main, 0));
+    g.fillStyle = rim;
+    g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill();
+
+    // Кромка
+    g.lineWidth = S * 0.022;
+    const edge = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+    edge.addColorStop(0.00, hexA(main, 0.60));
+    edge.addColorStop(0.35, hexA(main, 0.55));
+    edge.addColorStop(0.70, hexA(main, 0.15));
+    edge.addColorStop(1.00, hexA(main, 0.40));
+    g.strokeStyle = edge;
+    g.beginPath(); g.arc(cx, cy, r * 0.99, 0, TAU); g.stroke();
+
+    return cv;
+  }
+
+  // Спрайт блика (белый, мягкий градиент + острый глинт)
+  function makeHighlightSprite() {
+    const S = 160;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    const g = cv.getContext('2d');
+    const cx = S * 0.5, cy = S * 0.5;
+    const r = S * 0.34;
+
+    // Мягкое пятно
+    const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0.00, 'rgba(255,255,255,0.95)');
+    grd.addColorStop(0.22, 'rgba(255,255,255,0.55)');
+    grd.addColorStop(0.55, 'rgba(255,255,255,0.18)');
+    grd.addColorStop(1.00, 'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill();
+
+    // Острый глинт
+    g.fillStyle = 'rgba(255,255,255,0.98)';
+    g.beginPath();
+    g.ellipse(cx - r * 0.20, cy - r * 0.22, r * 0.24, r * 0.13, -0.55, 0, TAU);
+    g.fill();
+
+    // Вторичная подсветка сверху
+    g.fillStyle = 'rgba(255,255,255,0.32)';
+    g.beginPath();
+    g.ellipse(cx + r * 0.05, cy - r * 0.38, r * 0.42, r * 0.08, -0.15, 0, TAU);
+    g.fill();
+
+    return cv;
+  }
+
+  const SPRITES_BASE = PALETTE.map(p => makeBaseSprite(p.main, p.dark));
+  const HIGHLIGHT_SPRITE = makeHighlightSprite();
+
+  /* =========================================================
+     5. ФОН
+     ========================================================= */
+  const bgParticles = [];
+  for (let i = 0; i < 55; i++) {
+    const pick = Math.random();
+    const col = pick < 0.45 ? '#00f0ff' : (pick < 0.8 ? '#ff00d4' : '#a855ff');
+    bgParticles.push({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.035,
+      vy: (Math.random() - 0.5) * 0.035,
+      r: 0.6 + Math.random() * 1.9,
+      color: col,
+      phase: Math.random() * TAU,
+      speed: 0.6 + Math.random() * 1.6
+    });
+  }
+
+  const bgBlobs = [
+    { x: 0.15, y: 0.18, r: 0.55, color: '#00f0ff', speed: 0.35, phase: 0.0 },
+    { x: 0.85, y: 0.80, r: 0.60, color: '#ff00d4', speed: 0.28, phase: 1.7 },
+    { x: 0.80, y: 0.15, r: 0.50, color: '#a855ff', speed: 0.42, phase: 3.1 },
+    { x: 0.20, y: 0.85, r: 0.50, color: '#ffe94d', speed: 0.22, phase: 4.4 }
+  ];
+
+  function updateBg(dt) {
+    for (const p of bgParticles) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.x < -0.05) p.x = 1.05; else if (p.x > 1.05) p.x = -0.05;
+      if (p.y < -0.05) p.y = 1.05; else if (p.y > 1.05) p.y = -0.05;
+    }
+  }
+
+  function drawBackground(W, time) {
+    ctx.fillStyle = '#05060f';
+    ctx.fillRect(0, 0, W, W);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const b of bgBlobs) {
+      const pulse = 0.55 + 0.45 * Math.sin(time * b.speed + b.phase);
+      const rad = W * b.r * (0.85 + 0.25 * pulse);
+      const cx = W * b.x, cy = W * b.y;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+      const a = 0.12 * pulse;
+      g.addColorStop(0, hexA(b.color, a));
+      g.addColorStop(0.4, hexA(b.color, a * 0.35));
+      g.addColorStop(1, hexA(b.color, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, W);
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of bgParticles) {
+      const px = p.x * W, py = p.y * W;
+      const twinkle = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(time * p.speed * 2 + p.phase));
+      const a = 0.35 * twinkle;
+      const pr = p.r * (W / 620);
+      const g = ctx.createRadialGradient(px, py, 0, px, py, pr * 4);
+      g.addColorStop(0, hexA(p.color, a));
+      g.addColorStop(0.5, hexA(p.color, a * 0.3));
+      g.addColorStop(1, hexA(p.color, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, pr * 4, 0, TAU); ctx.fill();
+      ctx.fillStyle = hexA(p.color, a * 1.6);
+      ctx.beginPath(); ctx.arc(px, py, pr * 0.7, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.045;
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 1;
+    const step = 8 * (W / 620);
+    const offset = (time * 22) % step;
+    ctx.beginPath();
+    for (let yy = -W + offset; yy < W * 1.5; yy += step) {
+      ctx.moveTo(0, yy);
+      ctx.lineTo(W, yy - W * 0.35);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* =========================================================
+     6. СОСТОЯНИЕ
+     ========================================================= */
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  let CELL = 40;
+
+  let board = new Int8Array(N);
+  let popScale = new Float32Array(N).fill(1);
+  let selected = -1;
+  let reachable = new Set();
+  let nextBalls = [];
+  let score = 0;
+  let best = 0;
+  let startingBest = 0;
+
+  let busy = false;
+  let gameOver = true;
+
+  let moveAnim = null;
+  let clearTimer = 0;
+  let pendingAfterClear = null;
+
+  let fx = [];           // исчезающие шары
+  let textFx = [];       // всплывающий счёт «+N»
+  let bigTextFx = [];    // крупные текстовые эффекты (рубежи, рекорд)
+  let shockwaves = [];   // ударные волны
+
+  // --- idle-блик ---
+  let lastActionTime = performance.now();
+  let flipAmount = 0;                // 0 = блик слева-сверху, 1 = справа-снизу
+  const FLIP_IDLE_DELAY = 5000;      // 5 секунд без хода
+  const FLIP_FWD_SPEED = 0.55;       // скорость перетекания вперёд (1/сек)
+  const FLIP_BACK_SPEED = 2.2;       // скорость возврата при действии
+
+  // --- рубежи и рекорд ---
+  let nextMilestone = 100;
+  let recordBrokenThisGame = false;
+
+  function resetIdle() { lastActionTime = performance.now(); }
+
+  /* =========================================================
+     7. УТИЛИТЫ
+     ========================================================= */
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  function randColor() { return 1 + ((Math.random() * NCOLORS) | 0); }
+  function countEmpty() { let e = 0; for (let i = 0; i < N; i++) if (!board[i]) e++; return e; }
+  function emptyCells() { const a = []; for (let i = 0; i < N; i++) if (!board[i]) a.push(i); return a; }
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* =========================================================
+     8. ПОИСК ПУТИ И ЛИНИЙ
+     ========================================================= */
+  function computeReachable(from) {
+    reachable.clear();
+    if (from < 0 || !board[from]) return;
+    const vis = new Uint8Array(N);
+    const q = [from];
+    vis[from] = 1;
+    let head = 0;
+    while (head < q.length) {
+      const cur = q[head++];
+      const x = cur % COLS, y = (cur / COLS) | 0;
+      for (let d = 0; d < 4; d++) {
+        const nx = x + DIRS[d][0], ny = y + DIRS[d][1];
+        if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
+        const ni = ny * COLS + nx;
+        if (vis[ni] || board[ni]) continue;
+        vis[ni] = 1;
+        reachable.add(ni);
+        q.push(ni);
+      }
+    }
+  }
+
+  function findPath(from, to) {
+    if (from === to || from < 0 || to < 0) return null;
+    if (board[from] === 0 || board[to] !== 0) return null;
+    const prev = new Int16Array(N).fill(-1);
+    const vis = new Uint8Array(N);
+    const q = [from];
+    vis[from] = 1;
+    let head = 0;
+    while (head < q.length) {
+      const cur = q[head++];
+      if (cur === to) break;
+      const x = cur % COLS, y = (cur / COLS) | 0;
+      for (let d = 0; d < 4; d++) {
+        const nx = x + DIRS[d][0], ny = y + DIRS[d][1];
+        if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
+        const ni = ny * COLS + nx;
+        if (vis[ni] || board[ni] !== 0) continue;
+        vis[ni] = 1;
+        prev[ni] = cur;
+        q.push(ni);
+      }
+    }
+    if (!vis[to]) return null;
+    const path = [];
+    let c = to;
+    while (c !== -1) { path.push(c); c = prev[c]; }
+    path.reverse();
+    return path;
+  }
+
+  function findLines() {
+    const out = new Set();
+    for (let d = 0; d < 4; d++) {
+      const dx = DIRS4[d][0], dy = DIRS4[d][1];
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const i = y * COLS + x;
+          const col = board[i];
+          if (!col) continue;
+          const px = x - dx, py = y - dy;
+          if (px >= 0 && px < COLS && py >= 0 && py < ROWS && board[py * COLS + px] === col) continue;
+          const run = [];
+          let cx = x, cy = y;
+          while (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS && board[cy * COLS + cx] === col) {
+            run.push(cy * COLS + cx);
+            cx += dx; cy += dy;
+          }
+          if (run.length >= 5) for (const r of run) out.add(r);
+        }
+      }
+    }
+    return out;
+  }
+
+  /* =========================================================
+     9. ЭФФЕКТЫ
+     ========================================================= */
+  function addShockwave(gx, gy, color, dur, maxR, lineWidthMul) {
+    shockwaves.push({
+      gx, gy, color,
+      t: 0, dur: dur || 0.65,
+      maxR: maxR || 3.0,
+      lw: lineWidthMul || 1.0
+    });
+  }
+
+  function triggerBigText(text, sub, color, dur, sound) {
+    bigTextFx.push({ text, sub, color, t: 0, dur: dur || 2.0 });
+    // центральная волна
+    addShockwave(COLS / 2, ROWS / 2, color, 1.0, COLS * 0.75, 1.6);
+    addShockwave(COLS / 2, ROWS / 2, '#ffffff', 0.7, COLS * 0.55, 1.0);
+    if (sound) playSound(sound);
+  }
+
+  function flashStat(el) {
+    if (!el) return;
+    el.classList.add('flash');
+    setTimeout(() => el.classList.remove('flash'), 700);
+  }
+  function bumpVal(el) {
+    if (!el) return;
+    el.classList.add('bump');
+    setTimeout(() => el.classList.remove('bump'), 260);
+  }
+
+  function checkScoreEffects() {
+    // Рубежи 100, 200, 300 ...
+    if (score >= nextMilestone) {
+      triggerBigText(
+        '★ ' + score + ' ★',
+        'РУБЕЖ ' + nextMilestone + ' ПРОЙДЕН',
+        '#ffe94d',
+        2.0,
+        'milestone'
+      );
+      flashStat(statScore);
+      bumpVal(scoreVal);
+      nextMilestone += 100;
+    }
+
+    // Побитие личного рекорда (только если был ненулевой рекорд)
+    if (!recordBrokenThisGame && startingBest > 0 && score > startingBest) {
+      recordBrokenThisGame = true;
+      triggerBigText(
+        '🏆 НОВЫЙ РЕКОРД!',
+        score + ' ОЧКОВ — ПОЗДРАВЛЯЕМ!',
+        '#ff00d4',
+        2.8,
+        'record'
+      );
+      flashStat(statBest);
+      bumpVal(bestVal);
+    }
+  }
+
+  /* =========================================================
+     10. ИГРОВОЙ ПРОЦЕСС
+     ========================================================= */
+  function newGame() {
+    board = new Int8Array(N);
+    popScale = new Float32Array(N).fill(1);
+    selected = -1;
+    reachable.clear();
+    fx = []; textFx = []; bigTextFx = []; shockwaves = [];
+    moveAnim = null;
+    clearTimer = 0;
+    pendingAfterClear = null;
+    busy = false;
+    gameOver = false;
+    score = 0;
+
+    // Зафиксировать рекорд на старте
+    startingBest = best;
+    recordBrokenThisGame = false;
+    nextMilestone = 100;
+
+    resetIdle();
+    flipAmount = 0;
+
+    overlay.classList.add('hidden');
+    updateScoreUI();
+
+    const cells = shuffle(emptyCells());
+    for (let i = 0; i < 5 && i < cells.length; i++) {
+      board[cells[i]] = randColor();
+      popScale[cells[i]] = 0;
+    }
+
+    nextBalls = [randColor(), randColor(), randColor()];
+    renderNext();
+  }
+
+  function renderNext() {
+    if (!nextDotsEl) return;
+    nextDotsEl.innerHTML = '';
+    for (const c of nextBalls) {
+      const d = document.createElement('div');
+      d.className = 'dot';
+      const col = PALETTE[c - 1].main;
+      d.style.background = col;
+      d.style.boxShadow = `0 0 12px ${col}, inset 0 -3px 6px rgba(0,0,0,.35)`;
+      nextDotsEl.appendChild(d);
+    }
+  }
+
+  function updateScoreUI() {
+    if (scoreVal) scoreVal.textContent = score;
+    if (score > best) {
+      best = score;
+      if (bestVal) bestVal.textContent = best;
+    }
+  }
+
+  function spawnBalls() {
+    const empties = shuffle(emptyCells());
+    let placed = 0;
+    for (let k = 0; k < 3 && k < empties.length; k++) {
+      const idx = empties[k];
+      board[idx] = nextBalls[k] || randColor();
+      popScale[idx] = 0;
+      placed++;
+    }
+    nextBalls = [randColor(), randColor(), randColor()];
+    renderNext();
+    if (placed) playSound('spawn');
+  }
+
+  function doClear(cells) {
+    const n = cells.size;
+    let sx = 0, sy = 0;
+    for (const i of cells) {
+      fx.push({ idx: i, color: board[i], t: 0, dur: 0.5 });
+      board[i] = 0;
+      sx += i % COLS;
+      sy += (i / COLS) | 0;
+    }
+    const cxg = sx / n + 0.5;
+    const cyg = sy / n + 0.5;
+
+    const pts = 2 * n + (n > 5 ? 5 * (n - 5) : 0);
+    score += pts;
+    updateScoreUI();
+    bumpVal(scoreVal);
+    playSound('clear');
+
+    // Всплывающий «+N»
+    textFx.push({
+      gx: cxg,
+      gy: cyg,
+      text: '+' + pts,
+      t: 0,
+      dur: 1.0
+    });
+
+    // Ударные волны: белая мгновенная + цветная
+    addShockwave(cxg, cyg, '#ffffff', 0.55, 2.6 + n * 0.14, 1.3);
+    addShockwave(cxg, cyg, PALETTE[board[cells.values().next().value] - 1]?.main || '#00f0ff', 0.75, 2.2 + n * 0.12, 1.0);
+    // Дополнительная волна для длинных линий
+    if (n >= 6) {
+      addShockwave(cxg, cyg, '#ffe94d', 1.0, 3.2 + n * 0.15, 1.5);
+    }
+
+    // Проверка рубежей и рекорда
+    checkScoreEffects();
+  }
+
+  // ВАЖНО: после схлопывания линии >= 5 НЕ добавляем новые шары.
+  function afterMove() {
+    const lines = findLines();
+    if (lines.size) {
+      doClear(lines);
+      pendingAfterClear = 'end';
+      clearTimer = 0.38;
+    } else {
+      spawnBalls();
+      afterSpawn();
+    }
+  }
+
+  function afterSpawn() {
+    const lines = findLines();
+    if (lines.size) {
+      doClear(lines);
+      pendingAfterClear = 'end';
+      clearTimer = 0.38;
+    } else {
+      checkGameOver();
+    }
+  }
+
+  function checkGameOver() {
+    if (countEmpty() === 0) endGame();
+    else busy = false;
+  }
+
+  function endGame() {
+    gameOver = true;
+    busy = true;
+    playSound('over');
+
+    if (score > 0) {
+      const local = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0;
+      if (score > local) localStorage.setItem(BEST_KEY, String(score));
+    }
+    loadStats();
+
+    if (ovTitle) ovTitle.textContent = 'ИГРА ОКОНЧЕНА';
+    if (ovText) ovText.innerHTML = 'Ваш счёт: <b>' + score + '</b>';
+    overlay.classList.remove('hidden');
+
+    onGameOver(score);
+  }
+
+  /* =========================================================
+     11. ХОД
+     ========================================================= */
+  function handleCell(idx) {
+    if (busy || gameOver) return;
+    resetIdle();
+
+    if (board[idx]) {
+      if (selected === idx) {
+        selected = -1;
+        reachable.clear();
+        playSound('deselect');
+        return;
+      }
+      selected = idx;
+      computeReachable(idx);
+      playSound('select');
+      return;
+    }
+
+    if (selected < 0) { playSound('invalid'); return; }
+    const path = findPath(selected, idx);
+    if (!path) { playSound('invalid'); return; }
+    doMove(selected, idx, path);
+  }
+
+  function doMove(from, to, path) {
+    const color = board[from];
+    board[from] = 0;
+    board[to] = color;
+    popScale[to] = 1;
+    selected = -1;
+    reachable.clear();
+    busy = true;
+
+    const dur = Math.max(0.12, Math.min(0.46, (path.length - 1) * 0.055));
+    moveAnim = { color, path, t: 0, dur, to };
+    playSound('move');
+  }
+
+  /* =========================================================
+     12. ВВОД
+     ========================================================= */
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    resetIdle();
+    if (busy || gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width) return;
+    const gx = ((e.clientX - rect.left) / rect.width) * COLS;
+    const gy = ((e.clientY - rect.top) / rect.height) * ROWS;
+    const x = Math.floor(gx), y = Math.floor(gy);
+    if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
+    handleCell(y * COLS + x);
+  }, { passive: false });
+
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  window.addEventListener('keydown', (e) => {
+    resetIdle();
+    if (e.key === 'Escape') {
+      selected = -1;
+      reachable.clear();
+    } else if (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') {
+      newGame();
+    }
+  });
+
+  /* =========================================================
+     13. ОБНОВЛЕНИЕ
+     ========================================================= */
+  function update(dt) {
+    updateBg(dt);
+
+    // --- idle-перетекание блика ---
+    const idleMs = performance.now() - lastActionTime;
+    const target = idleMs > FLIP_IDLE_DELAY ? 1 : 0;
+    if (flipAmount < target) {
+      flipAmount = Math.min(target, flipAmount + dt * FLIP_FWD_SPEED);
+    } else if (flipAmount > target) {
+      flipAmount = Math.max(target, flipAmount - dt * FLIP_BACK_SPEED);
+    }
+
+    // поп-скейл шаров
+    for (let i = 0; i < N; i++) {
+      if (popScale[i] < 1) popScale[i] = Math.min(1, popScale[i] + dt * 6.5);
+    }
+
+    // fx
+    for (let i = fx.length - 1; i >= 0; i--) {
+      fx[i].t += dt;
+      if (fx[i].t >= fx[i].dur) fx.splice(i, 1);
+    }
+    // textFx
+    for (let i = textFx.length - 1; i >= 0; i--) {
+      textFx[i].t += dt;
+      if (textFx[i].t >= textFx[i].dur) textFx.splice(i, 1);
+    }
+    // bigTextFx
+    for (let i = bigTextFx.length - 1; i >= 0; i--) {
+      bigTextFx[i].t += dt;
+      if (bigTextFx[i].t >= bigTextFx[i].dur) bigTextFx.splice(i, 1);
+    }
+    // shockwaves
+    for (let i = shockwaves.length - 1; i >= 0; i--) {
+      shockwaves[i].t += dt;
+      if (shockwaves[i].t >= shockwaves[i].dur) shockwaves.splice(i, 1);
+    }
+
+    if (moveAnim) {
+      moveAnim.t += dt;
+      if (moveAnim.t >= moveAnim.dur) {
+        moveAnim = null;
+        afterMove();
+      }
+      return;
+    }
+
+    if (clearTimer > 0) {
+      clearTimer -= dt;
+      if (clearTimer <= 0) {
+        clearTimer = 0;
+        const p = pendingAfterClear;
+        pendingAfterClear = null;
+        if (p === 'spawn') { spawnBalls(); afterSpawn(); }
+        else if (p === 'end') { checkGameOver(); }
+      }
+    }
+  }
+
+  /* =========================================================
+     14. ОТРИСОВКА
+     ========================================================= */
+  function drawBall(colorIdx, cx, cy, scale, alpha, cell) {
+    const sp = SPRITES_BASE[colorIdx - 1];
+    if (!sp) return;
+    const size = cell * 1.34 * scale;
+
+    // Основа
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(sp, cx - size / 2, cy - size / 2, size, size);
+    ctx.globalAlpha = 1;
+
+    // Блик — отдельный слой, двигается при idle
+    if (alpha > 0.02) {
+      const hlSize = size * 1.02;
+      const mag = cell * 0.26 * scale;
+      const offX = (flipAmount * 2 - 1) * mag * 0.70;
+      const offY = (flipAmount * 2 - 1) * mag * 1.00;
+      ctx.globalAlpha = alpha * 0.95;
+      ctx.drawImage(
+        HIGHLIGHT_SPRITE,
+        cx + offX - hlSize / 2,
+        cy + offY - hlSize / 2,
+        hlSize, hlSize
+      );
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function draw(time) {
+    const W = canvas.width;
+    if (!W) return;
+    const cell = W / COLS;
+    CELL = cell;
+
+    // Фон
+    drawBackground(W, time);
+
+    // Сетка
+    const pad = cell * 0.055;
+    ctx.lineWidth = Math.max(1, W * 0.0016);
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const px = x * cell + pad, py = y * cell + pad;
+        const s = cell - pad * 2;
+        roundRect(ctx, px, py, s, s, cell * 0.16);
+        ctx.fillStyle = 'rgba(0,240,255,0.035)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,240,255,0.10)';
+        ctx.stroke();
+      }
+    }
+
+    // Подсветка доступных
+    if (selected >= 0 && !busy && !gameOver) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (const i of reachable) {
+        const cx = ((i % COLS) + 0.5) * cell;
+        const cy = (((i / COLS) | 0) + 0.5) * cell;
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, cell * 0.22);
+        g.addColorStop(0, 'rgba(0,240,255,0.55)');
+        g.addColorStop(1, 'rgba(0,240,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(cx, cy, cell * 0.22, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // --- УДАРНЫЕ ВОЛНЫ (под шарами) ---
+    if (shockwaves.length) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (const s of shockwaves) {
+        const p = s.t / s.dur;
+        const cx = s.gx * cell;
+        const cy = s.gy * cell;
+        const maxR = s.maxR * cell;
+        const rad = maxR * (0.15 + p * 0.85);
+        const a = Math.max(0, 1 - p);
+        // Кольцо
+        ctx.strokeStyle = hexA(s.color, a * 0.85);
+        ctx.lineWidth = cell * 0.16 * (1 - p * 0.7) * s.lw;
+        ctx.beginPath(); ctx.arc(cx, cy, rad, 0, TAU); ctx.stroke();
+        // Мягкое свечение
+        const g = ctx.createRadialGradient(cx, cy, rad * 0.4, cx, cy, rad * 1.1);
+        g.addColorStop(0, hexA(s.color, 0));
+        g.addColorStop(0.7, hexA(s.color, a * 0.28));
+        g.addColorStop(1, hexA(s.color, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(cx, cy, rad * 1.1, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // --- ИСЧЕЗАЮЩИЕ ШАРЫ (яркий всплеск) ---
+    if (fx.length) {
+      // Слой яркого свечения (аддитивный)
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (const f of fx) {
+        const p = f.t / f.dur;
+        const cx = ((f.idx % COLS) + 0.5) * cell;
+        const cy = (((f.idx / COLS) | 0) + 0.5) * cell;
+        const col = PALETTE[f.color - 1].main;
+        const rad = cell * (0.30 + p * 0.95);
+        const a = Math.max(0, 1 - p);
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+        g.addColorStop(0, hexA('#ffffff', a * 1.0));
+        g.addColorStop(0.25, hexA(col, a * 0.85));
+        g.addColorStop(1, hexA(col, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(cx, cy, rad, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+
+      // Сам шар — сжимается и исчезает
+      for (const f of fx) {
+        const p = f.t / f.dur;
+        const cx = ((f.idx % COLS) + 0.5) * cell;
+        const cy = (((f.idx / COLS) | 0) + 0.5) * cell;
+        drawBall(f.color, cx, cy, 1 + p * 0.9, Math.max(0, 1 - p), cell);
+      }
+    }
+
+    // --- ОБЫЧНЫЕ ШАРЫ ---
+    for (let i = 0; i < N; i++) {
+      if (!board[i]) continue;
+      if (moveAnim && i === moveAnim.to) continue;
+      const cx = ((i % COLS) + 0.5) * cell;
+      const cy = (((i / COLS) | 0) + 0.5) * cell;
+      drawBall(board[i], cx, cy, popScale[i], 1, cell);
+    }
+
+    // Выделение
+    if (selected >= 0 && board[selected] && !gameOver) {
+      const cx = ((selected % COLS) + 0.5) * cell;
+      const cy = (((selected / COLS) | 0) + 0.5) * cell;
+      const pulse = 0.5 + 0.5 * Math.sin(time * 6);
+      ctx.strokeStyle = hexA(PALETTE[board[selected] - 1].main, 0.35 + 0.5 * pulse);
+      ctx.lineWidth = cell * 0.055;
+      ctx.beginPath(); ctx.arc(cx, cy, cell * 0.42, 0, TAU); ctx.stroke();
+    }
+
+    // Летящий шар
+    if (moveAnim) {
+      const p = Math.min(1, moveAnim.t / moveAnim.dur);
+      const path = moveAnim.path;
+      const segs = path.length - 1;
+      let cx, cy;
+      if (segs <= 0) {
+        const a = path[0];
+        cx = ((a % COLS) + 0.5) * cell;
+        cy = (((a / COLS) | 0) + 0.5) * cell;
+      } else {
+        const f = p * segs;
+        const si = Math.min(segs - 1, Math.floor(f));
+        const lt = f - si;
+        const a = path[si], b = path[si + 1];
+        const ax = ((a % COLS) + 0.5) * cell, ay = (((a / COLS) | 0) + 0.5) * cell;
+        const bx = ((b % COLS) + 0.5) * cell, by = (((b / COLS) | 0) + 0.5) * cell;
+        cx = ax + (bx - ax) * lt;
+        cy = ay + (by - ay) * lt;
+      }
+      drawBall(moveAnim.color, cx, cy, 1.05, 1, cell);
+    }
+
+    // Всплывающий «+N»
+    if (textFx.length) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '800 ' + (cell * 0.42) + 'px system-ui, -apple-system, sans-serif';
+      for (const t of textFx) {
+        const p = t.t / t.dur;
+        ctx.globalAlpha = Math.max(0, 1 - p * p);
+        ctx.fillStyle = '#ffe94d';
+        ctx.shadowColor = '#ffe94d';
+        ctx.shadowBlur = cell * 0.35;
+        ctx.fillText(t.text, t.gx * cell, t.gy * cell - p * cell * 1.1);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // --- Крупные текстовые эффекты (рубежи / рекорд) ---
+    if (bigTextFx.length) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const t of bigTextFx) {
+        const p = t.t / t.dur;
+        let a;
+        if (p < 0.12) a = p / 0.12;
+        else if (p > 0.72) a = 1 - (p - 0.72) / 0.28;
+        else a = 1;
+        a = Math.max(0, Math.min(1, a));
+
+        const scale = 1 + p * 0.28;
+        const mainSize = cell * 1.05 * scale;
+        const subSize = cell * 0.36 * scale;
+
+        ctx.globalAlpha = a;
+
+        // Двойная обводка / свечение
+        ctx.font = '900 ' + mainSize + 'px system-ui, -apple-system, sans-serif';
+        ctx.shadowColor = t.color;
+        ctx.shadowBlur = cell * 1.1;
+        ctx.lineWidth = cell * 0.14;
+        ctx.strokeStyle = hexA('#05060f', 0.85 * a);
+        ctx.strokeText(t.text, W / 2, W / 2 - cell * 0.28);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(t.text, W / 2, W / 2 - cell * 0.28);
+
+        // Подзаголовок
+        ctx.font = '700 ' + subSize + 'px system-ui, -apple-system, sans-serif';
+        ctx.shadowBlur = cell * 0.55;
+        ctx.fillStyle = t.color;
+        ctx.fillText(t.sub, W / 2, W / 2 + cell * 0.55);
+
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+    }
+  }
+
+  /* =========================================================
+     15. ЦИКЛ
+     ========================================================= */
+  let lastT = 0;
+  function loop(t) {
+    if (!lastT) lastT = t;
+    let dt = (t - lastT) / 1000;
+    lastT = t;
+    if (dt > 0.05) dt = 0.05;
+    if (dt < 0) dt = 0;
+    update(dt);
+    draw(t / 1000);
+    requestAnimationFrame(loop);
+  }
+
+  /* =========================================================
+     16. РАЗМЕРЫ
+     ========================================================= */
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    CELL = canvas.width / COLS;
+  }
+
+  if (window.ResizeObserver) new ResizeObserver(resizeCanvas).observe(canvas);
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));
+  document.addEventListener('visibilitychange', () => { lastT = 0; });
+
+  /* =========================================================
+     17. СТАТИСТИКА
+     ========================================================= */
+  function loadStats() {
+    try {
+      let myBest = 0;
+      if (typeof Leaderboard !== 'undefined' && Leaderboard.getPlayerBest) {
+        myBest = Leaderboard.getPlayerBest(GAME_ID, currentPlayer) || 0;
+      }
+      const local = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0;
+      best = Math.max(myBest, local, score);
+      if (bestVal) bestVal.textContent = best;
+
+      let globalRec = null;
+      if (typeof Leaderboard !== 'undefined' && Leaderboard.getGlobalRecord) {
+        globalRec = Leaderboard.getGlobalRecord(GAME_ID);
+      }
+      if (globalVal) {
+        if (globalRec && globalRec.score) {
+          globalVal.textContent = globalRec.score;
+          globalVal.title = globalRec.username ? (globalRec.username + ': ' + globalRec.score) : '';
+        } else {
+          globalVal.textContent = '—';
+          globalVal.title = '';
+        }
+      }
+    } catch (e) {
+      if (bestVal) bestVal.textContent = best;
+    }
+  }
+
+  window.addEventListener('leaderboard-updated', loadStats);
+
+  async function onGameOver(finalScore) {
+    try {
+      if (typeof Leaderboard !== 'undefined' && Leaderboard.submit &&
+          currentPlayer && finalScore > 0) {
+        await Leaderboard.submit(GAME_ID, currentPlayer, finalScore);
+        loadStats();
+      }
+    } catch (e) { /* тихо */ }
+  }
+
+  /* =========================================================
+     18. КНОПКИ
+     ========================================================= */
+  newBtn?.addEventListener('click', () => { playSound('select'); newGame(); });
+  ovBtn?.addEventListener('click', () => { playSound('select'); newGame(); });
+
+  /* =========================================================
+     19. СТАРТ
+     ========================================================= */
+  resizeCanvas();
+  loadStats();
+  newGame();
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
