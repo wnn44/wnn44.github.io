@@ -76,7 +76,7 @@ window.GAMES = [
   },
   {
     id:          'neon-lines5',
-	title:       'NEON MATCH-3',
+	title:       'NEON LINES',
 	description: 'Классическая головоломка «пять в ряд» с неоновыми шариками.',
 	url:         'neon-lines5.html',
 	icon:        '🔮',
