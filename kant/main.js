@@ -538,45 +538,54 @@ class Main {
         }
     }
 
-    triggerVictoryScreen(winner) {
-        // Записываем результат в статистику
-        if (window.stats) {
-            window.stats.recordResult(winner, this.movesCount);
-        }
-        window.audio.playWin();
+triggerVictoryScreen(winner) {
+    // Записываем результат: локально + отправляем на NEON ARCADE (wins - losses)
+    const scoreLine = document.getElementById('score-change-line');
 
-        // Lock interaction
-        document.getElementById('grid').style.pointerEvents = 'none';
-
-        // Animate cubes
-        for (let i = 0; i < 16; i++) {
-            const cubeData = this.game.board[i];
-            const dom = this.cubeDOMMap[i];
-            if (dom && cubeData) {
-                if (cubeData.owner === winner) {
-                    dom.classList.add('victory-dance');
+    (async () => {
+        if (window.PlatformIntegration) {
+            const newScore = await window.PlatformIntegration.recordResult(winner, this.movesCount);
+            if (scoreLine) {
+                if (winner === 'white') {
+                    scoreLine.textContent = newScore !== null
+                        ? `🏆 Счёт NEON ARCADE: ${newScore} (${newScore >= 0 ? '+' : ''}${newScore})`
+                        : '🏆 Победа записана!';
                 } else {
-                    dom.classList.add('loser-fade');
+                    scoreLine.textContent = newScore !== null
+                        ? `💀 Счёт NEON ARCADE: ${newScore}`
+                        : 'Сыграй ещё — отыграешься!';
                 }
             }
+        } else if (window.stats) {
+            window.stats.recordResult(winner, this.movesCount);
         }
+    })();
 
-        // Cinematic camera rotation (isometric angled view)
-        this.boardContainer.style.transition = 'transform 3s cubic-bezier(0.25, 1, 0.5, 1)';
-        this.boardContainer.style.transform = `rotateX(-60deg) rotateZ(${winner === 'white' ? 45 : 225}deg)`;
+    window.audio.playWin();
+    document.getElementById('grid').style.pointerEvents = 'none';
 
-        // Show UI Overlay after a dramatic pause
-        setTimeout(() => {
-            const go = document.getElementById('game-over');
-            go.style.display = 'flex';
-            // force reflow
-            void go.offsetWidth;
-            go.classList.add('show');
-            document.getElementById('winner-text').innerText = winner === 'white'
-                ? (window._t && window._t.playerWins)   || 'ПОБЕДА!'
-                : (window._t && window._t.computerWins) || 'КОМПЬЮТЕР ПОБЕДИЛ!';
-        }, 1500);
+    for (let i = 0; i < 16; i++) {
+        const cubeData = this.game.board[i];
+        const dom = this.cubeDOMMap[i];
+        if (dom && cubeData) {
+            if (cubeData.owner === winner) dom.classList.add('victory-dance');
+            else dom.classList.add('loser-fade');
+        }
     }
+
+    this.boardContainer.style.transition = 'transform 3s cubic-bezier(0.25, 1, 0.5, 1)';
+    this.boardContainer.style.transform = `rotateX(-60deg) rotateZ(${winner === 'white' ? 45 : 225}deg)`;
+
+    setTimeout(() => {
+        const go = document.getElementById('game-over');
+        go.style.display = 'flex';
+        void go.offsetWidth;
+        go.classList.add('show');
+        document.getElementById('winner-text').innerText = winner === 'white'
+            ? (window._t && window._t.playerWins)   || 'ПОБЕДА!'
+            : (window._t && window._t.computerWins) || 'КОМПЬЮТЕР ПОБЕДИЛ!';
+    }, 1500);
+}
 
     updateStatus() {
         if (!this.statusText) this.statusText = document.getElementById('turn-text');

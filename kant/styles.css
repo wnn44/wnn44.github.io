@@ -96,19 +96,6 @@ body.animated-bg .bg-layer {
 }
 
 /* === TOP BAR === */
-#ui {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 1000;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    background: rgba(10, 10, 20, 0.85);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    gap: 12px;
-}
 
 h1 {
     margin: 0;
@@ -1057,10 +1044,7 @@ body[data-theme="phantom"] .cube-wrapper.black .face {
         bottom: 60px;
     }
 
-    /* Нижний бар с кнопками */
-    #mobile-bar {
-        display: flex !important;
-    }
+
     
     #game-over h2 { font-size: 3rem; }
     .modal-content { padding: 15px; }
@@ -1394,5 +1378,303 @@ body[data-theme="phantom"] .cube-wrapper.black .face {
     color: rgba(255, 65, 108, 0.7);
     border-color: rgba(255, 65, 108, 0.35);
     background: rgba(255, 65, 108, 0.08);
+}
+
+/* ══════════════════════════════════════════════════
+   NEON ARCADE — единый header
+   ══════════════════════════════════════════════════ */
+
+:root {
+    --neon-cyan:    #00f0ff;
+    --neon-magenta: #ff00d4;
+    --neon-purple:  #a855ff;
+    --neon-yellow:  #ffe94d;
+    --neon-green:   #00ff88;
+    --neon-red:     #ff3355;
+    --neon-text:    #e6f7ff;
+    --neon-panel:   rgba(13, 17, 40, 0.85);
+    --neon-header-h: 60px; /* обновляется через JS */
+}
+
+body {
+    background: radial-gradient(ellipse at top, #0b0d1f, #05060f 75%) !important;
+    color: var(--neon-text);
+    padding-top: var(--neon-header-h);
+    box-sizing: border-box;
+}
+body.animated-bg { background: #05060f !important; }
+
+/* --- Единая шапка: 1 ряд на десктопе, обтекание на мобиле --- */
+header.neon-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;                /* ключ к 2–3 рядам на мобиле */
+    gap: 8px 10px;
+    padding: 8px 14px;
+    min-height: 56px;
+    box-sizing: border-box;
+    background: rgba(5, 6, 15, 0.92);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.22);
+    box-shadow: 0 0 22px rgba(0, 240, 255, 0.18);
+}
+
+/* Логотип */
+header.neon-header .logo {
+    font-family: 'Cinzel', 'Inter', serif;
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: 3px;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan), 0 0 22px rgba(0, 240, 255, 0.55);
+    flex-shrink: 0;
+}
+
+/* Индикатор хода (внутри шапки) */
+header.neon-header #turn-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: rgba(0, 240, 255, 0.07);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+header.neon-header #turn-text {
+    font-size: 13px !important;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 8px currentColor;
+}
+header.neon-header .mini-cube-wrap {
+    width: 20px; height: 20px;
+    perspective: 100px;
+    display: inline-block;
+    position: relative !important;
+    top: auto !important; left: auto !important;
+    pointer-events: none;
+}
+header.neon-header .mini-cube-mesh,
+header.neon-header .mini-cube-mesh .face {
+    width: 20px; height: 20px;
+}
+header.neon-header .mini-cube-mesh .face.top    { transform: translateZ(10px); }
+header.neon-header .mini-cube-mesh .face.bottom { transform: rotateY(180deg) translateZ(10px); }
+header.neon-header .mini-cube-mesh .face.front  { transform: rotateX(-90deg) translateZ(10px); }
+header.neon-header .mini-cube-mesh .face.back   { transform: rotateX(90deg) translateZ(10px); }
+header.neon-header .mini-cube-mesh .face.right  { transform: rotateY(90deg) translateZ(10px); }
+header.neon-header .mini-cube-mesh .face.left   { transform: rotateY(-90deg) translateZ(10px); }
+
+/* Правая группа */
+header.neon-header .header-right {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* Кнопки-иконки (📖 🏅 🔊) в шапке */
+header.neon-header .top-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    background: rgba(0, 240, 255, 0.08);
+    color: var(--neon-cyan);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+    transition: background .18s, transform .1s, box-shadow .2s;
+    flex-shrink: 0;
+}
+header.neon-header .top-btn:hover {
+    background: rgba(0, 240, 255, 0.22);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.55);
+    transform: scale(1.06);
+}
+header.neon-header .top-btn:active { transform: scale(0.94); }
+
+/* Чипы платформы + новые кнопки */
+header.neon-header .chip,
+header.neon-header .config {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+    transition: background .2s, transform .1s, box-shadow .2s;
+    user-select: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+header.neon-header .chip:hover,
+header.neon-header .config:hover {
+    background: rgba(0, 240, 255, 0.22);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    transform: translateY(-1px);
+}
+header.neon-header .chip.user {
+    background: rgba(168, 85, 255, 0.12);
+    border-color: rgba(168, 85, 255, 0.5);
+    color: var(--neon-purple);
+    text-shadow: 0 0 8px rgba(168, 85, 255, 0.6);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+header.neon-header .chip.lb {
+    background: rgba(255, 233, 77, 0.1);
+    border-color: rgba(255, 233, 77, 0.5);
+    color: var(--neon-yellow);
+    text-shadow: 0 0 8px rgba(255, 233, 77, 0.6);
+}
+header.neon-header .chip.menu {
+    background: rgba(255, 0, 212, 0.1);
+    border-color: rgba(255, 0, 212, 0.5);
+    color: var(--neon-magenta);
+    text-shadow: 0 0 8px rgba(255, 0, 212, 0.6);
+}
+/* Красивая «кнопка настройки» */
+header.neon-header .config {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(168, 85, 255, 0.18));
+    border-color: rgba(0, 240, 255, 0.55);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.35), inset 0 0 10px rgba(168, 85, 255, 0.25);
+}
+header.neon-header .config:hover {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(168, 85, 255, 0.32));
+    box-shadow: 0 0 22px rgba(0, 240, 255, 0.7), 0 0 30px rgba(168, 85, 255, 0.4);
+}
+
+/* Сцена и панель настроек прижаты под шапкой */
+#scene {
+    top: var(--neon-header-h);
+    bottom: 0;
+}
+#settings-panel {
+    top: calc(var(--neon-header-h) + 8px);
+    background: var(--neon-panel);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
+}
+
+/* AI-трекер */
+#ai-tracker-panel {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 998;
+    background: var(--neon-panel);
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    font-family: 'Courier New', monospace;
+    color: var(--neon-cyan);
+    font-size: 13px;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+/* ═════ МОБИЛЬНАЯ АДАПТАЦИЯ: шапка в 2–3 ряда ═════ */
+@media (max-width: 900px) {
+    header.neon-header {
+        padding: 6px 10px;
+        gap: 6px 8px;
+    }
+    header.neon-header .logo { font-size: 1.05rem; letter-spacing: 2px; }
+
+    /* Скрываем текстовые подписи, оставляем иконки */
+    header.neon-header .chip-label { display: none; }
+    header.neon-header .chip,
+    header.neon-header .config {
+        padding: 6px 9px;
+        font-size: 15px;
+        gap: 0;
+    }
+    header.neon-header .chip.user {
+        font-size: 12px;
+        padding: 6px 10px;
+        max-width: 100px;
+    }
+
+    header.neon-header .top-btn {
+        width: 32px; height: 32px;
+        font-size: 15px;
+    }
+
+    /* Индикатор хода переносится на новую строку вместе с кнопками */
+    header.neon-header #turn-indicator {
+        order: 10;                  /* уходит вниз, если не влезает */
+        flex-basis: 100%;
+        justify-content: center;
+        padding: 5px 10px;
+    }
+
+    #scene { bottom: 0; }
+    #ai-tracker-panel {
+        bottom: 12px;
+        font-size: 11px;
+        padding: 8px 12px;
+        max-width: 92vw;
+        white-space: normal;
+        text-align: center;
+    }
+}
+
+@media (max-width: 420px) {
+    header.neon-header { gap: 5px; padding: 5px 8px; }
+    header.neon-header .logo { font-size: 0.95rem; }
+    header.neon-header .top-btn { width: 30px; height: 30px; font-size: 14px; }
+    header.neon-header .chip,
+    header.neon-header .config { padding: 5px 8px; font-size: 14px; }
+    header.neon-header .chip.user { font-size: 11px; padding: 5px 8px; max-width: 80px; }
+}
+
+/* Убедимся, что старая нижняя панель мобильного не мешает */
+#mobile-bar { display: none !important; }
+
+/* Мобильная адаптация: учитываем новый header */
+@media (max-width: 768px) {
+    :root { --neon-header-h: 52px; --neon-ui-h: 40px; }
+
+    header.neon-header { padding: 0 10px; }
+    header.neon-header .logo { font-size: 1.1rem; letter-spacing: 2px; }
+    header.neon-header .chip,
+    header.neon-header .config {
+        padding: 5px 8px;
+        font-size: 11px;
+    }
+    /* Прячем подписи на мобиле — оставляем эмодзи/иконки */
+    header.neon-header .chip.user { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    #scene {
+        top: calc(var(--neon-header-h) + var(--neon-ui-h));
+        bottom: 60px;
+    }
+}
+
+/* Линия со счётом на экране победы */
+#score-change-line {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
 }
 
