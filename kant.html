@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>КАНТ — NEON ARCADE</title>
+<meta name="description" content="КАНТ — 3D стратегическая игра с кубиками. Играй бесплатно на NEON ARCADE!">
+
+<!-- === ПЛАТФОРМЕННЫЕ ЗАВИСИМОСТИ (строгий порядок) === -->
+<link rel="stylesheet" href="common.css">
+<script src="auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="leaderboard.js"></script>
+<script src="leaderboard-ui.js"></script>
+
+<!-- === СТИЛИ ИГРЫ === -->
+<link rel="stylesheet" href="styles.css?v=51">
+
+<!-- Блокировка нативных жестов -->
+<script>
+document.addEventListener('touchmove', function(e) {
+    if (e.target.closest('.modal-content') || e.target.closest('#mobile-drawer-content') || e.target.closest('#settings-panel')) return;
+    if (e.cancelable) e.preventDefault();
+}, { passive: false });
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('dragstart', e => e.preventDefault());
+</script>
+</head>
+<body>
+
+<!-- === ЕДИНЫЙ HEADER NEON ARCADE === -->
+<header class="neon-header">
+  <div class="logo">КАНТ</div>
+
+  <!-- Ход + анимированный кубик -->
+  <div id="turn-indicator" class="status">
+    <span id="turn-text">Ход</span>
+    <div id="turn-cube" class="mini-cube-wrap cube-wrapper white">
+      <div class="mini-cube-mesh">
+        <div class="face top"></div>
+        <div class="face bottom"></div>
+        <div class="face front"></div>
+        <div class="face back"></div>
+        <div class="face left"></div>
+        <div class="face right"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <button id="open-rules-btn" class="top-btn" title="Правила">📖</button>
+    <button id="open-stats-btn" class="top-btn" title="Рекорды">🏅</button>
+    <button id="mute-btn" class="top-btn" title="Звук">🔊</button>
+    <div class="chip lb" id="lbHeaderBtn" title="Лидеры">🏆 <span class="chip-label">ЛИДЕРЫ</span></div>
+    <div class="chip user" id="userChip">ГОСТЬ</div>
+    <div class="config" id="config" title="Настройки">⚙️ <span class="chip-label">НАСТРОЙКИ</span></div>
+    <div class="chip menu" id="menuBtn" title="Меню">◀ <span class="chip-label">МЕНЮ</span></div>
+  </div>
+</header>
+
+<!-- === ПАНЕЛЬ НАСТРОЕК (desktop) === -->
+<div id="settings-panel">
+    <select id="theme-selector" style="width:100%; padding:6px 10px; border-radius:6px; background:rgba(0,0,0,0.5); color:#fff; border:1px solid rgba(255,255,255,0.2); font-family:inherit; font-size:13px; cursor:pointer; outline:none; margin-bottom:10px;">
+        <option value="classic">Classic Glass</option>
+        <option value="neon">Cyberpunk Neon</option>
+        <option value="wood">Wood &amp; Slate</option>
+        <option value="hologram">Sci-Fi Hologram</option>
+        <option value="candy">Matte Candy</option>
+        <option value="luxury">Gold &amp; Sapphire</option>
+        <option value="retro">Retro 8-bit</option>
+        <option value="acid">Acid Trip</option>
+        <option value="gothic">Blood &amp; Bone</option>
+        <option value="steampunk">Steampunk</option>
+        <option value="synthwave">Synthwave</option>
+        <option value="elements">Ice &amp; Fire</option>
+        <option value="void">High Contrast Void</option>
+        <option value="toxic">Toxic Biohazard</option>
+        <option value="phantom">Ghost / Phantom</option>
+    </select>
+    <label style="display:block; margin-bottom:8px; cursor:pointer; font-size:13px; color:#fff;">
+        <input type="checkbox" id="physics-toggle" checked style="margin-right:5px; cursor:pointer;"> Физика (3D Прыжки)
+    </label>
+    <label style="display:block; margin-bottom:10px; cursor:pointer; font-size:13px; color:#fff;">
+        <input type="checkbox" id="bg-toggle" style="margin-right:5px; cursor:pointer;"> Живой фон (Магия)
+    </label>
+    <div class="audio-slider-row">
+        <label class="audio-slider-label">
+            <span id="vol-icon">🔊</span> <span>Громкость</span>
+            <span id="vol-value" class="audio-slider-pct">100%</span>
+        </label>
+        <input type="range" id="volume-slider" class="audio-slider" min="0" max="100" step="1" value="100">
+    </div>
+    <div class="audio-slider-row">
+        <label class="audio-slider-label">
+            <span>🎲 Хаос тона</span>
+            <span id="pitch-value" class="audio-slider-pct">0%</span>
+        </label>
+        <input type="range" id="pitch-slider" class="audio-slider" min="0" max="100" step="1" value="0">
+    </div>
+</div>
+
+<!-- === ЖИВОЙ ФОН === -->
+<div id="bg-layer" class="bg-layer">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+</div>
+
+<!-- === ПРЕДУПРЕЖДЕНИЯ И AI === -->
+<div class="warning" id="warning"></div>
+<div id="ai-tracker-panel">
+    <div style="font-weight:bold; margin-bottom:4px;">[ СИСТЕМА АНАЛИЗА ИИ ]</div>
+    <div id="ai-thoughts">Сбор данных о противнике...</div>
+</div>
+
+<!-- === МОБИЛЬНЫЙ DRAWER === -->
+<div id="mobile-drawer">
+    <div id="mobile-drawer-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-weight:900; font-size:16px; color:#fff;">⚙️ Настройки</span>
+            <button id="mob-drawer-close" style="background:none; border:none; color:#fff; font-size:22px; cursor:pointer; padding:0 4px;">✕</button>
+        </div>
+        <label style="display:block; margin-bottom:8px; font-size:14px; color:#fff;">Тема:</label>
+        <select id="mob-theme-selector" style="width:100%; padding:8px 10px; border-radius:8px; background:rgba(0,0,0,0.6); color:#fff; border:1px solid rgba(255,255,255,0.2); font-size:14px; margin-bottom:12px;">
+            <option value="classic">Classic Glass</option>
+            <option value="neon">Cyberpunk Neon</option>
+            <option value="wood">Wood &amp; Slate</option>
+            <option value="hologram">Sci-Fi Hologram</option>
+            <option value="candy">Matte Candy</option>
+            <option value="luxury">Gold &amp; Sapphire</option>
+            <option value="retro">Retro 8-bit</option>
+            <option value="acid">Acid Trip</option>
+            <option value="gothic">Blood &amp; Bone</option>
+            <option value="steampunk">Steampunk</option>
+            <option value="synthwave">Synthwave</option>
+            <option value="elements">Ice &amp; Fire</option>
+            <option value="void">High Contrast Void</option>
+            <option value="toxic">Toxic Biohazard</option>
+            <option value="phantom">Ghost / Phantom</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:10px; font-size:14px; color:#fff; margin-bottom:10px; cursor:pointer;">
+            <input type="checkbox" id="mob-physics-toggle" checked style="width:18px;height:18px;cursor:pointer;">
+            Физика (3D Прыжки)
+        </label>
+        <label style="display:flex; align-items:center; gap:10px; font-size:14px; color:#fff; cursor:pointer;">
+            <input type="checkbox" id="mob-bg-toggle" style="width:18px;height:18px;cursor:pointer;">
+            Живой фон (Магия)
+        </label>
+        <div class="audio-slider-row" style="margin-top:14px;">
+            <label class="audio-slider-label">
+                <span id="mob-vol-icon">🔊</span> <span>Громкость</span>
+                <span id="mob-vol-value" class="audio-slider-pct">100%</span>
+            </label>
+            <input type="range" id="mob-volume-slider" class="audio-slider" min="0" max="100" step="1" value="100">
+        </div>
+        <div class="audio-slider-row">
+            <label class="audio-slider-label">
+                <span>🎲 Хаос тона</span>
+                <span id="mob-pitch-value" class="audio-slider-pct">0%</span>
+            </label>
+            <input type="range" id="mob-pitch-slider" class="audio-slider" min="0" max="100" step="1" value="0">
+        </div>
+    </div>
+</div>
+
+<!-- === ИГРОВОЕ ПОЛЕ === -->
+<div id="scene">
+    <div id="zoom-wrapper">
+        <div id="board-container">
+            <div id="grid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- === ФИНАЛЬНЫЙ ЭКРАН === -->
+<div id="game-over">
+    <h2 id="winner-text"></h2>
+    <div id="score-change-line" style="font-size:1.1rem; color:#00f0ff; margin-bottom:24px; text-shadow:0 0 12px #00f0ff;"></div>
+    <button id="play-again-btn">ИГРАТЬ СНОВА</button>
+</div>
+
+<!-- === МОДАЛКА ЛОКАЛЬНОЙ СТАТИСТИКИ === -->
+<div id="stats-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>🏆 МОИ РЕКОРДЫ</h2>
+        <div id="stats-body"></div>
+        <div class="winrate-bar-wrap" id="winrate-wrap" style="display:none;">
+            <div class="winrate-bar-label">
+                <span>Процент побед</span>
+                <span id="winrate-pct">0%</span>
+            </div>
+            <div class="winrate-bar"><div class="winrate-bar-fill" id="winrate-fill"></div></div>
+        </div>
+        <button id="reset-stats-btn" class="btn-danger">♻️ СБРОСИТЬ СТАТИСТИКУ</button>
+        <button id="close-stats" class="close-btn">ЗАКРЫТЬ</button>
+    </div>
+</div>
+
+<!-- === ПОДТВЕРЖДЕНИЕ СБРОСА === -->
+<div id="confirm-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width:360px; text-align:center;">
+        <h2 id="confirm-title">♻️ СБРОСИТЬ СТАТИСТИКУ</h2>
+        <p id="confirm-text" style="color:#ccc; margin-bottom:24px; line-height:1.5;">Сбросить всю статистику? Это действие нельзя отменить.</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button id="confirm-cancel" class="close-btn" style="flex:1;">ОТМЕНА</button>
+            <button id="confirm-ok" class="btn-danger" style="flex:1;">СБРОСИТЬ</button>
+        </div>
+    </div>
+</div>
+
+<!-- === ПРАВИЛА === -->
+<div id="rules-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>ПРАВИЛА ИГРЫ</h2>
+        <div class="rules-text">
+            <p><strong>Цель игры</strong> — первым выстроить свои кубики на исходной горизонтали противника. Кубики должны быть ориентированы кругами вверх.</p>
+            <div style="margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;"><strong>Правила:</strong></div>
+            <ol>
+                <li>После того как один из игроков устанавливает на исходной горизонтали противника один свой кубик кругом вверх, противник обязан последующими ходами вывести с этой горизонтали все свои кубики быстрейшим по числу ходов способом.<br><br>В случае, если освободить горизонталь пока невозможно, игрок-противник выбирает ходы по своему усмотрению до тех пор, пока в ходе игры не появится такая возможность.</li>
+                <li>Если одному из игроков удаётся установить на исходной горизонтали противника два своих кубика кругами вверх, то противник ходит в соответствии с правилом 1 с той лишь разницей, что теперь он должен освободить и следующую за исходной горизонталь.</li>
+                <li>После того как игрок устанавливает три кубика кругом вверх, противник обязан немедленно освободить четвёртый кубик, если тот в окружении.</li>
+                <li>Если все кубики одного из игроков блокированы так, что он не может сделать ни одного хода, противнику засчитывается поражение.</li>
+            </ol>
+        </div>
+        <button id="close-rules" class="close-btn">ПОНЯТНО</button>
+    </div>
+</div>
+
+<!-- === СКРИПТЫ ИГРЫ === -->
+<script src="audio.js?v=51"></script>
+<script src="cube.js?v=51"></script>
+<script src="ai.js?v=51"></script>
+<script src="game.js?v=51"></script>
+<script src="i18n.js?v=51"></script>
+<script src="stats.js?v=51"></script>
+<script src="main.js?v=51"></script>
+
+<!-- === ИНТЕГРАЦИЯ С ПЛАТФОРМОЙ NEON ARCADE === -->
+<script src="platform-integration.js?v=51"></script>
+<script>
+(function bootstrapKant() {
+    'use strict';
+    function start() {
+        const lang = typeof getLang === 'function' ? getLang() : 'ru';
+        if (typeof applyLocale === 'function') applyLocale(lang);
+
+        // Инициализация игры
+        window.app = new Main();
+
+        // Play again
+        document.getElementById('play-again-btn')
+            .addEventListener('click', () => location.reload());
+
+        // Mute (desktop)
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            window.audio.toggle();
+            window.syncVolumeUI(Math.round(window.audio.volume * 100));
+        });
+
+        // Мобильные кнопки
+        const drawer = document.getElementById('mobile-drawer');
+        const rulesModal = document.getElementById('rules-modal');
+        const statsModal = document.getElementById('stats-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+
+        function showModal(m) { m.style.display='flex'; void m.offsetWidth; m.classList.add('show'); }
+        function hideModal(m) { m.classList.remove('show'); setTimeout(()=>m.style.display='none',300); }
+
+        // === Локальная статистика ===
+        function openStatsModal() {
+            const s = window.stats, body = document.getElementById('stats-body');
+            const wrap = document.getElementById('winrate-wrap');
+            const t = window._t || {};
+            if (s.isEmpty()) {
+                body.innerHTML = `<div class="stats-empty"><span class="stats-empty-icon">🎲</span>${t.statsEmpty||'Сыграй первую партию!'}</div>`;
+                wrap.style.display = 'none';
+            } else {
+                body.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card wins"><div class="stat-icon">🏆</div><div class="stat-value">${s.wins}</div><div class="stat-label">${t.statsWins||'Победы'}</div></div>
+                        <div class="stat-card losses"><div class="stat-icon">💀</div><div class="stat-value">${s.losses}</div><div class="stat-label">${t.statsLosses||'Поражения'}</div></div>
+                        <div class="stat-card games"><div class="stat-icon">🎮</div><div class="stat-value">${s.gamesPlayed}</div><div class="stat-label">${t.statsGames||'Партий'}</div></div>
+                        <div class="stat-card streak"><div class="stat-icon">🔥</div><div class="stat-value">${s.winStreak}</div><div class="stat-label">${t.statsStreak||'Серия'}</div></div>
+                        <div class="stat-card best"><div class="stat-icon">⭐</div><div class="stat-value">${s.bestStreak}</div><div class="stat-label">${t.statsBest||'Рекорд серии'}</div></div>
+                        <div class="stat-card fastest"><div class="stat-icon">⚡</div><div class="stat-value">${s.fastestWin!==null?s.fastestWin:'—'}</div><div class="stat-label">${t.statsFastest||'Быстрейшая'}</div></div>
+                    </div>`;
+                wrap.style.display = 'block';
+                const pct = s.winRate;
+                document.getElementById('winrate-pct').textContent = pct + '%';
+                requestAnimationFrame(()=>requestAnimationFrame(()=>{
+                    document.getElementById('winrate-fill').style.width = pct + '%';
+                }));
+            }
+            showModal(statsModal);
+        }
+
+        document.getElementById('open-rules-btn')?.addEventListener('click', () => showModal(rulesModal));
+        document.getElementById('close-rules').addEventListener('click', () => hideModal(rulesModal));
+        rulesModal.addEventListener('click', e => { if (e.target === rulesModal) hideModal(rulesModal); });
+
+        document.getElementById('open-stats-btn')?.addEventListener('click', openStatsModal);
+        document.getElementById('close-stats').addEventListener('click', () => hideModal(statsModal));
+        statsModal.addEventListener('click', e => { if (e.target === statsModal) hideModal(statsModal); });
+
+        document.getElementById('reset-stats-btn').addEventListener('click', () => showModal(confirmModal));
+        document.getElementById('confirm-cancel').addEventListener('click', () => hideModal(confirmModal));
+        document.getElementById('confirm-ok').addEventListener('click', () => {
+            hideModal(confirmModal);
+            window.stats.reset();
+            openStatsModal();
+        });
+        confirmModal.addEventListener('click', e => { if (e.target === confirmModal) hideModal(confirmModal); });
+
+        document.getElementById('mob-rules-btn').addEventListener('click', () => showModal(rulesModal));
+        document.getElementById('mob-stats-btn')?.addEventListener('click', openStatsModal);
+
+        document.getElementById('mob-settings-btn').addEventListener('click', () => {
+            drawer.classList.add('open');
+            document.getElementById('mob-theme-selector').value = document.getElementById('theme-selector').value;
+            document.getElementById('mob-physics-toggle').checked = document.getElementById('physics-toggle').checked;
+            document.getElementById('mob-bg-toggle').checked = document.getElementById('bg-toggle').checked;
+            const cv = Math.round(window.audio.volume*100), cp = Math.round(window.audio.pitchChaos*100);
+            document.getElementById('mob-volume-slider').value = cv;
+            document.getElementById('mob-vol-value').textContent = cv + '%';
+            document.getElementById('mob-vol-icon').textContent = cv === 0 ? '🔇' : '🔊';
+            document.getElementById('mob-pitch-slider').value = cp;
+            document.getElementById('mob-pitch-value').textContent = cp + '%';
+        });
+		
+		function syncHeaderHeight() {
+			const h = document.querySelector('header.neon-header');
+			if (h) document.documentElement.style.setProperty('--neon-header-h', h.offsetHeight + 'px');
+}
+			syncHeaderHeight();
+			window.addEventListener('resize', syncHeaderHeight);
+			setTimeout(syncHeaderHeight, 150);   // после подгрузки шрифтов
+			setTimeout(syncHeaderHeight, 600);
+
+        function syncDrawerState() {
+            const phys = document.getElementById('mob-physics-toggle').checked;
+            document.getElementById('physics-toggle').checked = phys;
+            localStorage.setItem('kant_physics', phys);
+            const bg = document.getElementById('mob-bg-toggle').checked;
+            document.getElementById('bg-toggle').checked = bg;
+            localStorage.setItem('kant_bg', bg);
+            document.body.classList.toggle('animated-bg', bg);
+        }
+        document.getElementById('mob-drawer-close').addEventListener('click', () => {
+            syncDrawerState(); drawer.classList.remove('open');
+        });
+        drawer.addEventListener('click', e => { if (e.target === drawer) { syncDrawerState(); drawer.classList.remove('open'); } });
+
+        document.getElementById('mob-bg-toggle').addEventListener('input', e => {
+            document.body.classList.toggle('animated-bg', e.target.checked);
+        });
+        document.getElementById('mob-theme-selector').addEventListener('change', e => {
+            const sel = document.getElementById('theme-selector');
+            sel.value = e.target.value;
+            sel.dispatchEvent(new Event('change'));
+        });
+
+        // === AUDIO SLIDERS ===
+        function syncVolumeUI(pct) {
+            const icon = pct === 0 ? '🔇' : (pct < 40 ? '🔉' : '🔊');
+            document.getElementById('vol-value').textContent = pct + '%';
+            document.getElementById('vol-icon').textContent = icon;
+            document.getElementById('mob-vol-value').textContent = pct + '%';
+            document.getElementById('mob-vol-icon').textContent = icon;
+            document.getElementById('volume-slider').value = pct;
+            document.getElementById('mob-volume-slider').value = pct;
+            document.getElementById('mute-btn').textContent = icon;
+            const mb = document.getElementById('mob-mute-btn');
+            mb.textContent = icon; mb.classList.toggle('muted', pct === 0);
+        }
+        window.syncVolumeUI = syncVolumeUI;
+
+        function syncPitchUI(pct) {
+            document.getElementById('pitch-value').textContent = pct + '%';
+            document.getElementById('mob-pitch-value').textContent = pct + '%';
+            document.getElementById('pitch-slider').value = pct;
+            document.getElementById('mob-pitch-slider').value = pct;
+        }
+
+        syncVolumeUI(Math.round(window.audio.volume*100));
+        syncPitchUI(Math.round(window.audio.pitchChaos*100));
+
+        document.getElementById('volume-slider').addEventListener('input', e => {
+            const p = parseInt(e.target.value);
+            window.audio.setVolume(p/100); syncVolumeUI(p);
+        });
+        document.getElementById('mob-volume-slider').addEventListener('input', e => {
+            const p = parseInt(e.target.value);
+            window.audio.setVolume(p/100); syncVolumeUI(p);
+        });
+        document.getElementById('pitch-slider').addEventListener('input', e => {
+            const p = parseInt(e.target.value);
+            window.audio.setPitchChaos(p/100); syncPitchUI(p); window.audio.playClick();
+        });
+        document.getElementById('mob-pitch-slider').addEventListener('input', e => {
+            const p = parseInt(e.target.value);
+            window.audio.setPitchChaos(p/100); syncPitchUI(p); window.audio.playClick();
+        });
+        document.getElementById('mob-mute-btn').addEventListener('click', () => {
+            window.audio.toggle(); syncVolumeUI(Math.round(window.audio.volume*100));
+        });
+
+        // === ПЛАТФОРМЕННЫЙ HEADER ===
+        PlatformIntegration.init();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+})();
+</script>
+</body>
+</html>
