@@ -23,6 +23,12 @@ const Auth = (() => {
       const t = (name || '').trim();
       if (!validate(t)) return false;
       localStorage.setItem(KEY, t);
+      try {
+        const recent = JSON.parse(localStorage.getItem('neon_recent_players') || '[]');
+        const filtered = recent.filter(x => x.toLowerCase() !== t.toLowerCase());
+        filtered.unshift(t);
+        localStorage.setItem('neon_recent_players', JSON.stringify(filtered.slice(0, 20)));
+      } catch {}
       return true;
     },
 

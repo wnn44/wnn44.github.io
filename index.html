@@ -443,6 +443,263 @@
     font-size: 11px;
     letter-spacing: 2px;
   }
+
+  /* ===== КРАСОЧНОЕ ОКНО АВТОРИЗАЦИИ / ВЫБОРА ИГРОКА ===== */
+  .auth-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 5, 14, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 16px;
+  }
+  .auth-modal.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .auth-card {
+    background: linear-gradient(180deg, rgba(16, 20, 48, 0.98), rgba(7, 10, 24, 0.99));
+    border: 1px solid rgba(0, 240, 255, 0.45);
+    border-radius: 22px;
+    padding: 32px 28px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 
+      0 0 50px rgba(0, 240, 255, 0.25),
+      0 0 90px rgba(255, 0, 212, 0.18),
+      0 30px 80px rgba(0, 0, 0, 0.9);
+    position: relative;
+    overflow: hidden;
+    transform: scale(0.92);
+    transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  }
+  .auth-modal.open .auth-card {
+    transform: scale(1);
+  }
+  
+  /* Верхний неоновый блик карточки */
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00f0ff, #ff00d4, #00f0ff);
+    background-size: 200% auto;
+    animation: textShimmer 3s linear infinite;
+  }
+
+  .auth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    background: rgba(0, 240, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .auth-title {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+    background: linear-gradient(90deg, #00f0ff, #ff00d4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.4));
+  }
+  .auth-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 22px;
+    line-height: 1.4;
+  }
+
+  /* Раздел 1: Список существующих игроков */
+  .auth-section-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--yellow);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .player-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-height: 140px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    padding-right: 4px;
+  }
+  .player-chip {
+    background: rgba(13, 17, 40, 0.9);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .player-chip:hover {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(255, 0, 212, 0.2));
+    border-color: var(--accent);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+  }
+  .player-chip.active {
+    border-color: var(--success);
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--success);
+  }
+  .player-empty {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    padding: 6px 0;
+  }
+
+  /* Разделитель */
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0;
+    color: rgba(136, 170, 187, 0.5);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.2), transparent);
+  }
+  .auth-divider::before {
+    background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2));
+  }
+
+  /* Форма ввода нового игрока */
+  .auth-new-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .auth-input-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .auth-input-wrap input {
+    width: 100%;
+    background: rgba(5, 7, 20, 0.85);
+    border: 1.5px solid rgba(0, 240, 255, 0.35);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 14px;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  .auth-input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+    background: rgba(7, 10, 28, 0.95);
+  }
+  .auth-input-wrap input::placeholder {
+    color: rgba(136, 170, 187, 0.5);
+    font-weight: 400;
+  }
+
+  .auth-btn-submit {
+    padding: 13px;
+    background: linear-gradient(135deg, #00f0ff 0%, #ff00d4 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .auth-btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.8), 0 0 50px rgba(255, 0, 212, 0.5);
+  }
+
+  .auth-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .auth-skip-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+  .auth-skip-btn:hover {
+    color: #fff;
+  }
+  .auth-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .auth-close-btn:hover {
+    color: var(--accent);
+  }
 </style>
 </head>
 <body>
@@ -469,6 +726,37 @@
   </section>
 </main>
 
+<!-- Красочное окно авторизации / выбора игрока -->
+<div class="auth-modal" id="auth-modal" role="dialog" aria-modal="true">
+  <div class="auth-card">
+    <button class="auth-close-btn" id="auth-close-btn" title="Закрыть">✕</button>
+    <div class="auth-badge">🎮 NEON ARCADE PROFILE</div>
+    <div class="auth-title">КТО ИГРАЕТ?</div>
+    <div class="auth-subtitle">Выберите ваш профиль для таблицы лидеров или введите новое имя:</div>
+
+    <div class="auth-section-label">⚡ Выберите игрока:</div>
+    <div class="player-list" id="modal-player-list">
+      <!-- Генерируется из JS -->
+    </div>
+
+    <div class="auth-divider">или введите новое имя</div>
+
+    <form class="auth-new-form" id="modal-auth-form">
+      <div class="auth-input-wrap">
+        <input type="text" id="modal-nickname-input" placeholder="Новый никнейм..." maxlength="20" autocomplete="off" required>
+      </div>
+      <button type="submit" class="auth-btn-submit">
+        <span>▶ ВОЙТИ В АРКАДУ</span>
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <span style="font-size:11px; color:#5c6594;">2-20 символов (a-z, 0-9, _, -)</span>
+      <button type="button" class="auth-skip-btn" id="auth-skip-btn">Продолжить как Гость</button>
+    </div>
+  </div>
+</div>
+
 <footer>© NEON ARCADE</footer>
 
 <script>
@@ -477,6 +765,70 @@
 document.addEventListener('DOMContentLoaded', () => {
   const profileBox = document.getElementById('profile-box');
   const gamesGrid = document.getElementById('games-grid');
+  const authModal = document.getElementById('auth-modal');
+  const modalPlayerList = document.getElementById('modal-player-list');
+  const modalAuthForm = document.getElementById('modal-auth-form');
+  const modalNickInput = document.getElementById('modal-nickname-input');
+  const authCloseBtn = document.getElementById('auth-close-btn');
+  const authSkipBtn = document.getElementById('auth-skip-btn');
+
+  // Управление красочным окном авторизации
+  function openAuthModal() {
+    renderPlayerList();
+    authModal.classList.add('open');
+    setTimeout(() => modalNickInput && modalNickInput.focus(), 150);
+  }
+
+  function closeAuthModal() {
+    authModal.classList.remove('open');
+  }
+
+  function selectPlayer(name) {
+    if (Auth.set(name)) {
+      closeAuthModal();
+      renderProfile();
+      loadAllStatsBatch(window.GAMES || [], Auth.get());
+    }
+  }
+
+  function renderPlayerList() {
+    modalPlayerList.innerHTML = '';
+    const currentName = Auth.get();
+    const players = Leaderboard.getAllPlayers();
+
+    if (!players || players.length === 0) {
+      modalPlayerList.innerHTML = '<div class="player-empty">Список пуст. Создайте первого игрока ниже!</div>';
+      return;
+    }
+
+    players.forEach(p => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'player-chip' + (currentName && p.toLowerCase() === currentName.toLowerCase() ? ' active' : '');
+      chip.innerHTML = `<span>👤</span> <span>${escapeHtml(p)}</span>`;
+      chip.onclick = () => selectPlayer(p);
+      modalPlayerList.appendChild(chip);
+    });
+  }
+
+  modalAuthForm.onsubmit = (e) => {
+    e.preventDefault();
+    const val = modalNickInput.value;
+    if (Auth.set(val)) {
+      modalNickInput.value = '';
+      closeAuthModal();
+      renderProfile();
+      loadAllStatsBatch(window.GAMES || [], Auth.get());
+    } else {
+      alert('Никнейм должен содержать от 2 до 20 символов (латиница, цифры, _, -)');
+    }
+  };
+
+  authCloseBtn.onclick = closeAuthModal;
+  authSkipBtn.onclick = closeAuthModal;
+  authModal.onclick = (e) => {
+    if (e.target === authModal) closeAuthModal();
+  };
 
   // Отрисовка плашки никнейма в шапке
   function renderProfile() {
@@ -491,33 +843,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const changeBtn = document.createElement('button');
       changeBtn.className = 'btn-sm';
       changeBtn.textContent = 'Сменить';
-      changeBtn.onclick = () => {
-        Auth.clear();
-        renderProfile();
-        renderGames(); // обновляем рекорды на карточках
-      };
+      changeBtn.onclick = openAuthModal;
 
       profileBox.appendChild(info);
       profileBox.appendChild(changeBtn);
     } else {
-      const form = document.createElement('form');
-      form.className = 'nickname-form';
-      form.onsubmit = (e) => {
-        e.preventDefault();
-        const val = form.querySelector('input').value;
-        if (Auth.set(val)) {
-          renderProfile();
-          renderGames();
-        } else {
-          alert('Никнейм должен содержать от 2 до 20 символов (латиница, цифры, _, -)');
-        }
-      };
-
-      form.innerHTML = `
-        <input type="text" class="nickname-input" placeholder="Ваш никнейм..." maxlength="20" required>
-        <button type="submit" class="btn-save">Сохранить</button>
-      `;
-      profileBox.appendChild(form);
+      const loginBtn = document.createElement('button');
+      loginBtn.className = 'btn-save';
+      loginBtn.innerHTML = '👤 Выбрать игрока';
+      loginBtn.onclick = openAuthModal;
+      profileBox.appendChild(loginBtn);
     }
   }
 
@@ -723,9 +1058,17 @@ document.addEventListener('DOMContentLoaded', () => {
   renderProfile();
   renderGames();
 
-  // Автоматически обновлять рекорды на карточках, как только данные пришли из сети
+  // Проверка авторизации: если игрок не авторизован — выскакивает красочное окно!
+  if (!Auth.isValid()) {
+    setTimeout(openAuthModal, 250);
+  }
+
+  // Автоматически обновлять рекорды на карточках и список игроков в модалке, как только данные пришли из сети
   window.addEventListener('leaderboard-updated', () => {
     loadAllStatsBatch(window.GAMES || [], Auth.get());
+    if (authModal.classList.contains('open')) {
+      renderPlayerList();
+    }
   });
 });
 </script>

@@ -114,6 +114,21 @@ const Leaderboard = (() => {
   return {
     sync,
 
+    /** Получить список всех уникальных игроков */
+    getAllPlayers() {
+      const set = new Set();
+      try {
+        const recent = JSON.parse(localStorage.getItem('neon_recent_players') || '[]');
+        if (Array.isArray(recent)) recent.forEach(p => p && set.add(p.trim()));
+      } catch {}
+      for (const item of db) {
+        if (item.username && item.username.trim()) {
+          set.add(item.username.trim());
+        }
+      }
+      return Array.from(set);
+    },
+
     /** Топ игроков для игры */
     getTop(gameId, limit = 50) {
       const filtered = db.filter(r => isSameGame(r.game_id, gameId));
