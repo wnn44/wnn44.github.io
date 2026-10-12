@@ -241,172 +241,219 @@ document.addEventListener('dragstart', e => e.preventDefault());
 <script>
 (function bootstrapKant() {
     'use strict';
+
     function start() {
         const lang = typeof getLang === 'function' ? getLang() : 'ru';
         if (typeof applyLocale === 'function') applyLocale(lang);
 
-        // Инициализация игры
         window.app = new Main();
 
-        // Play again
-        document.getElementById('play-again-btn')
-            .addEventListener('click', () => location.reload());
+        // ---------- helpers ----------
+        const $  = (id) => document.getElementById(id);
+        const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
 
-        // Mute (desktop)
-        document.getElementById('mute-btn').addEventListener('click', () => {
-            window.audio.toggle();
-            window.syncVolumeUI(Math.round(window.audio.volume * 100));
-        });
-
-        // Мобильные кнопки
-        const drawer = document.getElementById('mobile-drawer');
-        const rulesModal = document.getElementById('rules-modal');
-        const statsModal = document.getElementById('stats-modal');
-        const confirmModal = document.getElementById('confirm-modal');
-
-        function showModal(m) { m.style.display='flex'; void m.offsetWidth; m.classList.add('show'); }
-        function hideModal(m) { m.classList.remove('show'); setTimeout(()=>m.style.display='none',300); }
-
-        // === Локальная статистика ===
-        function openStatsModal() {
-            const s = window.stats, body = document.getElementById('stats-body');
-            const wrap = document.getElementById('winrate-wrap');
-            const t = window._t || {};
-            if (s.isEmpty()) {
-                body.innerHTML = `<div class="stats-empty"><span class="stats-empty-icon">🎲</span>${t.statsEmpty||'Сыграй первую партию!'}</div>`;
-                wrap.style.display = 'none';
-            } else {
-                body.innerHTML = `
-                    <div class="stats-grid">
-                        <div class="stat-card wins"><div class="stat-icon">🏆</div><div class="stat-value">${s.wins}</div><div class="stat-label">${t.statsWins||'Победы'}</div></div>
-                        <div class="stat-card losses"><div class="stat-icon">💀</div><div class="stat-value">${s.losses}</div><div class="stat-label">${t.statsLosses||'Поражения'}</div></div>
-                        <div class="stat-card games"><div class="stat-icon">🎮</div><div class="stat-value">${s.gamesPlayed}</div><div class="stat-label">${t.statsGames||'Партий'}</div></div>
-                        <div class="stat-card streak"><div class="stat-icon">🔥</div><div class="stat-value">${s.winStreak}</div><div class="stat-label">${t.statsStreak||'Серия'}</div></div>
-                        <div class="stat-card best"><div class="stat-icon">⭐</div><div class="stat-value">${s.bestStreak}</div><div class="stat-label">${t.statsBest||'Рекорд серии'}</div></div>
-                        <div class="stat-card fastest"><div class="stat-icon">⚡</div><div class="stat-value">${s.fastestWin!==null?s.fastestWin:'—'}</div><div class="stat-label">${t.statsFastest||'Быстрейшая'}</div></div>
-                    </div>`;
-                wrap.style.display = 'block';
-                const pct = s.winRate;
-                document.getElementById('winrate-pct').textContent = pct + '%';
-                requestAnimationFrame(()=>requestAnimationFrame(()=>{
-                    document.getElementById('winrate-fill').style.width = pct + '%';
-                }));
-            }
-            showModal(statsModal);
+        function showModal(m) {
+            if (!m) return;
+            m.style.display = 'flex';
+            void m.offsetWidth;
+            m.classList.add('show');
+        }
+        function hideModal(m) {
+            if (!m) return;
+            m.classList.remove('show');
+            setTimeout(() => m.style.display = 'none', 300);
         }
 
-        document.getElementById('open-rules-btn')?.addEventListener('click', () => showModal(rulesModal));
-        document.getElementById('close-rules').addEventListener('click', () => hideModal(rulesModal));
-        rulesModal.addEventListener('click', e => { if (e.target === rulesModal) hideModal(rulesModal); });
+        // ---------- Play again ----------
+        on('play-again-btn', 'click', () => location.reload());
 
-        document.getElementById('open-stats-btn')?.addEventListener('click', openStatsModal);
-        document.getElementById('close-stats').addEventListener('click', () => hideModal(statsModal));
-        statsModal.addEventListener('click', e => { if (e.target === statsModal) hideModal(statsModal); });
-
-        document.getElementById('reset-stats-btn').addEventListener('click', () => showModal(confirmModal));
-        document.getElementById('confirm-cancel').addEventListener('click', () => hideModal(confirmModal));
-        document.getElementById('confirm-ok').addEventListener('click', () => {
-            hideModal(confirmModal);
-            window.stats.reset();
-            openStatsModal();
-        });
-        confirmModal.addEventListener('click', e => { if (e.target === confirmModal) hideModal(confirmModal); });
-
-        document.getElementById('mob-rules-btn').addEventListener('click', () => showModal(rulesModal));
-        document.getElementById('mob-stats-btn')?.addEventListener('click', openStatsModal);
-
-        document.getElementById('mob-settings-btn').addEventListener('click', () => {
-            drawer.classList.add('open');
-            document.getElementById('mob-theme-selector').value = document.getElementById('theme-selector').value;
-            document.getElementById('mob-physics-toggle').checked = document.getElementById('physics-toggle').checked;
-            document.getElementById('mob-bg-toggle').checked = document.getElementById('bg-toggle').checked;
-            const cv = Math.round(window.audio.volume*100), cp = Math.round(window.audio.pitchChaos*100);
-            document.getElementById('mob-volume-slider').value = cv;
-            document.getElementById('mob-vol-value').textContent = cv + '%';
-            document.getElementById('mob-vol-icon').textContent = cv === 0 ? '🔇' : '🔊';
-            document.getElementById('mob-pitch-slider').value = cp;
-            document.getElementById('mob-pitch-value').textContent = cp + '%';
-        });
-		
-		function syncHeaderHeight() {
-			const h = document.querySelector('header.neon-header');
-			if (h) document.documentElement.style.setProperty('--neon-header-h', h.offsetHeight + 'px');
-}
-			syncHeaderHeight();
-			window.addEventListener('resize', syncHeaderHeight);
-			setTimeout(syncHeaderHeight, 150);   // после подгрузки шрифтов
-			setTimeout(syncHeaderHeight, 600);
-
-        function syncDrawerState() {
-            const phys = document.getElementById('mob-physics-toggle').checked;
-            document.getElementById('physics-toggle').checked = phys;
-            localStorage.setItem('kant_physics', phys);
-            const bg = document.getElementById('mob-bg-toggle').checked;
-            document.getElementById('bg-toggle').checked = bg;
-            localStorage.setItem('kant_bg', bg);
-            document.body.classList.toggle('animated-bg', bg);
-        }
-        document.getElementById('mob-drawer-close').addEventListener('click', () => {
-            syncDrawerState(); drawer.classList.remove('open');
-        });
-        drawer.addEventListener('click', e => { if (e.target === drawer) { syncDrawerState(); drawer.classList.remove('open'); } });
-
-        document.getElementById('mob-bg-toggle').addEventListener('input', e => {
-            document.body.classList.toggle('animated-bg', e.target.checked);
-        });
-        document.getElementById('mob-theme-selector').addEventListener('change', e => {
-            const sel = document.getElementById('theme-selector');
-            sel.value = e.target.value;
-            sel.dispatchEvent(new Event('change'));
-        });
-
-        // === AUDIO SLIDERS ===
+        // ---------- Audio UI ----------
+        // Полностью защищённая версия — работает даже без мобильных элементов.
         function syncVolumeUI(pct) {
+            pct = Math.max(0, Math.min(100, parseInt(pct) || 0));
             const icon = pct === 0 ? '🔇' : (pct < 40 ? '🔉' : '🔊');
-            document.getElementById('vol-value').textContent = pct + '%';
-            document.getElementById('vol-icon').textContent = icon;
-            document.getElementById('mob-vol-value').textContent = pct + '%';
-            document.getElementById('mob-vol-icon').textContent = icon;
-            document.getElementById('volume-slider').value = pct;
-            document.getElementById('mob-volume-slider').value = pct;
-            document.getElementById('mute-btn').textContent = icon;
-            const mb = document.getElementById('mob-mute-btn');
-            mb.textContent = icon; mb.classList.toggle('muted', pct === 0);
+
+            // desktop popup
+            if ($('vol-value'))  $('vol-value').textContent = pct + '%';
+            if ($('vol-icon'))   $('vol-icon').textContent  = icon;
+            if ($('volume-slider')) $('volume-slider').value = pct;
+            // mobile drawer
+            if ($('mob-vol-value')) $('mob-vol-value').textContent = pct + '%';
+            if ($('mob-vol-icon'))  $('mob-vol-icon').textContent  = icon;
+            if ($('mob-volume-slider')) $('mob-volume-slider').value = pct;
+            // кнопки mute
+            if ($('mute-btn'))   $('mute-btn').textContent = icon;
+            if ($('mob-mute-btn')) {
+                $('mob-mute-btn').textContent = icon;
+                $('mob-mute-btn').classList.toggle('muted', pct === 0);
+            }
         }
         window.syncVolumeUI = syncVolumeUI;
 
         function syncPitchUI(pct) {
-            document.getElementById('pitch-value').textContent = pct + '%';
-            document.getElementById('mob-pitch-value').textContent = pct + '%';
-            document.getElementById('pitch-slider').value = pct;
-            document.getElementById('mob-pitch-slider').value = pct;
+            pct = Math.max(0, Math.min(100, parseInt(pct) || 0));
+            if ($('pitch-value'))      $('pitch-value').textContent = pct + '%';
+            if ($('mob-pitch-value'))  $('mob-pitch-value').textContent = pct + '%';
+            if ($('pitch-slider'))     $('pitch-slider').value = pct;
+            if ($('mob-pitch-slider')) $('mob-pitch-slider').value = pct;
         }
+        window.syncPitchUI = syncPitchUI;
 
-        syncVolumeUI(Math.round(window.audio.volume*100));
-        syncPitchUI(Math.round(window.audio.pitchChaos*100));
+        // initial
+        syncVolumeUI(Math.round(window.audio.volume * 100));
+        syncPitchUI(Math.round(window.audio.pitchChaos * 100));
 
-        document.getElementById('volume-slider').addEventListener('input', e => {
-            const p = parseInt(e.target.value);
-            window.audio.setVolume(p/100); syncVolumeUI(p);
-        });
-        document.getElementById('mob-volume-slider').addEventListener('input', e => {
-            const p = parseInt(e.target.value);
-            window.audio.setVolume(p/100); syncVolumeUI(p);
-        });
-        document.getElementById('pitch-slider').addEventListener('input', e => {
-            const p = parseInt(e.target.value);
-            window.audio.setPitchChaos(p/100); syncPitchUI(p); window.audio.playClick();
-        });
-        document.getElementById('mob-pitch-slider').addEventListener('input', e => {
-            const p = parseInt(e.target.value);
-            window.audio.setPitchChaos(p/100); syncPitchUI(p); window.audio.playClick();
-        });
-        document.getElementById('mob-mute-btn').addEventListener('click', () => {
-            window.audio.toggle(); syncVolumeUI(Math.round(window.audio.volume*100));
+        // mute (desktop)
+        on('mute-btn', 'click', () => {
+            window.audio.toggle();
+            syncVolumeUI(Math.round(window.audio.volume * 100));
         });
 
-        // === ПЛАТФОРМЕННЫЙ HEADER ===
-        PlatformIntegration.init();
+        // sliders (desktop)
+        on('volume-slider', 'input', (e) => {
+            const p = parseInt(e.target.value);
+            window.audio.setVolume(p / 100); syncVolumeUI(p);
+        });
+        on('pitch-slider', 'input', (e) => {
+            const p = parseInt(e.target.value);
+            window.audio.setPitchChaos(p / 100); syncPitchUI(p); window.audio.playClick();
+        });
+
+        // sliders (mobile drawer)
+        on('mob-volume-slider', 'input', (e) => {
+            const p = parseInt(e.target.value);
+            window.audio.setVolume(p / 100); syncVolumeUI(p);
+        });
+        on('mob-pitch-slider', 'input', (e) => {
+            const p = parseInt(e.target.value);
+            window.audio.setPitchChaos(p / 100); syncPitchUI(p); window.audio.playClick();
+        });
+
+        // ---------- Modals ----------
+        const rulesModal   = $('rules-modal');
+        const statsModal   = $('stats-modal');
+        const confirmModal = $('confirm-modal');
+
+        // Rules
+        on('open-rules-btn', 'click', () => showModal(rulesModal));
+        on('close-rules',    'click', () => hideModal(rulesModal));
+        if (rulesModal) rulesModal.addEventListener('click', e => {
+            if (e.target === rulesModal) hideModal(rulesModal);
+        });
+
+        // Stats
+        function openStatsModal() {
+            const s = window.stats, body = $('stats-body');
+            const wrap = $('winrate-wrap');
+            const t = window._t || {};
+            if (!body) return;
+            if (s.isEmpty()) {
+                body.innerHTML = `<div class="stats-empty"><span class="stats-empty-icon">🎲</span>${t.statsEmpty || 'Сыграй первую партию!'}</div>`;
+                if (wrap) wrap.style.display = 'none';
+            } else {
+                body.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card wins"><div class="stat-icon">🏆</div><div class="stat-value">${s.wins}</div><div class="stat-label">${t.statsWins || 'Победы'}</div></div>
+                        <div class="stat-card losses"><div class="stat-icon">💀</div><div class="stat-value">${s.losses}</div><div class="stat-label">${t.statsLosses || 'Поражения'}</div></div>
+                        <div class="stat-card games"><div class="stat-icon">🎮</div><div class="stat-value">${s.gamesPlayed}</div><div class="stat-label">${t.statsGames || 'Партий'}</div></div>
+                        <div class="stat-card streak"><div class="stat-icon">🔥</div><div class="stat-value">${s.winStreak}</div><div class="stat-label">${t.statsStreak || 'Серия'}</div></div>
+                        <div class="stat-card best"><div class="stat-icon">⭐</div><div class="stat-value">${s.bestStreak}</div><div class="stat-label">${t.statsBest || 'Рекорд серии'}</div></div>
+                        <div class="stat-card fastest"><div class="stat-icon">⚡</div><div class="stat-value">${s.fastestWin !== null ? s.fastestWin : '—'}</div><div class="stat-label">${t.statsFastest || 'Быстрейшая'}</div></div>
+                    </div>`;
+                if (wrap) wrap.style.display = 'block';
+                const pct = s.winRate;
+                if ($('winrate-pct')) $('winrate-pct').textContent = pct + '%';
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    if ($('winrate-fill')) $('winrate-fill').style.width = pct + '%';
+                }));
+            }
+            showModal(statsModal);
+        }
+        window.openStatsModal = openStatsModal;
+
+        on('open-stats-btn', 'click', openStatsModal);
+        on('close-stats',    'click', () => hideModal(statsModal));
+        if (statsModal) statsModal.addEventListener('click', e => {
+            if (e.target === statsModal) hideModal(statsModal);
+        });
+
+        // Reset stats
+        on('reset-stats-btn', 'click', () => showModal(confirmModal));
+        on('confirm-cancel',  'click', () => hideModal(confirmModal));
+        on('confirm-ok',      'click', () => {
+            hideModal(confirmModal);
+            window.stats.reset();
+            openStatsModal();
+        });
+        if (confirmModal) confirmModal.addEventListener('click', e => {
+            if (e.target === confirmModal) hideModal(confirmModal);
+        });
+
+        // ---------- Mobile drawer ----------
+        const drawer = $('mobile-drawer');
+
+        function syncDrawerState() {
+            const phys = $('mob-physics-toggle')?.checked ?? true;
+            const bg   = $('mob-bg-toggle')?.checked ?? false;
+            if ($('physics-toggle')) $('physics-toggle').checked = phys;
+            if ($('bg-toggle'))      $('bg-toggle').checked = bg;
+            localStorage.setItem('kant_physics', phys);
+            localStorage.setItem('kant_bg', bg);
+            document.body.classList.toggle('animated-bg', bg);
+        }
+        window.syncDrawerState = syncDrawerState;
+
+        function openMobileDrawer() {
+            if (!drawer) return;
+            drawer.classList.add('open');
+            if ($('mob-theme-selector')) $('mob-theme-selector').value = $('theme-selector')?.value || 'classic';
+            if ($('mob-physics-toggle')) $('mob-physics-toggle').checked = $('physics-toggle')?.checked ?? true;
+            if ($('mob-bg-toggle'))      $('mob-bg-toggle').checked = $('bg-toggle')?.checked ?? false;
+            const cv = Math.round(window.audio.volume * 100);
+            const cp = Math.round(window.audio.pitchChaos * 100);
+            if ($('mob-volume-slider')) $('mob-volume-slider').value = cv;
+            if ($('mob-vol-value'))     $('mob-vol-value').textContent = cv + '%';
+            if ($('mob-vol-icon'))      $('mob-vol-icon').textContent = cv === 0 ? '🔇' : '🔊';
+            if ($('mob-pitch-slider'))  $('mob-pitch-slider').value = cp;
+            if ($('mob-pitch-value'))   $('mob-pitch-value').textContent = cp + '%';
+        }
+        window.openMobileDrawer = openMobileDrawer;
+
+        on('mob-drawer-close', 'click', () => {
+            syncDrawerState();
+            drawer?.classList.remove('open');
+        });
+        if (drawer) {
+            drawer.addEventListener('click', e => {
+                if (e.target === drawer) {
+                    syncDrawerState();
+                    drawer.classList.remove('open');
+                }
+            });
+        }
+        on('mob-bg-toggle', 'input', (e) => {
+            document.body.classList.toggle('animated-bg', e.target.checked);
+        });
+        on('mob-theme-selector', 'change', (e) => {
+            const sel = $('theme-selector');
+            if (sel) { sel.value = e.target.value; sel.dispatchEvent(new Event('change')); }
+        });
+
+        // ---------- Header height (for CSS variables) ----------
+        function syncHeaderHeight() {
+            const h = document.querySelector('header.neon-header');
+            if (h) document.documentElement.style.setProperty('--neon-header-h', h.offsetHeight + 'px');
+        }
+        syncHeaderHeight();
+        window.addEventListener('resize', syncHeaderHeight);
+        setTimeout(syncHeaderHeight, 150);
+        setTimeout(syncHeaderHeight, 600);
+
+        // ---------- Platform (Auth / Leaderboard / header buttons) ----------
+        if (window.PlatformIntegration && typeof window.PlatformIntegration.init === 'function') {
+            try { window.PlatformIntegration.init(); }
+            catch (err) { console.error('[KANT] PlatformIntegration.init failed:', err); }
+        }
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

@@ -154,8 +154,10 @@ class Main {
         zoomWrapper.style.transform = `scale(${this.currentZoom})`;
         boardOuter.style.transform = `rotateX(${this.rotX}deg) rotateZ(${this.rotZ}deg)`;
         
-        window.addEventListener('wheel', (e) => {
-            if (e.target.closest('#ui') || e.target.closest('#game-over') || e.target.closest('#settings-panel')) return;
+		window.addEventListener('wheel', (e) => {
+			if (e.target.closest('header') ||               // <-- ДОБАВЬ ЭТО
+				e.target.closest('#game-over') ||
+				e.target.closest('#settings-panel')) return;
             if (e.deltaY < 0) {
                 this.currentZoom *= 1.08;
             } else {
@@ -188,8 +190,12 @@ class Main {
 
 
 
-        const startInteraction = (x, y, e) => {
-            if (e.target.closest('#ui') || e.target.closest('#game-over') || e.target.closest('#settings-panel') || e.target.closest('#mobile-drawer') || e.target.closest('#mobile-bar') || e.target.closest('.modal-overlay')) return;
+		const startInteraction = (x, y, e) => {
+			if (e.target.closest('header') ||              // <-- ДОБАВЬ ЭТО
+				e.target.closest('#game-over') ||
+				e.target.closest('#settings-panel') ||
+				e.target.closest('#mobile-drawer') ||
+				e.target.closest('.modal-overlay')) return;
             this.isTrueDrag = false; // reset
             startInteractionX = x;
             startInteractionY = y;
@@ -285,8 +291,10 @@ class Main {
         window.addEventListener('touchcancel', stopDrag);
 
         // Double click/tap anywhere empty to snap perfectly flat
-        const resetRotation = (e) => {
-            if (e.target.closest('.cube-wrapper') || e.target.closest('#ui') || e.target.closest('#game-over')) return;
+			const resetRotation = (e) => {
+				if (e.target.closest('.cube-wrapper') ||
+					e.target.closest('header') ||               // <-- ДОБАВЬ ЭТО (вместо #ui)
+					e.target.closest('#game-over')) return;
             this.rotX = 0;
             this.rotZ = 0;
             const bc = document.getElementById('board-container');
