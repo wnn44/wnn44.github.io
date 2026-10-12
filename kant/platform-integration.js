@@ -59,7 +59,7 @@
             if (menuBtn) {
                 menuBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    window.location.href = 'index.html';
+                    window.location.href = '../index.html';
                 });
             }
 
