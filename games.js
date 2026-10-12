@@ -75,14 +75,14 @@ window.GAMES = [
 	preview:     { type: 'video', src: 'previews/ether-blocks.mp4' }
   },
   {
-    id:          'neon-lines5',
+    id:          'neon-lines',
 	title:       'NEON LINES',
 	description: 'Классическая головоломка «пять в ряд» с неоновыми шариками.',
-	url:         'neon-lines5.html',
+	url:         'neon-lines.html',
 	icon:        '🔮',
 	color:       '#00f0ff',
 	tags:        ['головоломка', 'пять-в-ряд'],
-	preview:     { type: 'video', src: 'previews/neon-lines5.mp4' }
+	preview:     { type: 'video', src: 'previews/neon-lines.mp4' }
   },
   {
 	id:          'gravity-breaker',
