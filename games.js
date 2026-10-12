@@ -84,4 +84,14 @@ window.GAMES = [
 	tags:        ['головоломка', 'пять-в-ряд'],
 	preview:     { type: 'video', src: 'previews/neon-lines5.mp4' }
   },
+  {
+	id:          'gravity-breaker',
+	title:       'ГРАВИТОН',
+	description: 'Собери сумму очков до окончания выстрелов, не дай слоям кирпичей пересечь красную линию — гравитация в помощь.',
+	url:         'gravity-breaker.html',
+	icon:        '💥',
+	color:       '#00f0ff',
+	tags:        ['аркада', 'физика', 'головоломка'],
+	preview:     { type: 'video', src: 'previews/gravity-breaker.mp4' }
+ },
 ];
