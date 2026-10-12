@@ -12,6 +12,17 @@
  * preview.src:   путь к файлу относительно корня сайта
  */
 window.GAMES = [
+    {
+    id:          'kant',
+    title:       'KANT',
+    description: 'Старая забытая всеми игра.',
+    url:         'kant/kant.html',
+    icon:        '🟦',
+    color:       '#00f0ff',
+    accent:      '#26d9f2',
+    tags:        ['логическая'],
+    preview:     { type: 'video', src: 'previews/kant.mp4' },
+  },
   {
     id:          'tetris',
     title:       'NEON TETRIS',
