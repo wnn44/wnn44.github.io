@@ -20,10 +20,10 @@ const Leaderboard = (() => {
 
   // Алиасы для игр с разными вариантами ID
   const ALIAS_MAP = {
-    'neon-match3': 'neon-balls3',
-    'neon-balls3': 'neon-match3',
-    'bubble_strike': 'neon_bubble_shooter',
-    'neon_bubble_shooter': 'bubble_strike'
+ //   'neon-match3': 'neon-balls3',
+ //   'neon-balls3': 'neon-match3',
+ //   'bubble_strike': 'neon_bubble_shooter',
+ //   'neon_bubble_shooter': 'bubble_strike'
   };
 
   function isSameGame(id1, id2) {
