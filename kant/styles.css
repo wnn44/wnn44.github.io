@@ -1021,35 +1021,7 @@ body[data-theme="phantom"] .cube-wrapper.black .face {
     animation: warningBlink 1.2s infinite ease-in-out;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-    /* Desktop settings popup скрыт на мобиле */
-    #settings-panel { display: none !important; }
 
-    /* Скрываем top-bar кнопки на мобиле (дублируются в нижнем баре) */
-    .top-btn { display: none !important; }
-
-    /* Компактный top-bar — только название и ход */
-    #ui {
-        height: 44px;
-        padding: 0 10px;
-        gap: 8px;
-    }
-    h1 { font-size: 1.1rem; }
-    #turn-text { font-size: 11px !important; padding: 3px 8px; }
-
-    /* Сцена — учитываем mobile-bar снизу (≈60px) */
-    #scene {
-        top: 44px;
-        bottom: 60px;
-    }
-
-
-    
-    #game-over h2 { font-size: 3rem; }
-    .modal-content { padding: 15px; }
-    .rules-text { font-size: 13px; }
-}
 
 /* Нижний бар — на десктопе скрыт */
 #mobile-bar {
@@ -1675,24 +1647,23 @@ header.neon-header .config:hover {
 /* Убедимся, что старая нижняя панель мобильного не мешает */
 #mobile-bar { display: none !important; }
 
-/* Мобильная адаптация: учитываем новый header */
+/* ═════ МОБИЛЬНАЯ АДАПТАЦИЯ (финальная) ═════ */
 @media (max-width: 768px) {
-    :root { --neon-header-h: 52px; --neon-ui-h: 40px; }
+    /* Панель настроек desktop скрыта на мобиле — там используется drawer */
+    #settings-panel { display: none !important; }
 
-    header.neon-header { padding: 0 10px; }
-    header.neon-header .logo { font-size: 1.1rem; letter-spacing: 2px; }
-    header.neon-header .chip,
-    header.neon-header .config {
-        padding: 5px 8px;
-        font-size: 11px;
-    }
-    /* Прячем подписи на мобиле — оставляем эмодзи/иконки */
-    header.neon-header .chip.user { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Кнопки 📖 🏅 🔊 (top-btn) ОСТАЮТСЯ видимыми — они и есть мобильный UI */
+    /* .top-btn { ... } — ничего не трогаем, стили уже заданы в 900px-медиа выше */
 
+    /* Игровой экран — ровно под шапкой, без отступов снизу */
     #scene {
-        top: calc(var(--neon-header-h) + var(--neon-ui-h));
-        bottom: 60px;
+        top: var(--neon-header-h);
+        bottom: 0;
     }
+
+    #game-over h2 { font-size: 3rem; }
+    .modal-content { padding: 15px; }
+    .rules-text { font-size: 13px; }
 }
 
 /* Линия со счётом на экране победы */
