@@ -191,14 +191,27 @@ class Main {
 
 
 		const startInteraction = (x, y, e) => {
-			if (e.target.closest('header') ||              // <-- ДОБАВЬ ЭТО
-				e.target.closest('#game-over') ||
-				e.target.closest('#settings-panel') ||
-				e.target.closest('#mobile-drawer') ||
-				e.target.closest('.modal-overlay')) return;
-            this.isTrueDrag = false; // reset
-            startInteractionX = x;
-            startInteractionY = y;
+			// Не перехватываем тач ни в нашей UI, ни в чужих модалках/кнопках.
+			if (e.target.closest('header')           ||
+				e.target.closest('#game-over')       ||
+				e.target.closest('#settings-panel')  ||
+				e.target.closest('#mobile-drawer')   ||
+				e.target.closest('.modal-overlay')   ||
+				// ── защита платформенных модалок (LeaderboardUI) ──
+				e.target.closest('button')           ||
+				e.target.closest('a')                ||
+				e.target.closest('input')            ||
+				e.target.closest('select')           ||
+				e.target.closest('[role="dialog"]')  ||
+				e.target.closest('[class*="modal"]') ||
+				e.target.closest('[class*="Modal"]') ||
+				e.target.closest('[class*="leader"]')||
+				e.target.closest('[class*="Leader"]')) {
+				return;
+			}
+			this.isTrueDrag = false;
+			startInteractionX = x;
+			startInteractionY = y;
             
             // Absolutely CRITICAL: 
             // Prevent default on touchstart universally stops the browser from trying
@@ -291,10 +304,13 @@ class Main {
         window.addEventListener('touchcancel', stopDrag);
 
         // Double click/tap anywhere empty to snap perfectly flat
-			const resetRotation = (e) => {
-				if (e.target.closest('.cube-wrapper') ||
-					e.target.closest('header') ||               // <-- ДОБАВЬ ЭТО (вместо #ui)
-					e.target.closest('#game-over')) return;
+		const resetRotation = (e) => {
+			if (e.target.closest('.cube-wrapper')  ||
+				e.target.closest('header')          ||
+				e.target.closest('#game-over')      ||
+				e.target.closest('.modal-overlay')  ||
+				e.target.closest('[class*="modal"]')||
+				e.target.closest('[class*="leader"]')) return;
             this.rotX = 0;
             this.rotZ = 0;
             const bc = document.getElementById('board-container');

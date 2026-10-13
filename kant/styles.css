@@ -1408,7 +1408,7 @@ body.animated-bg { background: #05060f !important; }
 header.neon-header {
     position: fixed;
     top: 0; left: 0; right: 0;
-    z-index: 1500;
+    z-index: 900;                    /* было 1500 — теперь НИЖЕ модалок платформы */
     display: flex;
     align-items: center;
     flex-wrap: wrap;                /* ключ к 2–3 рядам на мобиле */
@@ -1599,36 +1599,59 @@ header.neon-header .config:hover {
         padding: 6px 10px;
         gap: 6px 8px;
     }
-    header.neon-header .logo { font-size: 1.05rem; letter-spacing: 2px; }
+    header.neon-header .logo {
+        font-size: 1.05rem;
+        letter-spacing: 2px;
+        flex: 0 0 auto;
+    }
 
-    /* Скрываем текстовые подписи, оставляем иконки */
+    /* Ряд 1: логотип + индикатор хода (растягивается) */
+    header.neon-header #turn-indicator {
+        order: 1;
+        flex: 1 1 auto;
+        min-width: 0;
+        justify-content: flex-end;
+        padding: 4px 10px;
+    }
+
+    /* Ряд 2: все кнопки — на всю ширину, аккуратной строкой */
+    header.neon-header .header-right {
+        order: 2;
+        flex: 1 1 100%;
+        margin-left: 0;
+        justify-content: space-between;
+        gap: 5px;
+        padding-top: 2px;
+    }
+
+    /* Скрываем текстовые подписи, но оставляем крупные иконки */
     header.neon-header .chip-label { display: none; }
+
     header.neon-header .chip,
     header.neon-header .config {
-        padding: 6px 9px;
-        font-size: 15px;
+        flex: 0 0 auto;
+        padding: 6px 10px;
+        font-size: 16px;
         gap: 0;
     }
     header.neon-header .chip.user {
+        flex: 1 1 auto;
+        min-width: 0;
         font-size: 12px;
-        padding: 6px 10px;
-        max-width: 100px;
+        padding: 6px 8px;
+        text-align: center;
+        max-width: none;
     }
 
     header.neon-header .top-btn {
-        width: 32px; height: 32px;
-        font-size: 15px;
+        width: 34px; height: 34px;
+        font-size: 16px;
     }
 
-    /* Индикатор хода переносится на новую строку вместе с кнопками */
-    header.neon-header #turn-indicator {
-        order: 10;                  /* уходит вниз, если не влезает */
-        flex-basis: 100%;
-        justify-content: center;
-        padding: 5px 10px;
-    }
-
+    /* Сцена — во всю высоту */
     #scene { bottom: 0; }
+
+    /* AI-трекер */
     #ai-tracker-panel {
         bottom: 12px;
         font-size: 11px;
@@ -1640,13 +1663,14 @@ header.neon-header .config:hover {
 }
 
 @media (max-width: 420px) {
-    header.neon-header { gap: 5px; padding: 5px 8px; }
+    header.neon-header { gap: 4px; padding: 5px 8px; }
     header.neon-header .logo { font-size: 0.95rem; }
-    header.neon-header .top-btn { width: 30px; height: 30px; font-size: 14px; }
+    header.neon-header .top-btn { width: 32px; height: 32px; font-size: 15px; }
     header.neon-header .chip,
-    header.neon-header .config { padding: 5px 8px; font-size: 14px; }
-    header.neon-header .chip.user { font-size: 11px; padding: 5px 8px; max-width: 80px; }
+    header.neon-header .config { padding: 5px 8px; font-size: 15px; }
+    header.neon-header .chip.user { font-size: 11px; padding: 5px 6px; }
 }
+
 
 /* Убедимся, что старая нижняя панель мобильного не мешает */
 #mobile-bar { display: none !important; }
