@@ -13,9 +13,9 @@
  */
 window.GAMES = [
     {
-    id:          'kant',
+    id:          'kant-3d',
     title:       'KANT',
-    description: 'Старая забытая всеми игра.',
+    description: 'Старая, забытая всеми игра.',
     url:         'kant/kant.html',
     icon:        '🟦',
     color:       '#00f0ff',
