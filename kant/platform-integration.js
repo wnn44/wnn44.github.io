@@ -4,7 +4,7 @@
 (function () {
     'use strict';
 
-    const GAME_ID = 'kant-3d';
+    const game_id = 'kant-3d';
 
     class PlatformIntegration {
         constructor() {
@@ -44,7 +44,7 @@
                     e.stopPropagation();
                     try {
                         if (window.LeaderboardUI && typeof window.LeaderboardUI.open === 'function') {
-                            window.LeaderboardUI.open(GAME_ID);
+                            window.LeaderboardUI.open(game_id);
                         } else {
                             console.warn('[KANT] LeaderboardUI недоступен');
                         }
@@ -108,7 +108,7 @@
                 return;
             }
             try {
-                const best = Leaderboard.getPlayerBest(GAME_ID, this.player);
+                const best = Leaderboard.getPlayerBest(game_id, this.player);
                 this.remoteScore = Number.isFinite(best) ? best : 0;
                 this.synced = true;
                 console.log(`[KANT] Счёт игрока ${this.player}: ${this.remoteScore}`);
@@ -132,7 +132,7 @@
             const newScore = this.remoteScore + delta;
 
             try {
-                await Leaderboard.submit(GAME_ID, this.player, newScore);
+                await Leaderboard.submit(game_id, this.player, newScore);
                 this.remoteScore = newScore;
                 console.log(`[KANT] Счёт обновлён: ${newScore} (${delta >= 0 ? '+' : ''}${delta})`);
                 return newScore;
