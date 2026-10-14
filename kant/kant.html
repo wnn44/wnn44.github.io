@@ -14,7 +14,7 @@
 <script src="../leaderboard-ui.js"></script>
 
 <!-- === СТИЛИ ИГРЫ === -->
-<link rel="stylesheet" href="styles.css?v=51">
+<link rel="stylesheet" href="styles.css?v=52">
 
 <!-- Блокировка нативных жестов -->
 <script>
@@ -209,32 +209,61 @@ document.addEventListener('dragstart', e => e.preventDefault());
     </div>
 </div>
 
-<!-- === ПРАВИЛА === -->
-<div id="rules-modal" class="modal-overlay">
-    <div class="modal-content">
-        <h2>ПРАВИЛА ИГРЫ</h2>
-        <div class="rules-text">
-            <p><strong>Цель игры</strong> — первым выстроить свои кубики на исходной горизонтали противника. Кубики должны быть ориентированы кругами вверх.</p>
-            <div style="margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;"><strong>Правила:</strong></div>
-            <ol>
-                <li>После того как один из игроков устанавливает на исходной горизонтали противника один свой кубик кругом вверх, противник обязан последующими ходами вывести с этой горизонтали все свои кубики быстрейшим по числу ходов способом.<br><br>В случае, если освободить горизонталь пока невозможно, игрок-противник выбирает ходы по своему усмотрению до тех пор, пока в ходе игры не появится такая возможность.</li>
-                <li>Если одному из игроков удаётся установить на исходной горизонтали противника два своих кубика кругами вверх, то противник ходит в соответствии с правилом 1 с той лишь разницей, что теперь он должен освободить и следующую за исходной горизонталь.</li>
-                <li>После того как игрок устанавливает три кубика кругом вверх, противник обязан немедленно освободить четвёртый кубик, если тот в окружении.</li>
-                <li>Если все кубики одного из игроков блокированы так, что он не может сделать ни одного хода, противнику засчитывается поражение.</li>
-            </ol>
+<!-- === СТАРТОВАЯ КАРТОЧКА: КРАТКАЯ ИНСТРУКЦИЯ ПО УПРАВЛЕНИЮ === -->
+<div id="intro-modal" class="modal-overlay show" style="display:flex;">
+    <div class="modal-content card-neon">
+        <h2 id="intro-title">КАК ИГРАТЬ</h2>
+        <div class="card-sub">NEON ARCADE · КАНТ 3D</div>
+
+        <div class="intro-steps" id="intro-steps">
+            <div class="intro-step"><span class="is-icon">👆</span><span class="is-text"><b>Выбери</b> свой белый кубик — появятся призрачные подсказки хода.</span></div>
+            <div class="intro-step"><span class="is-icon">🎯</span><span class="is-text"><b>Тапни призрак</b> — кубик покатится на клетку и перевернётся.</span></div>
+            <div class="intro-step"><span class="is-icon">🔄</span><span class="is-text"><b>Тяни доску</b> мышью или пальцем, чтобы развернуть её в 3D.</span></div>
+            <div class="intro-step"><span class="is-icon">🔍</span><span class="is-text"><b>Колесо / щипок</b> — приблизить. <b>Двойной клик</b> по пустому месту — выровнять.</span></div>
+            <div class="intro-step is-goal"><span class="is-icon">🏆</span><span class="is-text"><b>Цель:</b> первым выставить 4 своих кубика на дальней линии противника кругами ⬤ вверх.</span></div>
         </div>
-        <button id="close-rules" class="close-btn">ПОНЯТНО</button>
+
+        <div class="card-actions">
+            <button id="intro-start-btn" class="close-btn card-primary">ПОНЯЛ, ИГРАЮ</button>
+            <button id="intro-rules-btn" class="close-btn card-ghost">📖 ПОДРОБНАЯ ИНСТРУКЦИЯ</button>
+        </div>
+    </div>
+</div>
+
+<!-- === ПОДРОБНАЯ ИНСТРУКЦИЯ (правила) === -->
+<div id="rules-modal" class="modal-overlay">
+    <div class="modal-content card-neon">
+        <h2 id="rules-title">ПРАВИЛА ИГРЫ</h2>
+        <div class="card-sub">КАНТ 3D</div>
+
+        <div class="rules-body" id="rules-body">
+            <div class="rules-sec">
+                <h3>ЦЕЛЬ</h3>
+                <p><strong>Цель игры</strong> — первым выстроить свои кубики на исходной горизонтали противника. Причем ориентированы кубики должны быть кругами вверх, как и в исходном состоянии.</p>
+            </div>
+            <div class="rules-sec">
+                <h3>ПРАВИЛА</h3>
+                <ol>
+                    <li>После того как один из игроков устанавливает на исходной горизонтали противника один свой кубик кругом вверх, противник обязан последующими ходами вывести с этой горизонтали все свои кубики быстрейшим по числу ходов способом.<br><br>В случае, если освободить горизонталь пока невозможно, игрок-противник выбирает ходы по своему усмотрению до тех пор, пока в ходе игры не появится такая возможность.</li>
+                    <li>Если одному из игроков удаётся установить на исходной горизонтали противника два своих кубика кругами вверх, то противник ходит в соответствии с правилом 1 с той лишь разницей, что теперь он должен освободить и следующую за исходной горизонталь.</li>
+                    <li>После того как игрок устанавливает на исходной горизонтали противника три кубика кругом вверх, противник обязан немедленно освободить последний, четвёртый кубик своего партнёра, если этот кубик находится в окружении.</li>
+                    <li>Если все кубики одного из игроков блокированы кубиками противника так, что он не может сделать ни одного хода, то противнику засчитывается поражение.</li>
+                </ol>
+            </div>
+        </div>
+
+        <button id="close-rules" class="close-btn card-primary">ПОНЯТНО</button>
     </div>
 </div>
 
 <!-- === СКРИПТЫ ИГРЫ === -->
-<script src="audio.js?v=51"></script>
-<script src="cube.js?v=51"></script>
-<script src="ai.js?v=51"></script>
-<script src="game.js?v=51"></script>
-<script src="i18n.js?v=51"></script>
-<script src="stats.js?v=51"></script>
-<script src="main.js?v=51"></script>
+<script src="audio.js?v=52"></script>
+<script src="cube.js?v=52"></script>
+<script src="ai.js?v=52"></script>
+<script src="game.js?v=52"></script>
+<script src="i18n.js?v=52"></script>
+<script src="stats.js?v=52"></script>
+<script src="main.js?v=52"></script>
 
 <!-- === ИНТЕГРАЦИЯ С ПЛАТФОРМОЙ NEON ARCADE === -->
 <script src="platform-integration.js?v=51"></script>
@@ -333,12 +362,26 @@ document.addEventListener('dragstart', e => e.preventDefault());
         const rulesModal   = $('rules-modal');
         const statsModal   = $('stats-modal');
         const confirmModal = $('confirm-modal');
+        const introModal   = $('intro-modal');
 
         // Rules
         on('open-rules-btn', 'click', () => showModal(rulesModal));
         on('close-rules',    'click', () => hideModal(rulesModal));
         if (rulesModal) rulesModal.addEventListener('click', e => {
             if (e.target === rulesModal) hideModal(rulesModal);
+        });
+
+        // ---------- Стартовая карточка: краткая инструкция по управлению ----------
+        // Видна сразу при загрузке; пока открыта, поле не принимает ходы.
+        on('intro-start-btn', 'click', () => hideModal(introModal));
+        on('intro-rules-btn', 'click', () => { hideModal(introModal); showModal(rulesModal); });
+        if (introModal) introModal.addEventListener('click', e => {
+            if (e.target === introModal) hideModal(introModal); // клик по фону закрывает
+        });
+        window.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            if (rulesModal && rulesModal.classList.contains('show')) hideModal(rulesModal);
+            else if (introModal && introModal.classList.contains('show')) hideModal(introModal);
         });
 
         // Stats

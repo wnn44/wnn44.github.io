@@ -1673,3 +1673,226 @@ header.neon-header .config:hover {
     letter-spacing: 1px;
 }
 
+/* ══════════════════════════════════════════════════
+   NEON ARCADE — стартовая карточка и подробная инструкция
+   ══════════════════════════════════════════════════ */
+
+/* Общая «неоновая» карточка для обоих модалок */
+#intro-modal .modal-content,
+#rules-modal .modal-content {
+    position: relative;
+    max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: clamp(18px, 5vw, 26px) clamp(16px, 4.5vw, 24px);
+    background: linear-gradient(180deg, rgba(13, 17, 40, 0.97), rgba(13, 17, 40, 0.9));
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 18px;
+    box-shadow:
+        0 0 40px rgba(0, 240, 255, 0.22),
+        0 0 80px rgba(0, 240, 255, 0.1),
+        inset 0 0 60px rgba(0, 240, 255, 0.06);
+}
+#intro-modal .modal-content::-webkit-scrollbar,
+#rules-modal .modal-content::-webkit-scrollbar { width: 8px; }
+#intro-modal .modal-content::-webkit-scrollbar-thumb,
+#rules-modal .modal-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 255, 0.25);
+    border-radius: 4px;
+}
+
+/* Заголовок карточки */
+#intro-modal .modal-content h2,
+#rules-modal .modal-content h2 {
+    margin: 0;
+    padding-bottom: 0;
+    text-align: center;
+    font-size: clamp(17px, 5.2vw, 24px);
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: var(--neon-cyan);
+    border-bottom: none;
+    text-shadow: 0 0 12px var(--neon-cyan), 0 0 34px rgba(0, 240, 255, 0.7);
+}
+
+/* Подпись под заголовком */
+#intro-modal .card-sub,
+#rules-modal .card-sub {
+    text-align: center;
+    font-size: clamp(8px, 2.3vw, 10px);
+    letter-spacing: 3px;
+    font-weight: 700;
+    color: rgba(230, 247, 255, 0.45);
+    margin: 3px 0 16px;
+}
+
+/* --- Кнопки карточек --- */
+#intro-modal .card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+#intro-modal .close-btn,
+#rules-modal .close-btn {
+    margin-top: 0;
+    border-radius: 10px;
+    letter-spacing: 2px;
+    font-size: clamp(12px, 3.2vw, 14px);
+    transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+#rules-modal .close-btn { margin-top: 16px; }
+
+#intro-modal .card-primary,
+#rules-modal .card-primary {
+    border: 1px solid var(--neon-cyan);
+    background: linear-gradient(180deg, rgba(0, 240, 255, 0.22), rgba(0, 240, 255, 0.05));
+    color: var(--neon-cyan);
+    font-weight: 900;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 0 20px rgba(0, 240, 255, 0.14);
+}
+
+#intro-modal .card-ghost {
+    border: 1px solid rgba(0, 240, 255, 0.32);
+    background: rgba(0, 240, 255, 0.06);
+    color: rgba(230, 247, 255, 0.85);
+    font-weight: 700;
+}
+
+#intro-modal .close-btn:hover,
+#rules-modal .close-btn:hover { box-shadow: 0 0 26px rgba(0, 240, 255, 0.6); }
+#intro-modal .close-btn:active,
+#rules-modal .close-btn:active { transform: scale(0.97); }
+
+/* --- Краткая инструкция: список шагов --- */
+.intro-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.intro-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 11px;
+    background: rgba(0, 240, 255, 0.05);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    border-radius: 10px;
+}
+.intro-step.is-goal {
+    background: linear-gradient(90deg, rgba(255, 233, 77, 0.13), rgba(255, 233, 77, 0.03));
+    border-color: rgba(255, 233, 77, 0.35);
+}
+.intro-step .is-icon {
+    flex: 0 0 auto;
+    font-size: 15px;
+    line-height: 1.45;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.7));
+}
+.intro-step .is-text {
+    font-size: clamp(11px, 2.9vw, 13px);
+    line-height: 1.5;
+    color: rgba(230, 247, 255, 0.85);
+}
+.intro-step .is-text b { color: #fff; }
+.intro-step.is-goal .is-text b { color: var(--neon-yellow); }
+
+/* --- Подробная инструкция: секции --- */
+.rules-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+.rules-body::-webkit-scrollbar { width: 8px; }
+.rules-body::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 255, 0.25);
+    border-radius: 4px;
+}
+
+.rules-sec { margin-bottom: 15px; }
+.rules-sec:last-child { margin-bottom: 0; }
+.rules-sec h3 {
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(10px, 2.6vw, 12px);
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--neon-yellow);
+    text-shadow: 0 0 10px rgba(255, 233, 77, 0.6);
+}
+.rules-sec h3::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 233, 77, 0.5), transparent);
+}
+.rules-sec p,
+.rules-sec li {
+    font-size: clamp(11px, 2.9vw, 13px);
+    line-height: 1.6;
+    color: rgba(230, 247, 255, 0.85);
+}
+.rules-sec p { margin: 0; }
+.rules-sec ul,
+.rules-sec ol { margin: 0; padding: 0; }
+.rules-sec ul { list-style: none; }
+.rules-sec ol { list-style: none; counter-reset: rule-num; }
+.rules-sec li {
+    position: relative;
+    padding-left: 17px;
+    margin-bottom: 7px;
+}
+.rules-sec li:last-child { margin-bottom: 0; }
+
+.rules-sec ul li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px var(--neon-cyan);
+}
+.rules-sec ol li { padding-left: 25px; }
+.rules-sec ol li::before {
+    counter-increment: rule-num;
+    content: counter(rule-num);
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 17px;
+    height: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 900;
+    color: var(--neon-cyan);
+    border: 1px solid rgba(0, 240, 255, 0.5);
+    background: rgba(0, 240, 255, 0.08);
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+}
+.rules-sec b,
+.rules-sec strong { color: #fff; }
+
+.rules-warn {
+    padding: 10px 12px;
+    border-radius: 9px;
+    border-left: 3px solid var(--neon-cyan);
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.12), rgba(0, 240, 255, 0.02));
+    font-size: clamp(10px, 2.7vw, 12px);
+    line-height: 1.55;
+    color: rgba(230, 247, 255, 0.9);
+    box-shadow: 0 0 18px rgba(0, 240, 255, 0.18);
+}
+
+/* Компактнее на низких экранах */
+@media (max-height: 640px) {
+    .rules-body { max-height: 50vh; }
+    .intro-step { padding: 6px 10px; }
+    .intro-steps { gap: 5px; }
+}
+
+

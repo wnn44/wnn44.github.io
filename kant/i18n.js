@@ -196,6 +196,111 @@ title:           'КАНТ',
     },
 };
 
+// Дополнительные строки: стартовая карточка и подробная инструкция.
+// Держим отдельным блоком, чтобы не раздувать основной TRANSLATIONS выше.
+const EXTRA_I18N = {
+    ru: {
+        introTitle:      'КАК ИГРАТЬ',
+        introStep1:      '<b>Выбери</b> свой белый кубик — появятся призрачные подсказки хода.',
+        introStep2:      '<b>Тапни призрак</b> — кубик покатится на клетку и перевернётся.',
+        introStep3:      '<b>Тяни доску</b> мышью или пальцем, чтобы развернуть её в 3D.',
+        introStep4:      '<b>Колесо / щипок</b> — приблизить. <b>Двойной клик</b> по пустому месту — выровнять.',
+        introStep5:      '<b>Цель:</b> первым выставить 4 своих кубика на дальней линии противника кругами ⬤ вверх.',
+        introMore:       '📖 ПОДРОБНАЯ ИНСТРУКЦИЯ',
+        introStart:      'ПОНЯЛ, ИГРАЮ',
+        rulesGoalTitle:  'ЦЕЛЬ',
+        rulesCtrlTitle:  'УПРАВЛЕНИЕ',
+        rulesCtrl1:      'Выбрать кубик — клик или тап по своему белому кубику.',
+        rulesCtrl2:      'Сделать ход — клик или тап по призрачной копии на свободной клетке.',
+        rulesCtrl3:      'Развернуть доску — потянуть мышью или одним пальцем.',
+        rulesCtrl4:      'Приблизить — колесо мыши или щипок двумя пальцами.',
+        rulesCtrl5:      'Выровнять доску — двойной клик или двойной тап по пустому месту.',
+        rulesCtrl6:      'Снять выделение — клик или тап по пустому месту.',
+        rulesFacesTitle: 'КУБИКИ',
+        rulesFace1:      '<b>⬤ Круг</b> — победная грань: именно она должна смотреть вверх на линии противника.',
+        rulesFace2:      '<b>✚ Крест</b> — грань напротив круга.',
+        rulesFace3:      '<b>⬆ Стрелки</b> — четыре боковые грани, указывают на круг.',
+        rulesRulesTitle: 'ПРАВИЛА',
+        rulesWarnTitle:  'ВНИМАНИЕ',
+        rulesWarn:       '🔺 Круг противника встал на вашу линию — вы ОБЯЗАНЫ вывести свои кубики с неё; доступными останутся только ходы принудительной защиты.<br>🔺 Второй круг на вашей линии — освобождать придётся и следующую горизонталь.<br>🔺 В режиме защиты ходы вне кратчайшего маршрута отклоняются со звуком ошибки.',
+    },
+    en: {
+        introTitle:      'HOW TO PLAY',
+        introStep1:      '<b>Pick</b> one of your white cubes — ghost hints will appear.',
+        introStep2:      '<b>Tap a ghost</b> — the cube rolls onto that cell and flips over.',
+        introStep3:      '<b>Drag the board</b> with mouse or finger to rotate it in 3D.',
+        introStep4:      '<b>Wheel / pinch</b> to zoom. <b>Double-click</b> empty space to level the board.',
+        introStep5:      '<b>Goal:</b> be the first to get all 4 of your cubes onto the opponent\'s far row with circles ⬤ up.',
+        introMore:       '📖 FULL RULES',
+        introStart:      'GOT IT, PLAY',
+        rulesGoalTitle:  'GOAL',
+        rulesCtrlTitle:  'CONTROLS',
+        rulesCtrl1:      'Select a cube — click or tap one of your white cubes.',
+        rulesCtrl2:      'Make a move — click or tap a ghost copy on a free cell.',
+        rulesCtrl3:      'Rotate the board — drag with the mouse or one finger.',
+        rulesCtrl4:      'Zoom — mouse wheel or two-finger pinch.',
+        rulesCtrl5:      'Level the board — double-click or double-tap empty space.',
+        rulesCtrl6:      'Deselect — click or tap empty space.',
+        rulesFacesTitle: 'CUBES',
+        rulesFace1:      '<b>⬤ Circle</b> — the winning face: it must point up on the opponent\'s row.',
+        rulesFace2:      '<b>✚ Cross</b> — the face opposite the circle.',
+        rulesFace3:      '<b>⬆ Arrows</b> — four side faces pointing to the circle.',
+        rulesRulesTitle: 'RULES',
+        rulesWarnTitle:  'WARNING',
+        rulesWarn:       '🔺 An enemy circle landed on your row — you MUST move your cubes off it; only forced-defence moves stay available.<br>🔺 A second circle on your row — the row behind it must be cleared too.<br>🔺 In defence mode, moves outside the shortest route are rejected with an error sound.',
+    },
+    tr: {
+        introTitle:      'NASIL OYNANIR',
+        introStep1:      '<b>Beyaz küpünü seç</b> — hamle hayaletleri görünür.',
+        introStep2:      '<b>Hayalete dokun</b> — küp o kareye yuvarlanır ve döner.',
+        introStep3:      '<b>Tahtayı sürükle</b> — fare veya parmakla 3D döndür.',
+        introStep4:      '<b>Tekerlek / kıstırma</b> ile yakınlaştır. Boş yere <b>çift tıkla</b> — tahta düzleşir.',
+        introStep5:      '<b>Amaç:</b> 4 küpünü de rakibin uzak sırasına daireler ⬤ yukarı bakacak şekilde ilk dizen olmak.',
+        introMore:       '📖 TÜM KURALLAR',
+        introStart:      'ANLADIM, OYNA',
+        rulesGoalTitle:  'AMAÇ',
+        rulesCtrlTitle:  'KONTROLLER',
+        rulesCtrl1:      'Küp seç — beyaz küpüne tıkla veya dokun.',
+        rulesCtrl2:      'Hamle yap — boş karedeki hayalet kopyaya tıkla veya dokun.',
+        rulesCtrl3:      'Tahtayı döndür — fare veya tek parmakla sürükle.',
+        rulesCtrl4:      'Yakınlaştır — fare tekerleği veya iki parmakla kıstırma.',
+        rulesCtrl5:      'Tahtayı düzleştir — boş yere çift tıkla veya çift dokun.',
+        rulesCtrl6:      'Seçimi kaldır — boş yere tıkla veya dokun.',
+        rulesFacesTitle: 'KÜPLER',
+        rulesFace1:      '<b>⬤ Daire</b> — kazandıran yüz: rakibin sırasında yukarı bakmalı.',
+        rulesFace2:      '<b>✚ Artı</b> — dairenin karşı yüzü.',
+        rulesFace3:      '<b>⬆ Oklar</b> — dört yan yüz, daireyi gösterir.',
+        rulesRulesTitle: 'KURALLAR',
+        rulesWarnTitle:  'DİKKAT',
+        rulesWarn:       '🔺 Hattına rakip dairesi indi — küplerini oradan ÇIKARMAK zorundasın; sadece zorunlu savunma hamleleri açık kalır.<br>🔺 Hattında ikinci bir daire — arkasındaki sıra da boşaltılmalı.<br>🔺 Savunma modunda en kısa rota dışındaki hamleler hata sesiyle reddedilir.',
+    },
+    de: {
+        introTitle:      'SPIELANLEITUNG',
+        introStep1:      '<b>Wähle</b> einen deiner weißen Würfel — Geisterhinweise erscheinen.',
+        introStep2:      '<b>Tippe einen Geist an</b> — der Würfel rollt dorthin und dreht sich.',
+        introStep3:      '<b>Ziehe das Brett</b> mit Maus oder Finger, um es in 3D zu drehen.',
+        introStep4:      '<b>Mausrad / Pinch</b> zum Zoomen. <b>Doppelklick</b> auf freie Fläche richtet das Brett aus.',
+        introStep5:      '<b>Ziel:</b> Sei der Erste, der alle 4 Würfel mit Kreisen ⬤ nach oben auf der gegnerischen Grundlinie hat.',
+        introMore:       '📖 ALLE REGELN',
+        introStart:      'VERSTANDEN, SPIELEN',
+        rulesGoalTitle:  'ZIEL',
+        rulesCtrlTitle:  'STEUERUNG',
+        rulesCtrl1:      'Würfel wählen — klicke oder tippe einen deiner weißen Würfel an.',
+        rulesCtrl2:      'Zug machen — klicke oder tippe eine Geisterkopie auf ein freies Feld.',
+        rulesCtrl3:      'Brett drehen — mit Maus oder einem Finger ziehen.',
+        rulesCtrl4:      'Zoom — Mausrad oder Zwei-Finger-Pinch.',
+        rulesCtrl5:      'Brett ausrichten — Doppelklick oder Doppeltipp auf freie Fläche.',
+        rulesCtrl6:      'Auswahl aufheben — auf freie Fläche klicken oder tippen.',
+        rulesFacesTitle: 'WÜRFEL',
+        rulesFace1:      '<b>⬤ Kreis</b> — die Siegerseite: sie muss auf der Gegnerlinie nach oben zeigen.',
+        rulesFace2:      '<b>✚ Kreuz</b> — die Seite gegenüber dem Kreis.',
+        rulesFace3:      '<b>⬆ Pfeile</b> — vier Seitenflächen, die zum Kreis zeigen.',
+        rulesRulesTitle: 'REGELN',
+        rulesWarnTitle:  'ACHTUNG',
+        rulesWarn:       '🔺 Ein gegnerischer Kreis landete auf deiner Linie — du MUSST deine Würfel von dort entfernen; nur Züge der Pflichtverteidigung bleiben erlaubt.<br>🔺 Ein zweiter Kreis auf deiner Linie — auch die Reihe dahinter muss geräumt werden.<br>🔺 Im Verteidigungsmodus werden Züge außerhalb der kürzesten Route mit einem Fehlerton abgelehnt.',
+    },
+};
+
 const FALLBACK_LANG = 'ru';
 
 function getLang(preferredLang) {
@@ -237,7 +342,12 @@ const THEME_NAMES = {
 };
 
 function applyLocale(lang) {
-    const t = TRANSLATIONS[lang] || TRANSLATIONS[FALLBACK_LANG];
+    // Основной набор строк + строки стартовой карточки и подробной инструкции
+    const t = Object.assign(
+        {},
+        TRANSLATIONS[lang] || TRANSLATIONS[FALLBACK_LANG],
+        EXTRA_I18N[lang] || EXTRA_I18N[FALLBACK_LANG]
+    );
     window._t = t;
     document.documentElement.lang = lang;
 
@@ -321,22 +431,66 @@ function applyLocale(lang) {
     const mobPitchLabel = document.querySelector('#mob-pitch-slider')?.closest('.audio-slider-row')?.querySelector('span:first-child');
     if (mobPitchLabel) mobPitchLabel.innerText = t.pitchChaos;
 
-    // === Правила (Modal) ===
+    // === Стартовая карточка: краткая инструкция по управлению ===
+    set('intro-title',     t.introTitle);
+    set('intro-start-btn', t.introStart);
+    set('intro-rules-btn', t.introMore);
+
+    const introSteps = document.getElementById('intro-steps');
+    if (introSteps) {
+        const icons = ['👆', '🎯', '🔄', '🔍', '🏆'];
+        introSteps.innerHTML = [t.introStep1, t.introStep2, t.introStep3, t.introStep4, t.introStep5]
+            .map((text, i) =>
+                `<div class="intro-step${i === 4 ? ' is-goal' : ''}">` +
+                `<span class="is-icon">${icons[i]}</span>` +
+                `<span class="is-text">${text}</span></div>`)
+            .join('');
+    }
+
+    // === Правила (Modal) — подробная инструкция ===
     const rulesH2 = document.querySelector('#rules-modal h2');
     if (rulesH2) rulesH2.innerText = t.rulesTitle;
     set('close-rules', t.rulesClose);
 
-    const rulesText = document.querySelector('#rules-modal .rules-text');
-    if (rulesText) {
-        rulesText.innerHTML = `
-            <p>${t.rulesGoal}</p>
-            <div style="margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">${t.rulesLabel}</div>
-            <ol>
-                <li>${t.rule1}</li>
-                <li>${t.rule2}</li>
-                <li>${t.rule3}</li>
-                <li>${t.rule4}</li>
-            </ol>`;
+    const rulesBody = document.getElementById('rules-body');
+    if (rulesBody) {
+        rulesBody.innerHTML = `
+            <div class="rules-sec">
+                <h3>${t.rulesGoalTitle}</h3>
+                <p>${t.rulesGoal}</p>
+            </div>
+            <div class="rules-sec">
+                <h3>${t.rulesCtrlTitle}</h3>
+                <ul>
+                    <li>${t.rulesCtrl1}</li>
+                    <li>${t.rulesCtrl2}</li>
+                    <li>${t.rulesCtrl3}</li>
+                    <li>${t.rulesCtrl4}</li>
+                    <li>${t.rulesCtrl5}</li>
+                    <li>${t.rulesCtrl6}</li>
+                </ul>
+            </div>
+            <div class="rules-sec">
+                <h3>${t.rulesFacesTitle}</h3>
+                <ul>
+                    <li>${t.rulesFace1}</li>
+                    <li>${t.rulesFace2}</li>
+                    <li>${t.rulesFace3}</li>
+                </ul>
+            </div>
+            <div class="rules-sec">
+                <h3>${t.rulesRulesTitle}</h3>
+                <ol>
+                    <li>${t.rule1}</li>
+                    <li>${t.rule2}</li>
+                    <li>${t.rule3}</li>
+                    <li>${t.rule4}</li>
+                </ol>
+            </div>
+            <div class="rules-sec">
+                <h3>${t.rulesWarnTitle}</h3>
+                <div class="rules-warn">${t.rulesWarn}</div>
+            </div>`;
     }
 
     // === Статистика (Modal) ===
