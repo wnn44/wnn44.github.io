@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#05060f">
 <title>PHEENIX — NEON ARCADE</title>
 <link rel="stylesheet" href="common.css">
 <script src="auth.js"></script>
@@ -11,39 +15,55 @@
 <script src="leaderboard-ui.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html { height:100%; }
+  html {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   body {
-    height:100%;
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+    position: fixed;
+    top: 0; left: 0;
     background: radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
     font-family: 'Segoe UI', system-ui, sans-serif;
     color:#e6f7ff;
     user-select:none;
+    -webkit-user-select:none;
     display:flex;
     flex-direction:column;
-    overflow:hidden;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  @supports not (height: 100dvh) {
+    html, body { height: 100vh; }
   }
 
   /* ============================================================
-     ШАПКА — 2 ряда на мобильных, 1 на десктопе
+     ШАПКА
      ============================================================ */
   header {
     flex-shrink:0;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
+    display:flex; flex-direction:column; gap:6px;
     padding:8px 10px;
     background: rgba(13,17,40,0.85);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-bottom:1px solid rgba(0,240,255,0.25);
     box-shadow: 0 0 20px rgba(0,240,255,0.15);
     z-index:100;
   }
   .header-row {
     display:flex; align-items:center; gap:6px;
+    min-width:0;
   }
   .header-row-1 { justify-content:space-between; }
   .header-row-2 { justify-content:space-between; }
-  .header-actions { display:flex; align-items:center; gap:6px; }
+  .header-actions { display:flex; align-items:center; gap:6px; min-width:0; }
 
   .logo {
     font-weight:800; font-size:clamp(0.9rem,2.6vw,1.3rem);
@@ -52,9 +72,9 @@
     letter-spacing:2px; flex-shrink:0;
   }
   .chip {
-    padding:5px 10px; border-radius:20px;
+    padding:6px 11px; border-radius:20px;
     font-size:clamp(0.68rem,1.9vw,0.85rem);
-    font-weight:600; cursor:pointer; transition:0.2s;
+    font-weight:700; cursor:pointer; transition:0.2s;
     border:1px solid transparent; white-space:nowrap;
     flex-shrink:0; line-height:1.2;
     display:inline-flex; align-items:center; gap:3px;
@@ -71,8 +91,7 @@
   .chip.menu:active { background:#ff00d4; color:#05060f; }
   .chip.mute {
     background:rgba(0,240,255,0.1); color:#00f0ff; border-color:#00f0ff55;
-    padding:5px 8px; font-size:clamp(0.85rem,2.2vw,1rem);
-    min-width:32px; justify-content:center;
+    padding:6px 10px;
     box-shadow:0 0 10px #00f0ff33;
   }
   .chip.mute:active { background:#00f0ff; color:#05060f; }
@@ -83,23 +102,35 @@
     font-family: 'Courier New', ui-monospace, monospace;
     font-weight:800; letter-spacing:1px;
     text-shadow: 0 0 8px #ffe94d, 0 0 16px #ffe94d88;
-    padding:5px 12px;
+    padding:6px 12px;
     font-size:clamp(0.72rem,2vw,0.9rem);
   }
   .chip.score .score-ico {
     color:#ffd23f; margin-right:4px;
     filter: drop-shadow(0 0 4px #ffe94d);
   }
+  .chip.score .score-lbl { display:none; }
   @keyframes scoreBump {
     0%{transform:scale(1);} 45%{transform:scale(1.15);} 100%{transform:scale(1);}
   }
   .chip.score.bump { animation: scoreBump 0.28s ease; }
 
-  /* Очень узкие экраны — прячем текстовые подписи, оставляем иконки */
-  @media (max-width: 380px) {
-    .chip .lbl { display:none; }
-    .chip { padding:5px 8px; }
-    .chip.user { max-width:44px; }
+  /* ============================================================
+     МОБИЛЬНАЯ АДАПТАЦИЯ UI — ТЕКСТ ВМЕСТО ИКОНОК
+     ============================================================ */
+  @media (pointer: coarse), (max-width: 800px) {
+    /* Скрываем все emoji-иконки */
+    .chip .ico { display: none; }
+    /* Показываем текстовые метки */
+    .chip .lbl { display: inline; }
+    /* Счёт: убираем ✦, добавляем "СЧЁТ:" */
+    .chip.score .score-ico { display: none; }
+    .chip.score .score-lbl { display: inline; margin-right: 4px; }
+    /* Чуть крупнее текст для читабельности на тачах */
+    .chip {
+      font-size: clamp(0.72rem, 2.4vw, 0.88rem);
+      padding: 7px 11px;
+    }
   }
 
   /* ============================================================
@@ -107,12 +138,9 @@
      ============================================================ */
   @media (min-width: 800px) {
     header {
-      flex-direction:row;
-      align-items:center;
-      padding:8px 16px;
-      gap:10px;
+      flex-direction:row; align-items:center;
+      padding:8px 16px; gap:10px;
     }
-    .header-row { gap:8px; }
     .header-row-1 { flex:0 0 auto; }
     .header-row-2 { flex:0 0 auto; margin-left:auto; }
   }
@@ -129,6 +157,7 @@
     gap:16px;
     padding:8px;
     position:relative;
+    overflow:hidden;
   }
   .game-stage {
     position:relative;
@@ -148,7 +177,6 @@
     touch-action:none;
   }
 
-  /* HUD внутри game-stage */
   .hud {
     position:absolute;
     top:10px; left:14px; right:14px;
@@ -165,7 +193,7 @@
   .hud .weapon { color:#00ff88; }
 
   /* ============================================================
-     БОКОВЫЕ ПАНЕЛИ (только десктоп)
+     БОКОВЫЕ ПАНЕЛИ (десктоп)
      ============================================================ */
   .side-panel {
     display:none;
@@ -185,7 +213,6 @@
   @media (min-width: 1000px) { .side-panel { display:block; } }
   @media (min-width: 1300px) { .side-panel { width:230px; } }
 
-  /* Сетка на фоне */
   .side-panel::before {
     content:'';
     position:absolute; inset:0;
@@ -202,20 +229,16 @@
       linear-gradient(rgba(255,0,212,0.09) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,0,212,0.09) 1px, transparent 1px);
   }
-
-  /* Сканирующая линия */
   .side-panel::after {
     content:'';
-    position:absolute;
-    left:0; right:0;
-    height:2px;
+    position:absolute; left:0; right:0; height:2px;
     background: linear-gradient(to right, transparent, #00f0ff, transparent);
     box-shadow: 0 0 20px #00f0ff, 0 0 40px #00f0ff88;
     pointer-events:none;
     animation: scanDown 7s linear infinite;
   }
   @keyframes scanDown {
-    0%   { top:0;   opacity:0; }
+    0%   { top:0; opacity:0; }
     6%   { opacity:1; }
     94%  { opacity:1; }
     100% { top:100%; opacity:0; }
@@ -229,19 +252,15 @@
     0%   { top:100%; opacity:0; }
     6%   { opacity:1; }
     94%  { opacity:1; }
-    100% { top:0;     opacity:0; }
+    100% { top:0; opacity:0; }
   }
-
-  /* Вертикальные подписи */
   .side-panel .vlabel {
     position:absolute;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
     font-family: 'Courier New', monospace;
-    font-size:10px;
-    font-weight:700;
-    letter-spacing:6px;
-    padding:14px 0;
+    font-size:10px; font-weight:700;
+    letter-spacing:6px; padding:14px 0;
     color:#00f0ff;
     text-shadow: 0 0 8px #00f0ff, 0 0 16px #00f0ff88;
     opacity:0.85;
@@ -251,11 +270,8 @@
   .side-panel.right .vlabel { right:10px; top:0; color:#ff00d4;
     text-shadow: 0 0 8px #ff00d4, 0 0 16px #ff00d488; }
   .side-panel.right .vlabel.vbottom { right:auto; left:10px; bottom:0; top:auto; }
-
-  /* Уголки */
   .side-panel .corner {
-    position:absolute;
-    width:18px; height:18px;
+    position:absolute; width:18px; height:18px;
     border:2px solid #00f0ff;
     box-shadow: 0 0 10px #00f0ff, inset 0 0 6px #00f0ff44;
   }
@@ -267,13 +283,9 @@
   .corner.tr { top:8px;    right:8px;   border-left:none;  border-bottom:none; }
   .corner.bl { bottom:8px; left:8px;    border-right:none; border-top:none; }
   .corner.br { bottom:8px; right:8px;   border-left:none;  border-top:none; }
-
-  /* Пульсирующие точки в панели */
   .side-panel .dot {
-    position:absolute;
-    width:6px; height:6px;
-    border-radius:50%;
-    background:#00f0ff;
+    position:absolute; width:6px; height:6px;
+    border-radius:50%; background:#00f0ff;
     box-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff88;
   }
   .side-panel.right .dot {
@@ -294,7 +306,7 @@
   .mobile-controls {
     position:fixed; bottom:0; left:0; right:0; z-index:80;
     display:none; justify-content:space-between; align-items:flex-end;
-    padding:12px 16px 20px;
+    padding:12px 16px calc(20px + env(safe-area-inset-bottom)) 16px;
     pointer-events:none;
   }
   .mobile-controls .dpad { display:flex; gap:12px; pointer-events:auto; }
@@ -311,7 +323,7 @@
   .tbtn:active { background:rgba(0,240,255,0.3); transform:scale(0.92); }
   .tbtn.fire { border-color:#ff00d4; color:#ff00d4; box-shadow:0 0 15px #ff00d455; }
   .tbtn.shield { border-color:#ffe94d; color:#ffe94d; box-shadow:0 0 15px #ffe94d55; font-size:1.2rem; }
-  @media (pointer:coarse) { .mobile-controls { display:flex; } }
+  @media (pointer: coarse) { .mobile-controls { display:flex; } }
 
   #lbModalContainer { position:fixed; inset:0; z-index:200; display:none; }
   #lbModalContainer.open { display:block; }
@@ -330,9 +342,14 @@
     <div class="logo">PHEENIX</div>
     <div class="header-actions">
       <div class="chip score" id="hudScore">
-        <span class="score-ico">✦</span><span id="hudScoreVal">0</span>
+        <span class="score-ico">✦</span>
+        <span class="score-lbl">СЧЁТ:</span>
+        <span id="hudScoreVal">0</span>
       </div>
-      <div class="chip mute" id="muteBtn" title="Звук">🔊</div>
+      <div class="chip mute" id="muteBtn" title="Звук">
+        <span class="ico">🔊</span>
+        <span class="lbl">ЗВУК ВКЛ</span>
+      </div>
     </div>
   </div>
   <div class="header-row header-row-2">
@@ -356,9 +373,7 @@
     <div class="corner br"></div>
     <div class="vlabel">◈ SYSTEM ONLINE ◈</div>
     <div class="vlabel vbottom">NODE: PHX-01</div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
   </div>
 
   <div class="game-stage">
@@ -377,9 +392,7 @@
     <div class="corner br"></div>
     <div class="vlabel">◈ NEON ARCADE ◈</div>
     <div class="vlabel vbottom">EST. 2087</div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
   </div>
 </div>
 
@@ -402,7 +415,88 @@
 'use strict';
 
 /* ============================================================
-   0. DOM
+   0. FULLSCREEN / СКРЫТИЕ БРАУЗЕРНОГО UI
+   ============================================================ */
+const isTouchDevice = window.matchMedia('(pointer: coarse)').matches ||
+                      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+let fullscreenActive = false;
+
+function tryEnterFullscreen() {
+  if (!isTouchDevice) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen ||
+              el.webkitRequestFullscreen ||
+              el.mozRequestFullScreen ||
+              el.msRequestFullscreen;
+  if (req && !document.fullscreenElement && !document.webkitFullscreenElement) {
+    try {
+      const p = req.call(el, { navigationUI: 'hide' });
+      if (p && typeof p.then === 'function') {
+        p.then(function(){
+          fullscreenActive = true;
+          if (screen.orientation && typeof screen.orientation.lock === 'function') {
+            screen.orientation.lock('portrait').catch(function(){});
+          }
+        }).catch(function(){});
+      }
+    } catch (e) {}
+  }
+  // iOS Safari: попытка скрыть адресную строку через scrollTo
+  hideIOSAddressBar();
+}
+
+// iOS-трюк: если страница скроллится хоть на 1px, Safari прячет адресную строку
+function hideIOSAddressBar() {
+  if (!isTouchDevice) return;
+  // Если мы не в полноэкранном режиме (iOS iPhone)
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isIOS && !document.fullscreenElement) {
+    // Временно разрешаем скролл на 1px
+    document.body.style.overflowY = 'auto';
+    document.body.style.height = 'calc(100dvh + 1px)';
+    window.scrollTo(0, 1);
+    requestAnimationFrame(function(){
+      window.scrollTo(0, 1);
+      setTimeout(function(){
+        document.body.style.overflowY = 'hidden';
+        document.body.style.height = '100dvh';
+        window.scrollTo(0, 0);
+      }, 120);
+    });
+  }
+}
+
+// Отслеживаем выход из fullscreen — если это произошло случайно, можно повторить
+document.addEventListener('fullscreenchange', function(){
+  fullscreenActive = !!document.fullscreenElement;
+});
+document.addEventListener('webkitfullscreenchange', function(){
+  fullscreenActive = !!document.webkitFullscreenElement;
+});
+
+// Перехватываем первый пользовательский жест
+let firstGestureDone = false;
+function onFirstGesture() {
+  if (firstGestureDone) return;
+  firstGestureDone = true;
+  tryEnterFullscreen();
+  initAudio();
+}
+['touchstart','click','keydown'].forEach(function(ev){
+  window.addEventListener(ev, onFirstGesture, { once: false, passive: true });
+});
+
+// Дополнительно прячем адресную строку в момент старта игры
+function onGameStartHideBrowserUI() {
+  hideIOSAddressBar();
+  // Android Chrome: иногда bar показывается снова — повторим
+  setTimeout(hideIOSAddressBar, 400);
+  setTimeout(hideIOSAddressBar, 1200);
+}
+
+/* ============================================================
+   1. DOM
    ============================================================ */
 const $ = function (id) { return document.getElementById(id); };
 const userNameEl  = $('userName');
@@ -421,16 +515,27 @@ function showErr(msg) {
 }
 
 /* ============================================================
-   1. ЗВУК — процедурный, многослойный
+   2. ЗВУК
    ============================================================ */
 let audioCtx = null;
 let soundEnabled = true;
 let masterGain = null;
 
+function updateMuteUI() {
+  if (!muteBtn) return;
+  const ico = muteBtn.querySelector('.ico');
+  const lbl = muteBtn.querySelector('.lbl');
+  if (ico) ico.textContent = soundEnabled ? '🔊' : '🔇';
+  if (lbl) lbl.textContent = soundEnabled ? 'ЗВУК ВКЛ' : 'ЗВУК ВЫКЛ';
+  muteBtn.title = soundEnabled ? 'Отключить звук' : 'Включить звук';
+}
+updateMuteUI();
+
 if (muteBtn) {
-  muteBtn.addEventListener('click', function () {
+  muteBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
     soundEnabled = !soundEnabled;
-    muteBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    updateMuteUI();
     if (soundEnabled) { initAudio(); blip(1200, 0.06, 'square', 0.05); }
   });
 }
@@ -501,40 +606,36 @@ function noise(dur, vol, filterFreq) {
   } catch (e) {}
 }
 
-function sfxShoot()      { initAudio(); sweep(1400, 600, 0.07, 'square', 0.05); }
-function sfxShootHeavy() { initAudio(); sweep(1800, 400, 0.10, 'sawtooth', 0.06); blip(300, 0.08, 'square', 0.03); }
-function sfxHit()        { initAudio(); sweep(300, 120, 0.06, 'square', 0.05); noise(0.05, 0.05, 1500); }
-function sfxExplosionSmall() { initAudio(); noise(0.35, 0.20, 2200); sweep(160, 40, 0.30, 'sawtooth', 0.09); }
-function sfxExplosionBig()   { initAudio(); noise(0.7, 0.30, 1800); sweep(180, 30, 0.7, 'sawtooth', 0.12); blip(60, 0.5, 'triangle', 0.08); }
+function sfxShoot()      { sweep(1400, 600, 0.07, 'square', 0.05); }
+function sfxShootHeavy() { sweep(1800, 400, 0.10, 'sawtooth', 0.06); blip(300, 0.08, 'square', 0.03); }
+function sfxHit()        { sweep(300, 120, 0.06, 'square', 0.05); noise(0.05, 0.05, 1500); }
+function sfxExplosionSmall() { noise(0.35, 0.20, 2200); sweep(160, 40, 0.30, 'sawtooth', 0.09); }
+function sfxExplosionBig()   { noise(0.7, 0.30, 1800); sweep(180, 30, 0.7, 'sawtooth', 0.12); blip(60, 0.5, 'triangle', 0.08); }
 function sfxPlayerDeath() {
-  initAudio(); noise(0.9, 0.25, 1500);
+  noise(0.9, 0.25, 1500);
   sweep(600, 40, 0.9, 'sawtooth', 0.12);
   setTimeout(function(){ sweep(200, 30, 0.6, 'triangle', 0.10); }, 200);
 }
 function sfxShield() {
-  initAudio();
   blip(660, 0.10, 'sine', 0.10);
   setTimeout(function(){ blip(880, 0.10, 'sine', 0.09); }, 90);
   setTimeout(function(){ blip(1320, 0.16, 'sine', 0.08); }, 180);
 }
 function sfxLevelUp() {
-  initAudio();
   [523, 659, 784, 1046].forEach(function(f, i){
     setTimeout(function(){ blip(f, 0.14, 'square', 0.08); }, i * 100);
   });
 }
-function sfxGameOver() { initAudio(); sweep(400, 30, 1.2, 'sawtooth', 0.15); noise(1.0, 0.20, 900); }
+function sfxGameOver() { sweep(400, 30, 1.2, 'sawtooth', 0.15); noise(1.0, 0.20, 900); }
 function sfxVictory() {
-  initAudio();
   [523, 659, 784, 1046, 1318, 1568].forEach(function(f, i){
     setTimeout(function(){ blip(f, 0.16, 'square', 0.09); }, i * 110);
   });
 }
 function sfxPowerup() {
-  initAudio(); sweep(600, 1400, 0.18, 'square', 0.08); blip(880, 0.06, 'sine', 0.06);
+  sweep(600, 1400, 0.18, 'square', 0.08); blip(880, 0.06, 'sine', 0.06);
 }
 function sfxExtraLife() {
-  initAudio();
   blip(660, 0.10, 'sine', 0.10);
   setTimeout(function(){ blip(880, 0.10, 'sine', 0.10); }, 90);
   setTimeout(function(){ blip(1320, 0.18, 'sine', 0.10); }, 180);
@@ -542,15 +643,12 @@ function sfxExtraLife() {
 }
 
 /* ============================================================
-   2. CANVAS
+   3. CANVAS
    ============================================================ */
 const canvas = $('game');
 const ctx = canvas.getContext('2d');
 let W = 480, H = 720;
 
-// Коэффициент масштабирования шрифта относительно канваса 480px.
-// Позволяет текстам (Game Over, логотип и т.п.) не вылезать за пределы
-// поля на узких экранах.
 function fs(base) {
   const scale = Math.max(0.45, Math.min(1.4, W / 480));
   return Math.max(9, base * scale);
@@ -558,9 +656,6 @@ function fs(base) {
 
 function resize() {
   const wrap = $('gameWrap');
-  const stage = canvas.parentElement;
-
-  // Резервируем место снизу под мобильные кнопки на тач-устройствах
   const isTouch = window.matchMedia('(pointer: coarse)').matches;
   const bottomReserve = isTouch ? 96 : 0;
 
@@ -583,10 +678,15 @@ function resize() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 window.addEventListener('resize', resize);
-window.addEventListener('orientationchange', function(){ setTimeout(resize, 100); });
+window.addEventListener('orientationchange', function(){ setTimeout(resize, 150); });
+// На iOS при скрытии адресной строки меняется innerHeight — пересчитываем
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function(){ setTimeout(resize, 60); });
+  window.visualViewport.addEventListener('scroll', function(){ setTimeout(resize, 60); });
+}
 
 /* ============================================================
-   3. СОСТОЯНИЕ
+   4. СОСТОЯНИЕ
    ============================================================ */
 let state = 'intro';
 let introTime = 0;
@@ -605,13 +705,10 @@ const MAX_LEVEL = 15;
 
 const player = {
   x: W/2, y: H - 60, w: 30, h: 24,
-  speed: 340,
-  weaponLevel: 1,
+  speed: 340, weaponLevel: 1,
   shieldActive: false, shieldTimer: 0, shieldCooldown: 0,
-  invulnTimer: 0,
-  canShoot: true, shootCooldown: 0,
-  enginePhase: 0,
-  thrust: 0
+  invulnTimer: 0, canShoot: true, shootCooldown: 0,
+  enginePhase: 0, thrust: 0
 };
 
 let bullets = [];
@@ -625,7 +722,7 @@ let powerups = [];
 let floatTexts = [];
 
 /* ============================================================
-   4. ВВОД
+   5. ВВОД
    ============================================================ */
 const keys = {};
 window.addEventListener('keydown', function(e){
@@ -664,7 +761,7 @@ canvas.addEventListener('click', function(){
 });
 
 /* ============================================================
-   5. ФОН
+   6. ФОН
    ============================================================ */
 function initStars() {
   stars = [];
@@ -691,7 +788,7 @@ function initStars() {
 }
 
 /* ============================================================
-   6. КОНФИГ УРОВНЕЙ
+   7. КОНФИГ УРОВНЕЙ
    ============================================================ */
 const LEVELS = [
   { name:'ЗВЕЗДНЫЙ РОЙ',  kind:'birds', rows:2, cols:8, dive:0.0015, bhp:1 },
@@ -712,7 +809,7 @@ const LEVELS = [
 ];
 
 /* ============================================================
-   7. ФАБРИКИ
+   8. ФАБРИКИ
    ============================================================ */
 function createBird(x, y, type, hpBonus) {
   const hp = (type === 'big' ? 3 : 1) + (hpBonus || 0);
@@ -725,16 +822,14 @@ function createBird(x, y, type, hpBonus) {
     points: (type === 'big' ? 250 : 100) * (1 + level * 0.05),
     color: type === 'big' ? '#a855ff' : (Math.random() < 0.5 ? '#00f0ff' : '#ff00d4'),
     wingPhase: Math.random() * Math.PI * 2,
-    big: type === 'big',
-    flashTimer: 0,
-    diveChance: 0.002
+    big: type === 'big', flashTimer: 0, diveChance: 0.002
   };
 }
 function createEgg(x, y, hatchTime) {
   return { type:'egg', x:x, y:y, w:20, h:26, hp:1, alive:true,
            hatchTimer: hatchTime + Math.random()*0.5,
-           points: 120, color:'#ffe94d', wobble: Math.random()*Math.PI*2,
-           flashTimer: 0 };
+           points: 120, color:'#ffe94d',
+           wobble: Math.random()*Math.PI*2, flashTimer: 0 };
 }
 function createMothership(bossHp, final) {
   return {
@@ -745,21 +840,19 @@ function createMothership(bossHp, final) {
     vx: 40 + level * 4, points: 8000 + level * 300,
     color: final ? '#ff0055' : '#ff3355',
     fireRate: 0.025 + level * 0.002,
-    firePhase: 0, flashTimer: 0,
-    final: !!final
+    firePhase: 0, flashTimer: 0, final: !!final
   };
 }
 function createPowerup(x, y, kind) {
   return {
     type:'powerup', kind:kind,
     x:x, y:y, w:22, h:22, alive:true,
-    vy: 80, phase: Math.random()*Math.PI*2,
-    life: 12, points: 0
+    vy: 80, phase: Math.random()*Math.PI*2, life: 12, points: 0
   };
 }
 
 /* ============================================================
-   8. ГЕНЕРАЦИЯ УРОВНЯ
+   9. ГЕНЕРАЦИЯ УРОВНЯ
    ============================================================ */
 function buildLevel(lv) {
   enemies = []; enemyBullets = []; bullets = [];
@@ -811,18 +904,14 @@ function buildLevel(lv) {
   }
 
   speedMult = 1 + loopCount * 0.3 + (lv - 1) * 0.03;
-  player.x = W/2;
-  player.y = H - 60;
-  player.shieldActive = false;
-  player.shieldTimer = 0;
-  player.shieldCooldown = 0;
-  player.invulnTimer = 2.0;
-  player.canShoot = true;
+  player.x = W/2; player.y = H - 60;
+  player.shieldActive = false; player.shieldTimer = 0; player.shieldCooldown = 0;
+  player.invulnTimer = 2.0; player.canShoot = true;
   updateHUD();
 }
 
 /* ============================================================
-   9. СТРЕЛЬБА
+   10. СТРЕЛЬБА
    ============================================================ */
 function shoot() {
   if (!player.canShoot || player.shootCooldown > 0) return;
@@ -851,7 +940,7 @@ function shoot() {
 }
 
 /* ============================================================
-   10. ЭФФЕКТЫ
+   11. ЭФФЕКТЫ
    ============================================================ */
 function createParticles(x, y, color, count, speedScale) {
   speedScale = speedScale || 1;
@@ -924,7 +1013,7 @@ function createEngineTrail() {
 }
 
 /* ============================================================
-   11. POWERUPS
+   12. POWERUPS
    ============================================================ */
 function maybeDropPowerup(x, y, isBoss) {
   const roll = Math.random();
@@ -974,7 +1063,7 @@ function floatText(x, y, text, color) {
 }
 
 /* ============================================================
-   12. УРОН ИГРОКУ
+   13. УРОН ИГРОКУ
    ============================================================ */
 function playerHit() {
   if (player.shieldActive || player.invulnTimer > 0) return;
@@ -998,7 +1087,7 @@ function playerHit() {
 }
 
 /* ============================================================
-   13. ОБНОВЛЕНИЕ
+   14. ОБНОВЛЕНИЕ
    ============================================================ */
 function update(dt) {
   introTime += dt;
@@ -1046,7 +1135,6 @@ function update(dt) {
 
   if (state !== 'playing') return;
 
-  // Игрок
   let moveX = 0;
   if (keys['ArrowLeft']  || keys['KeyA'] || touchState.left)  moveX -= 1;
   if (keys['ArrowRight'] || keys['KeyD'] || touchState.right) moveX += 1;
@@ -1080,14 +1168,12 @@ function update(dt) {
 
   if ((keys['Space'] || keys['KeyW'] || keys['ArrowUp'] || touchState.fire) && player.canShoot) shoot();
 
-  // Пули игрока
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     b.x += b.vx * dt; b.y += b.vy * dt;
     if (b.y < -30 || b.x < -20 || b.x > W + 20) bullets.splice(i, 1);
   }
 
-  // Враги
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i];
     if (!e.alive) continue;
@@ -1107,8 +1193,7 @@ function update(dt) {
         }
       } else {
         e.diveTimer -= dt;
-        e.x += e.vx * dt;
-        e.y += e.vy * dt;
+        e.x += e.vx * dt; e.y += e.vy * dt;
         if (e.y > H + 30 || e.diveTimer <= 0) {
           e.dive = false; e.y = 60;
           e.x = 60 + Math.random() * (W - 120);
@@ -1151,7 +1236,6 @@ function update(dt) {
     }
   }
 
-  // Пули врагов
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     const b = enemyBullets[i];
     b.y += b.vy * dt;
@@ -1164,7 +1248,6 @@ function update(dt) {
     }
   }
 
-  // Пули игрока x враги
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     let consumed = false;
@@ -1211,7 +1294,6 @@ function update(dt) {
     if (consumed) bullets.splice(i, 1);
   }
 
-  // Столкновение игрока с врагами
   if (!player.shieldActive && player.invulnTimer <= 0) {
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
@@ -1228,7 +1310,6 @@ function update(dt) {
     }
   }
 
-  // Powerups
   for (let i = powerups.length - 1; i >= 0; i--) {
     const p = powerups[i];
     p.phase += dt * 4;
@@ -1245,7 +1326,6 @@ function update(dt) {
     }
   }
 
-  // Проверка конца уровня
   const anyAlive = enemies.some(function(x){ return x.alive; });
   if (!anyAlive && state === 'playing') {
     state = 'levelclear';
@@ -1271,7 +1351,7 @@ function update(dt) {
 }
 
 /* ============================================================
-   14. РИСОВАНИЕ КОРАБЛЯ
+   15. РИСОВАНИЕ КОРАБЛЯ
    ============================================================ */
 function drawShip(ctx, x, y, w, h, color, wingPhase, big) {
   ctx.fillStyle = color;
@@ -1366,7 +1446,7 @@ function drawPlayerShip() {
 }
 
 /* ============================================================
-   15. ОТРИСОВКА
+   16. ОТРИСОВКА
    ============================================================ */
 function draw() {
   let shakeX = 0, shakeY = 0;
@@ -1527,7 +1607,6 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // Пули игрока
   for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
     ctx.shadowColor = b.color; ctx.shadowBlur = 14;
@@ -1539,7 +1618,6 @@ function draw() {
     ctx.globalAlpha = 1;
   }
 
-  // Пули врагов
   for (let i = 0; i < enemyBullets.length; i++) {
     const b = enemyBullets[i];
     const c = b.color || '#ff3355';
@@ -1560,7 +1638,6 @@ function draw() {
 
   if (state === 'playing' || state === 'levelclear') drawPlayerShip();
 
-  // Плавающий текст
   for (let i = 0; i < floatTexts.length; i++) {
     const f = floatTexts[i];
     ctx.globalAlpha = Math.min(1, f.life / f.maxLife * 1.5);
@@ -1589,7 +1666,7 @@ function draw() {
 }
 
 /* ============================================================
-   16. ЗАСТАВКА
+   17. ЗАСТАВКА
    ============================================================ */
 let introShips = [];
 function initIntroShips() {
@@ -1632,7 +1709,6 @@ function drawIntro() {
   ctx.fillStyle = glowGrad;
   ctx.fillRect(W/2 - W*0.42, titleY - W*0.28, W*0.84, W*0.56);
 
-  // Логотип
   ctx.save();
   const grad = ctx.createLinearGradient(0, titleY - 30, 0, titleY + 30);
   grad.addColorStop(0, '#00f0ff');
@@ -1647,13 +1723,11 @@ function drawIntro() {
   ctx.fillText('PHEENIX', 0, 0);
   ctx.restore();
 
-  // Подзаголовок
   ctx.font = 'bold ' + fs(14) + 'px sans-serif';
   ctx.fillStyle = '#ffe94d';
   ctx.shadowColor = '#ffe94d'; ctx.shadowBlur = 12;
   ctx.fillText('★ NEON ARCADE EDITION ★', W/2, titleY + fs(38));
 
-  // Подсказка запуска
   const pulse = 0.6 + Math.sin(t * 4) * 0.4;
   ctx.globalAlpha = pulse;
   ctx.font = 'bold ' + fs(18) + 'px sans-serif';
@@ -1662,7 +1736,6 @@ function drawIntro() {
   ctx.fillText('► НАЖМИ ПРОБЕЛ / ТАПНИ ◄', W/2, H * 0.62);
   ctx.globalAlpha = 1;
 
-  // Управление
   ctx.font = fs(13) + 'px sans-serif';
   ctx.fillStyle = '#e6f7ff';
   ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 6;
@@ -1671,7 +1744,6 @@ function drawIntro() {
   ctx.fillText('SPACE / W — огонь   SHIFT / S — щит', W/2, ctrlY + fs(22));
   ctx.fillText('⚡ оружие   🛡 щит   ❤ жизнь   ✦ очки', W/2, ctrlY + fs(46));
 
-  // Приветствие
   ctx.font = 'bold ' + fs(13) + 'px sans-serif';
   ctx.fillStyle = '#a855ff';
   ctx.shadowColor = '#a855ff'; ctx.shadowBlur = 10;
@@ -1716,7 +1788,6 @@ function drawGameOver() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const t = performance.now() * 0.001;
 
-  // Автоуменьшение под ширину поля, чтобы не вылезать за края
   const fTitle = Math.min(fs(38), W / 12);
   const fScore = Math.min(fs(22), W / 22);
   const fInfo  = Math.min(fs(15), W / 32);
@@ -1793,7 +1864,7 @@ function drawVictory() {
 }
 
 /* ============================================================
-   17. HUD
+   18. HUD
    ============================================================ */
 function updateHUD() {
   if (hudLevelEl)  hudLevelEl.textContent  = 'УР. ' + level + '/' + MAX_LEVEL;
@@ -1814,9 +1885,10 @@ function updateHUD() {
 }
 
 /* ============================================================
-   18. СТАРТ / СБРОС
+   19. СТАРТ
    ============================================================ */
 function startGame() {
+  onGameStartHideBrowserUI();
   score = 0; lives = 3; level = 1; cycle = 0;
   lastRenderedScore = -1;
   player.weaponLevel = 1;
@@ -1830,7 +1902,7 @@ function startGame() {
 }
 
 /* ============================================================
-   19. ЦИКЛ
+   20. ЦИКЛ
    ============================================================ */
 let lastTime = 0;
 function loop(time) {
@@ -1842,7 +1914,7 @@ function loop(time) {
 }
 
 /* ============================================================
-   20. ПЛАТФОРМА
+   21. ПЛАТФОРМА
    ============================================================ */
 let currentPlayer = null;
 try {
@@ -1890,19 +1962,21 @@ async function submitScore(finalScore) {
 
 window.addEventListener('leaderboard-updated', loadStats);
 
-document.getElementById('lbHeaderBtn')?.addEventListener('click', function () {
+document.getElementById('lbHeaderBtn')?.addEventListener('click', function (e) {
+  e.stopPropagation();
   try {
     if (typeof LeaderboardUI !== 'undefined' && LeaderboardUI && typeof LeaderboardUI.open === 'function') {
       LeaderboardUI.open('pheenix');
     }
   } catch (e) { showErr('LB UI: ' + e.message); }
 });
-document.getElementById('menuBtn')?.addEventListener('click', function () {
+document.getElementById('menuBtn')?.addEventListener('click', function (e) {
+  e.stopPropagation();
   try { window.location.href = 'index.html'; } catch (_) {}
 });
 
 /* ============================================================
-   21. ЗАПУСК
+   22. ЗАПУСК
    ============================================================ */
 resize();
 initStars();
@@ -1912,6 +1986,12 @@ state = 'intro';
 updateHUD();
 requestAnimationFrame(loop);
 loadStats();
+
+// На всякий случай — блокируем скролл страницы (pull-to-refresh и т.п.)
+document.addEventListener('touchmove', function(e){
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 
 })();
 </script>
