@@ -21,30 +21,77 @@
   header {
     position:fixed; top:0; left:0; right:0; z-index:100;
     display:flex; align-items:center; justify-content:space-between;
-    padding:8px 16px;
+    gap:8px;
+    padding:8px 12px;
     background: rgba(13,17,40,0.85);
     backdrop-filter: blur(8px);
     border-bottom:1px solid rgba(0,240,255,0.25);
     box-shadow: 0 0 20px rgba(0,240,255,0.15);
   }
   .logo {
-    font-weight:800; font-size:clamp(1rem,3vw,1.4rem);
+    font-weight:800; font-size:clamp(0.9rem,2.6vw,1.3rem);
     color:#00f0ff;
     text-shadow: 0 0 10px #00f0ff, 0 0 25px #00f0ff55;
     letter-spacing:2px;
+    flex-shrink:0;
   }
-  .header-right { display:flex; gap:8px; align-items:center; }
+  .header-right {
+    display:flex; gap:6px; align-items:center;
+    flex-wrap:nowrap; overflow:hidden;
+  }
   .chip {
-    padding:5px 12px; border-radius:20px; font-size:clamp(0.7rem,2vw,0.85rem);
+    padding:5px 10px; border-radius:20px; font-size:clamp(0.65rem,1.8vw,0.82rem);
     font-weight:600; cursor:pointer; transition:0.2s;
     border:1px solid transparent;
     white-space:nowrap;
+    flex-shrink:0;
+    line-height:1.2;
   }
   .chip.lb { background:rgba(255,233,77,0.15); color:#ffe94d; border-color:#ffe94d; box-shadow:0 0 10px #ffe94d33; }
   .chip.lb:active { background:#ffe94d; color:#05060f; }
-  .chip.user { background:rgba(0,240,255,0.1); color:#00f0ff; border-color:#00f0ff55; }
+  .chip.user { background:rgba(0,240,255,0.1); color:#00f0ff; border-color:#00f0ff55; max-width:120px; overflow:hidden; text-overflow:ellipsis; }
   .chip.menu { background:rgba(255,0,212,0.15); color:#ff00d4; border-color:#ff00d455; box-shadow:0 0 10px #ff00d433; }
   .chip.menu:active { background:#ff00d4; color:#05060f; }
+  .chip.mute {
+    background:rgba(0,240,255,0.1); color:#00f0ff; border-color:#00f0ff55;
+    padding:5px 8px; font-size:clamp(0.85rem,2.2vw,1rem);
+    min-width:32px; text-align:center;
+    box-shadow:0 0 10px #00f0ff33;
+  }
+  .chip.mute:active { background:#00f0ff; color:#05060f; }
+
+  /* Красивый счётчик очков */
+  .chip.score {
+    background: linear-gradient(135deg, rgba(255,233,77,0.18) 0%, rgba(255,210,63,0.28) 100%);
+    color:#ffe94d;
+    border-color:#ffe94d88;
+    box-shadow:
+      0 0 14px #ffe94d55,
+      inset 0 0 10px #ffe94d22;
+    font-family: 'Courier New', ui-monospace, monospace;
+    font-weight:800;
+    letter-spacing:1px;
+    text-shadow: 0 0 8px #ffe94d, 0 0 16px #ffe94d88;
+    padding:5px 12px;
+    position:relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    font-size:clamp(0.7rem,1.9vw,0.88rem);
+  }
+  .chip.score .score-ico {
+    color:#ffd23f; margin-right:4px; filter: drop-shadow(0 0 4px #ffe94d);
+  }
+  .chip.score.bump {
+    transform: scale(1.12);
+    box-shadow:
+      0 0 22px #ffe94d,
+      inset 0 0 14px #ffe94d55;
+  }
+  @keyframes scoreBump {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  .chip.score.bump { animation: scoreBump 0.28s ease; }
 
   #gameWrap {
     position:fixed; top:52px; left:0; right:0; bottom:0;
@@ -60,6 +107,7 @@
     touch-action:none;
   }
 
+  /* Малый HUD только для уровня и жизней */
   .hud {
     position:fixed; top:60px; left:16px; right:16px; z-index:50;
     display:flex; justify-content:space-between;
@@ -67,8 +115,7 @@
     font-weight:700; font-size:clamp(0.75rem,2.5vw,1rem);
     text-shadow:0 0 8px currentColor;
   }
-  .hud .score { color:#00ff88; }
-  .hud .lives { color:#ff3355; }
+  .hud .lives { color:#ff3355; letter-spacing:1px; }
   .hud .level { color:#a855ff; }
 
   .mobile-controls {
@@ -96,14 +143,6 @@
 
   #lbModalContainer { position:fixed; inset:0; z-index:200; display:none; }
   #lbModalContainer.open { display:block; }
-  .mute-btn {
-    position:fixed; top:60px; right:16px; z-index:110;
-    background:rgba(13,17,40,0.8); border:1px solid #00f0ff55;
-    color:#00f0ff; border-radius:50%; width:36px; height:36px;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; font-size:1rem;
-    box-shadow:0 0 10px #00f0ff33;
-  }
   #err {
     position:fixed; bottom:8px; left:8px; right:8px; z-index:300;
     color:#ff5c6a; font-size:11px; font-family:monospace;
@@ -117,19 +156,18 @@
 <header>
   <div class="logo">PHEENIX</div>
   <div class="header-right">
+    <div class="chip score" id="hudScore"><span class="score-ico">✦</span><span id="hudScoreVal">0</span></div>
     <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
+    <div class="chip mute" id="muteBtn" title="Звук">🔊</div>
     <div class="chip user" id="userChip">ГОСТЬ</div>
     <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
   </div>
 </header>
 
 <div class="hud">
-  <div class="score" id="hudScore">0</div>
   <div class="level" id="hudLevel">УР. 1</div>
   <div class="lives" id="hudLives">❤❤❤❤</div>
 </div>
-
-<button class="mute-btn" id="muteBtn" type="button">🔊</button>
 
 <div id="gameWrap"><canvas id="game"></canvas></div>
 
@@ -152,13 +190,21 @@
 'use strict';
 
 /* ============================================================
-   0. УТИЛИТЫ
+   0. ССЫЛКИ НА DOM (объявляем СРАЗУ, до любого использования!)
    ============================================================ */
+const $ = function (id) { return document.getElementById(id); };
+const userChip    = $('userChip');
+const muteBtn     = $('muteBtn');
+const hudScoreEl  = $('hudScore');
+const hudScoreVal = $('hudScoreVal');
+const hudLevelEl  = $('hudLevel');
+const hudLivesEl  = $('hudLives');
+const errEl       = $('err');
+
 function showErr(msg) {
-  const el = document.getElementById('err');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.display = 'block';
+  if (!errEl) { console.error('[PHEENIX]', msg); return; }
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
   console.error('[PHEENIX]', msg);
 }
 
@@ -167,11 +213,11 @@ function showErr(msg) {
    ============================================================ */
 let audioCtx = null;
 let soundEnabled = true;
-const muteBtn = document.getElementById('muteBtn');
 if (muteBtn) {
   muteBtn.addEventListener('click', function () {
     soundEnabled = !soundEnabled;
     muteBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    if (soundEnabled) playTone(660, 0.08, 'square', 0.06);
   });
 }
 function initAudio() {
@@ -207,14 +253,14 @@ function sfxGameOver()   { playTone(300,0.35,'sawtooth',0.10); setTimeout(functi
 /* ============================================================
    2. CANVAS
    ============================================================ */
-const canvas = document.getElementById('game');
+const canvas = $('game');
 const ctx = canvas.getContext('2d');
 let W = 480, H = 720;
 
 function resize() {
-  const wrap = document.getElementById('gameWrap');
-  const availW = (wrap.clientWidth  || window.innerWidth)  - 16;
-  const availH = (wrap.clientHeight || (window.innerHeight - 52)) - 16;
+  const wrap = $('gameWrap');
+  const availW = ((wrap && wrap.clientWidth)  || window.innerWidth)  - 16;
+  const availH = ((wrap && wrap.clientHeight) || (window.innerHeight - 52)) - 16;
   const ratio = 2 / 3;
   if (availW / availH > ratio) { H = availH; W = H * ratio; }
   else                         { W = availW; H = W / ratio; }
@@ -239,6 +285,7 @@ let lives = 4;
 let level = 1;
 let cycle = 0;
 let speedMult = 1;
+let lastRenderedScore = -1;
 
 const player = {
   x: W/2, y: H - 60, w: 28, h: 20,
@@ -268,7 +315,7 @@ window.addEventListener('keyup', function(e){ keys[e.code] = false; });
 
 const touchState = { left:false, right:false, fire:false, shield:false };
 function bindTouch(id, key) {
-  const el = document.getElementById(id);
+  const el = $(id);
   if (!el) return;
   function on(e){ e.preventDefault(); touchState[key] = true; }
   function off(e){ e.preventDefault(); touchState[key] = false; }
@@ -413,13 +460,11 @@ function playerHit() {
 }
 
 function update(dt) {
-  // Звёзды двигаются всегда — чтобы даже в меню было видно, что игра живая
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i];
     s.y += s.speed * dt;
     if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
   }
-  // Частицы
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -429,14 +474,12 @@ function update(dt) {
 
   if (state !== 'playing') return;
 
-  // Игрок
   let moveX = 0;
   if (keys['ArrowLeft']  || keys['KeyA'] || touchState.left)  moveX -= 1;
   if (keys['ArrowRight'] || keys['KeyD'] || touchState.right) moveX += 1;
   player.x += moveX * player.speed * dt;
   player.x = Math.max(player.w/2, Math.min(W - player.w/2, player.x));
 
-  // Щит
   if (player.shieldActive) {
     player.shieldTimer -= dt;
     if (player.shieldTimer <= 0) {
@@ -455,28 +498,18 @@ function update(dt) {
     }
   }
 
-  // Стрельба
   if ((keys['Space'] || keys['KeyW'] || keys['ArrowUp'] || touchState.fire) && player.canShoot) shoot();
   if (player.shootCooldown > 0) player.shootCooldown -= dt;
 
-  // Пули игрока
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     b.y += b.vy * dt;
     if (b.y < -20) bullets.splice(i, 1);
   }
 
-  // Враги
-  let anyAlive = false;
-  let mothershipAlive = false;
-  let otherAlive = false;
-
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i];
     if (!e.alive) continue;
-    anyAlive = true;
-    if (e.type === 'mothership') mothershipAlive = true;
-    else otherAlive = true;
 
     if (e.type === 'bird') {
       if (!e.dive) {
@@ -520,7 +553,6 @@ function update(dt) {
     }
   }
 
-  // Пули врагов
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     const b = enemyBullets[i];
     b.y += b.vy * dt;
@@ -533,7 +565,6 @@ function update(dt) {
     }
   }
 
-  // Пули игрока vs враги
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     let consumed = false;
@@ -542,7 +573,6 @@ function update(dt) {
       if (!e.alive) continue;
       if (Math.abs(b.x - e.x) < e.w/2 + 3 && Math.abs(b.y - e.y) < e.h/2 + 6) {
         consumed = true;
-        // Материнский корабль: сначала пластины, потом корпус
         if (e.type === 'mothership') {
           if (e.plateHp > 0) {
             e.plateHp--;
@@ -578,7 +608,6 @@ function update(dt) {
     if (consumed) bullets.splice(i, 1);
   }
 
-  // Столкновение игрока с врагом (без щита)
   if (!player.shieldActive) {
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
@@ -593,11 +622,9 @@ function update(dt) {
     }
   }
 
-  // Проверка завершения уровня
   const ms = enemies.find(function(x){ return x.alive && x.type === 'mothership'; });
   const others = enemies.filter(function(x){ return x.alive && x.type !== 'mothership'; });
-  const done = (!ms && others.length === 0);
-  if (done && state === 'playing') {
+  if (!ms && others.length === 0 && state === 'playing') {
     state = 'levelclear';
     sfxLevelUp();
     setTimeout(function(){
@@ -623,7 +650,6 @@ function draw() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Звёзды
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i];
     ctx.globalAlpha = s.brightness;
@@ -632,7 +658,6 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // Частицы
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
     ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
@@ -643,7 +668,6 @@ function draw() {
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  // Враги
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i];
     if (!e.alive) continue;
@@ -686,7 +710,6 @@ function draw() {
   }
   ctx.shadowBlur = 0;
 
-  // Пули игрока
   ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 10;
   ctx.fillStyle = '#00f0ff';
   for (let i = 0; i < bullets.length; i++) {
@@ -694,7 +717,6 @@ function draw() {
     ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
   }
 
-  // Пули врагов
   ctx.shadowColor = '#ff3355'; ctx.shadowBlur = 10;
   ctx.fillStyle = '#ff3355';
   for (let i = 0; i < enemyBullets.length; i++) {
@@ -703,7 +725,6 @@ function draw() {
   }
   ctx.shadowBlur = 0;
 
-  // Игрок
   ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 15;
   ctx.fillStyle = '#00f0ff';
   ctx.beginPath();
@@ -715,7 +736,6 @@ function draw() {
   ctx.fillStyle = '#ffffff';
   ctx.beginPath(); ctx.arc(player.x, player.y - 2, 4, 0, Math.PI*2); ctx.fill();
 
-  // Щит
   if (player.shieldActive) {
     ctx.strokeStyle = '#ffe94d'; ctx.lineWidth = 3;
     ctx.shadowColor = '#ffe94d'; ctx.shadowBlur = 20;
@@ -727,7 +747,6 @@ function draw() {
   }
   ctx.shadowBlur = 0;
 
-  // Стартовый экран
   if (state === 'menu') {
     ctx.fillStyle = 'rgba(5,6,15,0.55)';
     ctx.fillRect(0, 0, W, H);
@@ -749,7 +768,6 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // Уровень пройден
   if (state === 'levelclear') {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#00ff88';
@@ -759,7 +777,6 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // Игра окончена
   if (state === 'gameover') {
     ctx.fillStyle = 'rgba(5,6,15,0.65)';
     ctx.fillRect(0, 0, W, H);
@@ -781,12 +798,20 @@ function draw() {
    10. HUD
    ============================================================ */
 function updateHUD() {
-  const s = document.getElementById('hudScore');
-  const l = document.getElementById('hudLevel');
-  const v = document.getElementById('hudLives');
-  if (s) s.textContent = score;
-  if (l) l.textContent = 'УР. ' + ((((level-1) % 5) + 1));
-  if (v) v.textContent = new Array(Math.max(0, lives) + 1).join('❤');
+  if (hudLevelEl) hudLevelEl.textContent = 'УР. ' + ((((level-1) % 5) + 1));
+  if (hudLivesEl) hudLivesEl.textContent = new Array(Math.max(0, lives) + 1).join('❤');
+
+  if (hudScoreVal && score !== lastRenderedScore) {
+    hudScoreVal.textContent = score;
+    // Анимация «bump» при изменении счёта
+    if (hudScoreEl && lastRenderedScore >= 0 && score > lastRenderedScore) {
+      hudScoreEl.classList.remove('bump');
+      // force reflow чтобы перезапустить анимацию
+      void hudScoreEl.offsetWidth;
+      hudScoreEl.classList.add('bump');
+    }
+    lastRenderedScore = score;
+  }
 }
 
 /* ============================================================
@@ -794,6 +819,7 @@ function updateHUD() {
    ============================================================ */
 function startGame() {
   score = 0; lives = 4; level = 1; cycle = 0;
+  lastRenderedScore = -1;
   player.shieldActive = false; player.shieldTimer = 0; player.shieldCooldown = 0;
   player.canShoot = true;
   bullets = []; enemyBullets = []; particles = [];
@@ -816,18 +842,47 @@ function loop(time) {
 }
 
 /* ============================================================
-   13. ПЛАТФОРМА (в try/catch — не должна ломать игру)
+   13. ПЛАТФОРМА — ИМЯ ИГРОКА, ЛИДЕРБОРД
    ============================================================ */
 let currentPlayer = null;
 try {
   if (typeof Auth !== 'undefined' && Auth && typeof Auth.get === 'function') {
-    currentPlayer = Auth.get();
+    const raw = Auth.get();
+    // Auth.get() может вернуть:
+    //  - строку "Имя"
+    //  - объект { username: "..." } / { name: "..." } / { user: "..." }
+    //  - null (гость)
+    if (raw == null) {
+      currentPlayer = null;
+    } else if (typeof raw === 'string') {
+      currentPlayer = raw.trim() || null;
+    } else if (typeof raw === 'object') {
+      currentPlayer = raw.username || raw.name || raw.user || raw.login || null;
+    }
+    // Дополнительно можно попробовать localStorage-фолбэк
+    if (!currentPlayer) {
+      try {
+        currentPlayer = localStorage.getItem('neon_player') ||
+                        localStorage.getItem('player') ||
+                        localStorage.getItem('username') ||
+                        null;
+      } catch (_) {}
+    }
   }
-} catch (e) { showErr('Auth: ' + e.message); }
+} catch (e) {
+  showErr('Auth: ' + e.message);
+}
 
-try {
-  if (userChip) userChip.textContent = currentPlayer ? ('👤 ' + currentPlayer) : 'ГОСТЬ';
-} catch (e) {}
+// Устанавливаем имя в шапке (userChip уже объявлен выше — не TDZ!)
+if (userChip) {
+  if (currentPlayer) {
+    userChip.textContent = '👤 ' + currentPlayer;
+    userChip.title = currentPlayer;
+  } else {
+    userChip.textContent = 'ГОСТЬ';
+    userChip.title = 'Войдите в аккаунт, чтобы попасть в лидерборд';
+  }
+}
 
 function loadStats() {
   try {
@@ -855,10 +910,6 @@ async function submitScore(finalScore) {
 
 window.addEventListener('leaderboard-updated', loadStats);
 
-/* ============================================================
-   14. UI-КНОПКИ ШАПКИ
-   ============================================================ */
-const userChip = document.getElementById('userChip');
 document.getElementById('lbHeaderBtn')?.addEventListener('click', function () {
   try {
     if (typeof LeaderboardUI !== 'undefined' && LeaderboardUI && typeof LeaderboardUI.open === 'function') {
@@ -871,7 +922,7 @@ document.getElementById('menuBtn')?.addEventListener('click', function () {
 });
 
 /* ============================================================
-   15. ЗАПУСК
+   14. ЗАПУСК
    ============================================================ */
 resize();
 initStars();
