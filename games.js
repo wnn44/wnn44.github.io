@@ -53,7 +53,7 @@ window.GAMES = [
 	  icon:        '🔥',
 	  color:       '#00f0ff',
 	  tags:        ['shooter', 'arcade', 'retro', 'fixed'],
-	  preview:     { type: 'video', src: 'previews/pheenix..mp4' }
+	  preview:     { type: 'video', src: 'previews/pheenix.mp4' }
   },
   {
     id:          'neon-match3',
