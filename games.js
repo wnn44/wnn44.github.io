@@ -46,6 +46,16 @@ window.GAMES = [
     preview:     { type: 'video', src: 'previews/2048.mp4' },
   },
   {
+	  id:          'pheenix',
+	  title:       'NEON PHEENIX',
+	  description: 'Классический фиксированный шутер: уничтожьте пять волн космических птиц и материнский корабль.',
+	  url:         'pheenix.html',
+	  icon:        '🔥',
+	  color:       '#00f0ff',
+	  tags:        ['shooter', 'arcade', 'retro', 'fixed'],
+	  preview:     { type: 'video', src: 'previews/pheenix..mp4' }
+  },
+  {
     id:          'neon-match3',
 	title:       'NEON MATCH-3',
 	description: 'Классическая головоломка «три в ряд» с неоновыми шариками, каскадными комбо и киберпанк-эстетикой.',
