@@ -56,6 +56,16 @@ window.GAMES = [
 	  preview:     { type: 'video', src: 'previews/pheenix.mp4' }
   },
   {
+	  id:          'batty',
+	  title:       'BATTY',
+	  description: 'Классический арканоид с 15 уровнями, врагами, бонусами и неоновой графикой.',
+	  url:         'batty.html',
+	  icon:        '🦇',
+	  color:       '#00f0ff',
+	  tags:        ['арканоид', 'ретро', 'аркада'],
+	  preview:     { type: 'video', src: 'previews/batty.mp4' }
+  },
+  {
     id:          'neon-match3',
 	title:       'NEON MATCH-3',
 	description: 'Классическая головоломка «три в ряд» с неоновыми шариками, каскадными комбо и киберпанк-эстетикой.',
