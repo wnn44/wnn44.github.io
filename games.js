@@ -56,6 +56,16 @@ window.GAMES = [
 	  preview:     { type: 'video', src: 'previews/pheenix.mp4' }
   },
   {
+	  id:          'flyingshark',
+	  title:       'NEON FLYING SHARK',
+	  description: 'Классический вертикальный шутер',
+	  url:         'FlyingShark.html',
+	  icon:        '🔥',
+	  color:       '#00f0ff',
+	  tags:        ['shooter', 'arcade', 'retro'],
+	  preview:     { type: 'video', src: 'previews/FlyingShark.mp4' }
+  },
+  {
 	  id:          'batty',
 	  title:       'BATTY',
 	  description: 'Классический арканоид с 15 уровнями, врагами, бонусами и неоновой графикой.',
