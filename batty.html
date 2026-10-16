@@ -424,8 +424,8 @@
   <div class="splash-instructions">
     <p>🖱️ <b>ПК:</b> <span class="key">← →</span> или <span class="key">A D</span> — движение</p>
     <p>🖱️ <b>Мышь:</b> движение ракетки</p>
-    <p>📱 <b>Мобильные:</b> свайп или кнопки внизу</p>
-    <p>🎯 <b>Огонь:</b> <span class="key">Space</span> / <span class="key">Click</span> / <span class="key">●</span></p>
+    <p>📱 <b>Мобильные:</b> водите пальцем по экрану</p>
+    <p>🎯 <b>Огонь:</b> <span class="key">Space</span> / <span class="key">Click</span></p>
     <p>🎁 Ловите бонусы: удлинение, замедление,<br>пушка, липучка, тройной мяч, ракета и др.</p>
     <p>👾 Уничтожайте врагов мячом или выстрелом!</p>
   </div>
@@ -1199,9 +1199,9 @@ function launchBall() {
     const sec = dt / 1000;
 
     // --- Управление ракеткой ---
-	let targetX = paddle.x;
-    if (keys['ArrowLeft'] || keys['a'] || keys['A'] || tLeft) targetX -= PADDLE_SPEED * 60 * sec;
-    if (keys['ArrowRight'] || keys['d'] || keys['D'] || tRight) targetX += PADDLE_SPEED * 60 * sec;
+    let targetX = paddle.x;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) targetX -= PADDLE_SPEED * 60 * sec;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) targetX += PADDLE_SPEED * 60 * sec;
 
     // Мышь/тач применяются только если это последний использованный способ ввода
     if (inputMode === 'mouse' && mouseX !== null) targetX = mouseX;
@@ -1210,7 +1210,7 @@ function launchBall() {
     paddle.x = clamp(targetX, paddle.w / 2, W - paddle.w / 2);
 
     // --- Огонь (пушка) ---
-    if ((keys[' '] || keys['Space'] || tFire || keys['w'] || keys['W']) && activePowers['gun']) {
+    if ((keys[' '] || keys['Space'] || keys['w'] || keys['W']) && activePowers['gun']) {
       if (!window._gunCooldown || gameTime - window._gunCooldown > 250) {
         window._gunCooldown = gameTime;
         bullets.push({
