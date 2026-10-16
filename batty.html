@@ -177,59 +177,16 @@
     width: 100%;
     max-width: 900px;
     height: auto;
-    aspect-ratio: 4 / 3;
+    /* aspect-ratio задаётся буфером canvas (W×H), а не CSS */
     border-radius: 8px;
     border: 1px solid rgba(0, 240, 255, 0.2);
     box-shadow: 0 0 30px rgba(0, 240, 255, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.5);
     background: #05060f;
     image-rendering: pixelated;
-  }
-
-  /* ====== ТАЧ-КНОПКИ ====== */
-  #touchControls {
-    display: none;
-    width: 100%;
-    max-width: 900px;
-    justify-content: center;
-    gap: 20px;
-    padding: 8px 0 4px;
-  }
-
-  .tbtn {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    border: 2px solid rgba(0, 240, 255, 0.5);
-    background: rgba(13, 17, 40, 0.85);
-    color: var(--cyan);
-    font-size: 26px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     touch-action: none;
-    cursor: pointer;
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
-    transition: all 0.1s;
-    -webkit-user-select: none;
-    user-select: none;
   }
 
-  .tbtn:active {
-    background: rgba(0, 240, 255, 0.2);
-    box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
-    transform: scale(0.92);
-  }
 
-  .tbtn.fire {
-    border-color: rgba(255, 0, 212, 0.5);
-    color: var(--magenta);
-    box-shadow: 0 0 15px rgba(255, 0, 212, 0.2);
-  }
-  .tbtn.fire:active {
-    background: rgba(255, 0, 212, 0.2);
-    box-shadow: 0 0 25px rgba(255, 0, 212, 0.5);
-  }
 
   /* ====== ЗАСТАВКА ====== */
   #splash {
@@ -424,12 +381,6 @@
     header { padding: 4px 8px; min-height: 38px; }
     #gameWrap { top: 38px; }
     .chip { padding: 3px 8px; font-size: 10px; }
-    #touchControls { display: flex; }
-    .tbtn { width: 56px; height: 56px; font-size: 22px; }
-  }
-
-  @media (min-width: 601px) and (pointer: coarse) {
-    #touchControls { display: flex; }
   }
 </style>
 </head>
@@ -461,12 +412,6 @@
   </div>
 
   <canvas id="gameCanvas" width="800" height="600"></canvas>
-
-  <div id="touchControls">
-    <div class="tbtn" id="tbtnLeft">◀</div>
-    <div class="tbtn fire" id="tbtnFire">●</div>
-    <div class="tbtn" id="tbtnRight">▶</div>
-  </div>
 </div>
 
 <!-- КНОПКА ЗВУКА -->
@@ -610,7 +555,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // ======================= КОНСТАНТЫ =======================
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
-  const W = 800, H = 600;
+
+  // ===== Адаптивные размеры: на мобильном портрете растягиваем H, чтобы занять экран =====
+  let W = 800;
+  let H = 600;
+  (function computeDimensions() {
+    const vpW = window.innerWidth || 800;
+    const vpH = window.innerHeight || 600;
+    const isMobilePortrait = vpW < 768 && vpH > vpW;
+    if (isMobilePortrait) {
+      // Игровой буфер: W фиксировано, H подгоняем под пропорции экрана (с потолком).
+      const targetRatio = vpH / vpW;          // напр. 2.0 для 400×800
+      H = Math.round(W * targetRatio);
+      H = Math.min(H, 1300);                  // разумный предел
+      H = Math.max(H, 600);                   // не меньше базового
+    }
+  })();
+  canvas.width = W;
+  canvas.height = H;
 
   const COLS = 13;
   const ROWS = 10;
@@ -1060,13 +1022,41 @@ canvas.addEventListener('click', () => {
   });
 
   // Тач-кнопки
-  let tLeft = false, tRight = false, tFire = false;
-  document.getElementById('tbtnLeft')?.addEventListener('touchstart', (e) => { e.preventDefault(); tLeft = true; }, { passive: false });
-  document.getElementById('tbtnLeft')?.addEventListener('touchend', (e) => { e.preventDefault(); tLeft = false; }, { passive: false });
-  document.getElementById('tbtnRight')?.addEventListener('touchstart', (e) => { e.preventDefault(); tRight = true; }, { passive: false });
-  document.getElementById('tbtnRight')?.addEventListener('touchend', (e) => { e.preventDefault(); tRight = false; }, { passive: false });
-  document.getElementById('tbtnFire')?.addEventListener('touchstart', (e) => { e.preventDefault(); tFire = true; initAudio(); }, { passive: false });
-  document.getElementById('tbtnFire')?.addEventListener('touchend', (e) => { e.preventDefault(); tFire = false; }, { passive: false });
+  // ===== Касания работают по всему экрану, а не только над канвасом =====
+  function isUiTarget(el) {
+    if (!el) return false;
+    return !!(el.closest('button') || el.closest('.chip') || el.closest('header') ||
+              el.closest('#splash') || el.closest('#overlay') || el.closest('#muteBtn'));
+  }
+
+  function updateTouchFromEvent(e) {
+    if (!e.touches || !e.touches[0]) return;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches[0].clientX - rect.left;
+    // Не ограничиваем — если палец ушёл за левый/правый край, ракетка всё равно следует
+    touchX = (clientX / rect.width) * W;
+    inputMode = 'touch';
+  }
+
+  document.addEventListener('touchstart', (e) => {
+    if (isUiTarget(e.target)) return;
+    initAudio();
+    if (state === 'splash') { startGame(); return; }
+    // Тап во время игры — запуск прилипшего мяча
+    if (state === 'playing' && balls.some(b => b.stuck)) {
+      launchBall();
+    }
+    updateTouchFromEvent(e);
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (isUiTarget(e.target)) return;
+    e.preventDefault();
+    updateTouchFromEvent(e);
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => { touchX = null; }, { passive: true });
+  document.addEventListener('touchcancel', () => { touchX = null; }, { passive: true });
 
   // ======================= ИГРОВЫЕ ФУНКЦИИ =======================
   function startGame() {
