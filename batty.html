@@ -28,11 +28,61 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  html, body {
+  html {
     width: 100%;
     height: 100%;
     overflow: hidden;
     background: radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
+  }
+
+  /* ===== Анимированный фон за пределами игрового поля ===== */
+  html::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(0,240,255,0.14), transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,0,212,0.14), transparent 42%),
+      radial-gradient(circle at 50% 50%, rgba(168,85,255,0.08), transparent 60%),
+      radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
+    animation: bgPulse 9s ease-in-out infinite alternate;
+  }
+
+  html::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.55;
+    background:
+      repeating-linear-gradient(0deg,
+        transparent 0, transparent 3px,
+        rgba(0,240,255,0.055) 3px, rgba(0,240,255,0.055) 4px),
+      repeating-linear-gradient(90deg,
+        transparent 0, transparent 3px,
+        rgba(255,0,212,0.055) 3px, rgba(255,0,212,0.055) 4px);
+    animation: bgScroll 32s linear infinite;
+  }
+
+  @keyframes bgPulse {
+    0%   { transform: scale(1)    translate(0, 0); }
+    50%  { transform: scale(1.06) translate(-1.5%, 1%); }
+    100% { transform: scale(1.02) translate(1.5%, -1%); }
+  }
+
+  @keyframes bgScroll {
+    from { background-position: 0 0, 0 0; }
+    to   { background-position: 0 220px, 220px 0; }
+  }
+
+  body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
     font-family: 'Segoe UI', 'Orbitron', system-ui, sans-serif;
     color: var(--text);
     touch-action: none;
@@ -58,8 +108,8 @@
   }
 
   .logo {
-    font-size: clamp(14px, 2.5vw, 20px);
-    font-weight: 800;
+    font-size: clamp(15px, 2.6vw, 22px);
+    font-weight: 900;
     letter-spacing: 3px;
     color: var(--cyan);
     text-shadow: 0 0 10px var(--cyan), 0 0 30px rgba(0, 240, 255, 0.5);
@@ -77,7 +127,7 @@
     padding: 4px 10px;
     border-radius: 20px;
     font-size: clamp(10px, 1.8vw, 13px);
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
     border: 1px solid transparent;
@@ -114,7 +164,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;   /* прижимаем к верху — низ свободен под управление */
+    justify-content: flex-start;
     padding: 4px;
     overflow: hidden;
   }
@@ -125,8 +175,8 @@
     max-width: 900px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 2px 6px 6px;
+    gap: 4px;
+    padding: 4px 8px 8px;
     z-index: 10;
   }
 
@@ -135,36 +185,40 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    gap: 8px;
-    font-size: clamp(10px, 2vw, 14px);
-    font-weight: 700;
+    gap: 10px;
+    font-size: clamp(11px, 2.2vw, 15px);
+    font-weight: 800;
     letter-spacing: 1px;
   }
 
   .ui-row .label {
-    color: rgba(230, 247, 255, 0.5);
-    font-weight: 400;
-    font-size: 0.8em;
+    color: rgba(230, 247, 255, 0.55);
+    font-weight: 600;
+    font-size: 0.75em;
+    letter-spacing: 1.5px;
   }
 
   .ui-row .value {
     color: var(--cyan);
-    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+    font-weight: 900;
+    font-size: clamp(16px, 3.4vw, 24px);
+    text-shadow: 0 0 12px rgba(0, 240, 255, 0.8), 0 0 24px rgba(0, 240, 255, 0.3);
+    font-variant-numeric: tabular-nums;
   }
 
   .ui-row .value.score {
     color: var(--yellow);
-    text-shadow: 0 0 8px rgba(255, 233, 77, 0.6);
+    text-shadow: 0 0 12px rgba(255, 233, 77, 0.9), 0 0 28px rgba(255, 233, 77, 0.4);
   }
 
   .ui-row .value.lives {
     color: var(--green);
-    text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+    text-shadow: 0 0 12px rgba(0, 255, 136, 0.9), 0 0 28px rgba(0, 255, 136, 0.4);
   }
 
   .ui-row .value.level {
     color: var(--magenta);
-    text-shadow: 0 0 8px rgba(255, 0, 212, 0.6);
+    text-shadow: 0 0 12px rgba(255, 0, 212, 0.9), 0 0 28px rgba(255, 0, 212, 0.4);
   }
 
   .ui-center {
@@ -178,16 +232,16 @@
     width: 100%;
     max-width: 900px;
     height: auto;
-    /* aspect-ratio задаётся буфером canvas (W×H), а не CSS */
-    border-radius: 8px;
-    border: 1px solid rgba(0, 240, 255, 0.2);
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow:
+      0 0 40px rgba(0, 240, 255, 0.15),
+      0 0 80px rgba(255, 0, 212, 0.08),
+      inset 0 0 60px rgba(0, 0, 0, 0.6);
     background: #05060f;
     image-rendering: pixelated;
     touch-action: none;
   }
-
-
 
   /* ====== ЗАСТАВКА ====== */
   #splash {
@@ -383,30 +437,6 @@
     #gameWrap { top: 38px; justify-content: flex-start; }
     .chip { padding: 3px 8px; font-size: 10px; }
   }
-  
-    /* Подсветка зоны управления внизу — только на тач-устройствах */
-  @media (pointer: coarse) {
-    body::after {
-      content: '';
-      position: fixed;
-      left: 0; right: 0;
-      bottom: 33%;
-      height: 1px;
-      background: linear-gradient(90deg,
-        transparent,
-        rgba(0, 240, 255, 0.35) 20%,
-        rgba(255, 0, 212, 0.35) 80%,
-        transparent);
-      pointer-events: none;
-      z-index: 50;
-      animation: touchZonePulse 2.5s ease-in-out infinite;
-    }
-
-    @keyframes touchZonePulse {
-      0%, 100% { opacity: 0.35; }
-      50%      { opacity: 0.7; }
-    }
-  }
 </style>
 </head>
 <body>
@@ -425,14 +455,14 @@
 <div id="gameWrap">
   <div id="uiTop">
     <div class="ui-row">
-      <span><span class="label">ОЧКИ:</span> <span class="value score" id="uiScore">0</span></span>
-      <span class="ui-center"><span class="label">РЕКОРД:</span> <span class="value" id="uiBest">0</span></span>
-      <span><span class="label">УР.:</span> <span class="value level" id="uiLevel">1</span></span>
+      <span><span class="label">ОЧКИ</span> <span class="value score" id="uiScore">0</span></span>
+      <span class="ui-center"><span class="label">РЕКОРД</span> <span class="value" id="uiBest">0</span></span>
+      <span><span class="label">УР.</span> <span class="value level" id="uiLevel">1</span></span>
     </div>
     <div class="ui-row">
-      <span><span class="label">ЖИЗНИ:</span> <span class="value lives" id="uiLives">3</span></span>
-      <span class="ui-center"><span class="label">БОНУС:</span> <span class="value" id="uiBonus">—</span></span>
-      <span><span class="label">ГЛОБАЛ:</span> <span class="value" id="uiGlobal">0</span></span>
+      <span><span class="label">ЖИЗНИ</span> <span class="value lives" id="uiLives">3</span></span>
+      <span class="ui-center"><span class="label">БОНУС</span> <span class="value" id="uiBonus">—</span></span>
+      <span><span class="label">ГЛОБАЛ</span> <span class="value" id="uiGlobal">0</span></span>
     </div>
   </div>
 
@@ -450,7 +480,7 @@
     <p>🖱️ <b>ПК:</b> <span class="key">← →</span> или <span class="key">A D</span> — движение</p>
     <p>🖱️ <b>Мышь:</b> движение ракетки</p>
     <p>📱 <b>Мобильные:</b> водите пальцем по экрану</p>
-    <p>🎯 <b>Огонь:</b> <span class="key">Space</span> / <span class="key">Click</span></p>
+    <p>🎯 <b>Огонь:</b> автоматически при активной пушке</p>
     <p>🎁 Ловите бонусы: удлинение, замедление,<br>пушка, липучка, тройной мяч, ракета и др.</p>
     <p>👾 Уничтожайте врагов мячом или выстрелом!</p>
   </div>
@@ -569,6 +599,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function sfxLose()   { playTone(200, 0.3, 'sawtooth', 0.08); playTone(150, 0.4, 'square', 0.06); }
   function sfxShoot()  { playTone(1500, 0.04, 'square', 0.04); }
   function sfxMilestone() { playTone(1200, 0.1, 'sine', 0.06); playTone(1600, 0.12, 'sine', 0.05); playTone(2000, 0.15, 'sine', 0.04); }
+  function sfxRocket() {
+    playTone(300, 0.15, 'sawtooth', 0.06);
+    setTimeout(() => playTone(500, 0.15, 'sawtooth', 0.06), 100);
+    setTimeout(() => playTone(800, 0.15, 'sawtooth', 0.07), 200);
+    setTimeout(() => {
+      playTone(120, 0.4, 'sawtooth', 0.09);
+      playTone(80, 0.5, 'square', 0.07);
+    }, 350);
+  }
 
   const muteBtn = document.getElementById('muteBtn');
   muteBtn.addEventListener('click', () => {
@@ -582,8 +621,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const ctx = canvas.getContext('2d');
 
   // ===== Адаптивные размеры =====
-  // На мобильном портрете игровое поле занимает ~2/3 высоты под шапкой,
-  // а нижняя треть остаётся пустой — это зона управления пальцем (touchpad).
   let W = 800;
   let H = 600;
   (function computeDimensions() {
@@ -591,10 +628,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const vpH = window.innerHeight || 600;
     const isMobilePortrait = vpW < 768 && vpH > vpW;
     if (isMobilePortrait) {
-      const headerH = 44;              // высота шапки
-      const uiH = 55;                  // две строки верхнего UI
-      const wrapH = vpH - headerH;     // всё, что ниже шапки
-      // На игру (canvas + UI) отводим 2/3 оставшейся высоты.
+      const headerH = 44;
+      const uiH = 60;
+      const wrapH = vpH - headerH;
       const gameZoneH = wrapH * 2 / 3;
       const canvasDisplayH = Math.max(280, gameZoneH - uiH);
       const displayW = Math.min(vpW - 8, 900);
@@ -620,7 +656,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const BALL_SPEED_INIT = 4.5;
   const BALL_SPEED_MAX = 9;
 
-  // Цвета блоков
   const BRICK_COLORS = {
     normal: { fill: '#00f0ff', glow: 'rgba(0,240,255,0.5)' },
     strong: { fill: '#a855ff', glow: 'rgba(168,85,255,0.5)' },
@@ -628,7 +663,6 @@ document.addEventListener('DOMContentLoaded', () => {
     gold:   { fill: '#ffe94d', glow: 'rgba(255,233,77,0.5)' }
   };
 
-  // Типы бонусов
   const POWER_TYPES = [
     { id: 'expand',  label: '⟷',  color: '#00ff88', desc: 'Удлинение' },
     { id: 'slow',    label: '🐢', color: '#00f0ff', desc: 'Замедление' },
@@ -637,13 +671,12 @@ document.addEventListener('DOMContentLoaded', () => {
     { id: 'gun',     label: '🔫', color: '#ff00d4', desc: 'Пушка' },
     { id: 'life',    label: '❤',  color: '#ff3355', desc: '+жизнь' },
     { id: 'multi',   label: '⚫', color: '#a855ff', desc: 'Тройной мяч' },
-    { id: 'rocket',  label: '🚀', color: '#ffe94d', desc: 'Ракета' },
+    { id: 'rocket',  label: '🚀', color: '#ffe94d', desc: 'РАКЕТА!' },
     { id: 'points',  label: '💰', color: '#ffe94d', desc: '+5000' },
     { id: 'smart',   label: '☠',  color: '#00ff88', desc: 'Умная бомба' }
   ];
 
   // ======================= УРОВНИ (15) =======================
-  // 0=пусто, 1=обычный, 2=крепкий(2 удара), 3=неразрушимый, 4=золотой(бонус)
   function makeLevel(pattern) {
     const grid = [];
     for (let r = 0; r < ROWS; r++) {
@@ -657,200 +690,110 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const LEVELS = [
-    // 1 — простой ряд
     makeLevel([
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,1,1,1,0],
-      [0,1,1,1,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,1,1,1,1,1,1,1,1,1,1,1,0],[0,1,1,1,1,1,1,1,1,1,1,1,0],
+      [0,1,1,1,1,1,1,1,1,1,1,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 2 — пирамида
     makeLevel([
-      [0,0,0,0,0,0,1,0,0,0,0,0,0],
-      [0,0,0,0,0,1,2,1,0,0,0,0,0],
-      [0,0,0,0,1,1,2,1,1,0,0,0,0],
-      [0,0,0,1,2,1,1,1,2,1,0,0,0],
-      [0,0,1,1,1,1,4,1,1,1,1,0,0],
-      [0,1,1,2,1,1,1,1,1,2,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [0,0,0,0,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,1,2,1,0,0,0,0,0],
+      [0,0,0,0,1,1,2,1,1,0,0,0,0],[0,0,0,1,2,1,1,1,2,1,0,0,0],
+      [0,0,1,1,1,1,4,1,1,1,1,0,0],[0,1,1,2,1,1,1,1,1,2,1,1,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 3 — колонны
     makeLevel([
-      [1,0,0,1,0,0,1,0,0,1,0,0,1],
-      [2,0,0,2,0,0,2,0,0,2,0,0,2],
-      [1,0,0,1,0,0,4,0,0,1,0,0,1],
-      [2,0,0,2,0,0,2,0,0,2,0,0,2],
-      [1,0,0,1,0,0,1,0,0,1,0,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [1,0,0,1,0,0,1,0,0,1,0,0,1],[2,0,0,2,0,0,2,0,0,2,0,0,2],
+      [1,0,0,1,0,0,4,0,0,1,0,0,1],[2,0,0,2,0,0,2,0,0,2,0,0,2],
+      [1,0,0,1,0,0,1,0,0,1,0,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 4 — стены с проходами
     makeLevel([
-      [3,3,3,0,0,0,3,0,0,0,3,3,3],
-      [1,1,1,0,0,0,1,0,0,0,1,1,1],
-      [2,2,2,0,0,0,2,0,0,0,2,2,2],
-      [1,1,1,0,0,0,4,0,0,0,1,1,1],
-      [2,2,2,0,0,0,2,0,0,0,2,2,2],
-      [1,1,1,0,0,0,1,0,0,0,1,1,1],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [3,3,3,0,0,0,3,0,0,0,3,3,3],[1,1,1,0,0,0,1,0,0,0,1,1,1],
+      [2,2,2,0,0,0,2,0,0,0,2,2,2],[1,1,1,0,0,0,4,0,0,0,1,1,1],
+      [2,2,2,0,0,0,2,0,0,0,2,2,2],[1,1,1,0,0,0,1,0,0,0,1,1,1],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 5 — шахматы
     makeLevel([
-      [1,0,1,0,1,0,1,0,1,0,1,0,1],
-      [0,2,0,2,0,2,0,2,0,2,0,2,0],
-      [1,0,1,0,1,0,1,0,1,0,1,0,1],
-      [0,2,0,2,0,2,0,2,0,2,0,2,0],
-      [1,0,1,0,1,0,4,0,1,0,1,0,1],
-      [0,2,0,2,0,2,0,2,0,2,0,2,0],
-      [1,0,1,0,1,0,1,0,1,0,1,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [1,0,1,0,1,0,1,0,1,0,1,0,1],[0,2,0,2,0,2,0,2,0,2,0,2,0],
+      [1,0,1,0,1,0,1,0,1,0,1,0,1],[0,2,0,2,0,2,0,2,0,2,0,2,0],
+      [1,0,1,0,1,0,4,0,1,0,1,0,1],[0,2,0,2,0,2,0,2,0,2,0,2,0],
+      [1,0,1,0,1,0,1,0,1,0,1,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 6 — спираль
     makeLevel([
-      [1,1,1,1,1,1,1,1,1,1,1,1,1],
-      [1,0,0,0,0,0,0,0,0,0,0,0,1],
-      [1,0,2,2,2,2,2,2,2,2,2,0,1],
-      [1,0,2,0,0,0,0,0,0,0,2,0,1],
-      [1,0,2,0,1,1,1,1,1,0,2,0,1],
-      [1,0,2,0,1,4,0,4,1,0,2,0,1],
-      [1,0,2,0,1,1,1,1,1,0,2,0,1],
-      [1,0,2,2,2,2,2,2,2,2,2,0,1],
-      [1,0,0,0,0,0,0,0,0,0,0,0,1],
-      [1,1,1,1,1,1,1,1,1,1,1,1,1]
+      [1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,2,2,2,2,2,2,2,2,2,0,1],[1,0,2,0,0,0,0,0,0,0,2,0,1],
+      [1,0,2,0,1,1,1,1,1,0,2,0,1],[1,0,2,0,1,4,0,4,1,0,2,0,1],
+      [1,0,2,0,1,1,1,1,1,0,2,0,1],[1,0,2,2,2,2,2,2,2,2,2,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1,1,1,1]
     ]),
-    // 7 — крест
     makeLevel([
-      [0,0,0,0,0,1,1,1,0,0,0,0,0],
-      [0,0,0,0,0,2,4,2,0,0,0,0,0],
-      [0,0,0,0,0,1,1,1,0,0,0,0,0],
-      [1,2,1,2,1,1,1,1,1,2,1,2,1],
-      [1,4,1,2,1,1,1,1,1,2,1,4,1],
-      [1,2,1,2,1,1,1,1,1,2,1,2,1],
-      [0,0,0,0,0,1,1,1,0,0,0,0,0],
-      [0,0,0,0,0,2,4,2,0,0,0,0,0],
-      [0,0,0,0,0,1,1,1,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [0,0,0,0,0,1,1,1,0,0,0,0,0],[0,0,0,0,0,2,4,2,0,0,0,0,0],
+      [0,0,0,0,0,1,1,1,0,0,0,0,0],[1,2,1,2,1,1,1,1,1,2,1,2,1],
+      [1,4,1,2,1,1,1,1,1,2,1,4,1],[1,2,1,2,1,1,1,1,1,2,1,2,1],
+      [0,0,0,0,0,1,1,1,0,0,0,0,0],[0,0,0,0,0,2,4,2,0,0,0,0,0],
+      [0,0,0,0,0,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 8 — зигзаг
     makeLevel([
-      [1,1,1,0,0,0,0,0,0,0,0,0,0],
-      [0,0,1,2,2,0,0,0,0,0,0,0,0],
-      [0,0,0,0,1,1,1,0,0,0,0,0,0],
-      [0,0,0,0,0,0,1,2,2,0,0,0,0],
-      [0,0,0,0,0,0,0,0,1,1,1,0,0],
-      [0,0,0,0,0,0,0,0,0,0,1,2,2],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [4,0,0,4,0,0,4,0,0,4,0,0,4],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [1,1,1,0,0,0,0,0,0,0,0,0,0],[0,0,1,2,2,0,0,0,0,0,0,0,0],
+      [0,0,0,0,1,1,1,0,0,0,0,0,0],[0,0,0,0,0,0,1,2,2,0,0,0,0],
+      [0,0,0,0,0,0,0,0,1,1,1,0,0],[0,0,0,0,0,0,0,0,0,0,1,2,2],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[4,0,0,4,0,0,4,0,0,4,0,0,4],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 9 — крепость
     makeLevel([
-      [3,3,3,3,3,3,3,3,3,3,3,3,3],
-      [3,1,1,1,1,1,1,1,1,1,1,1,3],
-      [3,1,2,2,2,2,2,2,2,2,2,1,3],
-      [3,1,2,0,0,0,0,0,0,0,2,1,3],
-      [3,1,2,0,4,1,1,1,4,0,2,1,3],
-      [3,1,2,0,1,1,1,1,1,0,2,1,3],
-      [3,1,2,0,4,1,1,1,4,0,2,1,3],
-      [3,1,2,0,0,0,0,0,0,0,2,1,3],
-      [3,1,2,2,2,2,2,2,2,2,2,1,3],
-      [3,1,1,1,1,1,1,1,1,1,1,1,3]
+      [3,3,3,3,3,3,3,3,3,3,3,3,3],[3,1,1,1,1,1,1,1,1,1,1,1,3],
+      [3,1,2,2,2,2,2,2,2,2,2,1,3],[3,1,2,0,0,0,0,0,0,0,2,1,3],
+      [3,1,2,0,4,1,1,1,4,0,2,1,3],[3,1,2,0,1,1,1,1,1,0,2,1,3],
+      [3,1,2,0,4,1,1,1,4,0,2,1,3],[3,1,2,0,0,0,0,0,0,0,2,1,3],
+      [3,1,2,2,2,2,2,2,2,2,2,1,3],[3,1,1,1,1,1,1,1,1,1,1,1,3]
     ]),
-    // 10 — волны
     makeLevel([
-      [1,0,0,1,0,0,1,0,0,1,0,0,1],
-      [0,2,0,0,2,0,0,2,0,0,2,0,0],
-      [0,0,1,0,0,1,0,0,1,0,0,1,0],
-      [0,0,0,2,0,0,2,0,0,2,0,0,0],
-      [4,0,0,0,1,0,0,1,0,0,0,0,4],
-      [0,0,0,0,0,2,0,0,2,0,0,0,0],
-      [0,0,1,0,0,0,1,0,0,0,1,0,0],
-      [0,2,0,0,2,0,0,2,0,0,2,0,0],
-      [1,0,0,1,0,0,1,0,0,1,0,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [1,0,0,1,0,0,1,0,0,1,0,0,1],[0,2,0,0,2,0,0,2,0,0,2,0,0],
+      [0,0,1,0,0,1,0,0,1,0,0,1,0],[0,0,0,2,0,0,2,0,0,2,0,0,0],
+      [4,0,0,0,1,0,0,1,0,0,0,0,4],[0,0,0,0,0,2,0,0,2,0,0,0,0],
+      [0,0,1,0,0,0,1,0,0,0,1,0,0],[0,2,0,0,2,0,0,2,0,0,2,0,0],
+      [1,0,0,1,0,0,1,0,0,1,0,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 11 — соты
     makeLevel([
-      [1,1,0,1,1,0,1,1,0,1,1,0,1],
-      [1,1,0,1,1,0,1,1,0,1,1,0,1],
-      [0,0,2,0,0,2,0,0,2,0,0,2,0],
-      [0,0,2,0,0,2,0,0,2,0,0,2,0],
-      [1,1,0,1,1,0,4,0,1,1,0,1,1],
-      [1,1,0,1,1,0,1,1,0,1,1,0,1],
-      [0,0,2,0,0,2,0,0,2,0,0,2,0],
-      [0,0,2,0,0,2,0,0,2,0,0,2,0],
-      [1,1,0,1,1,0,1,1,0,1,1,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [1,1,0,1,1,0,1,1,0,1,1,0,1],[1,1,0,1,1,0,1,1,0,1,1,0,1],
+      [0,0,2,0,0,2,0,0,2,0,0,2,0],[0,0,2,0,0,2,0,0,2,0,0,2,0],
+      [1,1,0,1,1,0,4,0,1,1,0,1,1],[1,1,0,1,1,0,1,1,0,1,1,0,1],
+      [0,0,2,0,0,2,0,0,2,0,0,2,0],[0,0,2,0,0,2,0,0,2,0,0,2,0],
+      [1,1,0,1,1,0,1,1,0,1,1,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 12 — стрела
     makeLevel([
-      [0,0,0,0,0,0,1,0,0,0,0,0,0],
-      [0,0,0,0,0,1,2,1,0,0,0,0,0],
-      [0,0,0,0,1,1,1,1,1,0,0,0,0],
-      [0,0,0,1,2,1,4,1,2,1,0,0,0],
-      [0,0,1,1,1,1,1,1,1,1,1,0,0],
-      [0,1,2,1,2,1,1,1,2,1,2,1,0],
-      [0,1,1,1,1,1,1,1,1,1,1,1,0],
-      [3,3,3,3,3,3,3,3,3,3,3,3,3],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [0,0,0,0,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,1,2,1,0,0,0,0,0],
+      [0,0,0,0,1,1,1,1,1,0,0,0,0],[0,0,0,1,2,1,4,1,2,1,0,0,0],
+      [0,0,1,1,1,1,1,1,1,1,1,0,0],[0,1,2,1,2,1,1,1,2,1,2,1,0],
+      [0,1,1,1,1,1,1,1,1,1,1,1,0],[3,3,3,3,3,3,3,3,3,3,3,3,3],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 13 — лабиринт
     makeLevel([
-      [1,1,1,1,1,1,1,1,1,1,1,1,1],
-      [1,0,0,0,0,0,0,0,0,0,0,0,1],
-      [1,0,3,3,3,3,3,3,3,3,3,0,1],
-      [1,0,3,2,2,2,2,2,2,2,3,0,1],
-      [1,0,3,2,1,1,4,1,1,2,3,0,1],
-      [1,0,3,2,1,1,1,1,1,2,3,0,1],
-      [1,0,3,2,2,2,2,2,2,2,3,0,1],
-      [1,0,3,3,3,3,3,3,3,3,3,0,1],
-      [1,0,0,0,0,0,0,0,0,0,0,0,1],
-      [1,1,1,1,1,1,1,1,1,1,1,1,1]
+      [1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,3,3,3,3,3,3,3,3,3,0,1],[1,0,3,2,2,2,2,2,2,2,3,0,1],
+      [1,0,3,2,1,1,4,1,1,2,3,0,1],[1,0,3,2,1,1,1,1,1,2,3,0,1],
+      [1,0,3,2,2,2,2,2,2,2,3,0,1],[1,0,3,3,3,3,3,3,3,3,3,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1,1,1,1]
     ]),
-    // 14 — двойная пирамида
     makeLevel([
-      [0,0,0,0,1,1,1,1,1,0,0,0,0],
-      [0,0,0,1,2,2,2,2,2,1,0,0,0],
-      [0,0,1,1,1,4,1,1,1,1,1,0,0],
-      [0,1,2,1,2,1,2,1,2,1,2,1,0],
-      [0,0,1,1,1,1,1,1,1,1,1,0,0],
-      [0,0,0,1,2,4,2,4,2,1,0,0,0],
-      [0,0,0,0,1,1,1,1,1,0,0,0,0],
-      [3,0,0,0,0,0,0,0,0,0,0,0,3],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0]
+      [0,0,0,0,1,1,1,1,1,0,0,0,0],[0,0,0,1,2,2,2,2,2,1,0,0,0],
+      [0,0,1,1,1,4,1,1,1,1,1,0,0],[0,1,2,1,2,1,2,1,2,1,2,1,0],
+      [0,0,1,1,1,1,1,1,1,1,1,0,0],[0,0,0,1,2,4,2,4,2,1,0,0,0],
+      [0,0,0,0,1,1,1,1,1,0,0,0,0],[3,0,0,0,0,0,0,0,0,0,0,0,3],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]),
-    // 15 — финальный босс-уровень
     makeLevel([
-      [3,3,3,3,3,3,3,3,3,3,3,3,3],
-      [3,1,1,1,1,1,1,1,1,1,1,1,3],
-      [3,1,2,2,2,2,2,2,2,2,2,1,3],
-      [3,1,2,4,1,4,1,4,1,4,2,1,3],
-      [3,1,2,1,2,1,2,1,2,1,2,1,3],
-      [3,1,2,4,1,4,1,4,1,4,2,1,3],
-      [3,1,2,1,2,1,2,1,2,1,2,1,3],
-      [3,1,2,2,2,2,2,2,2,2,2,1,3],
-      [3,1,1,1,1,1,1,1,1,1,1,1,3],
-      [3,3,3,3,3,3,3,3,3,3,3,3,3]
+      [3,3,3,3,3,3,3,3,3,3,3,3,3],[3,1,1,1,1,1,1,1,1,1,1,1,3],
+      [3,1,2,2,2,2,2,2,2,2,2,1,3],[3,1,2,4,1,4,1,4,1,4,2,1,3],
+      [3,1,2,1,2,1,2,1,2,1,2,1,3],[3,1,2,4,1,4,1,4,1,4,2,1,3],
+      [3,1,2,1,2,1,2,1,2,1,2,1,3],[3,1,2,2,2,2,2,2,2,2,2,1,3],
+      [3,1,1,1,1,1,1,1,1,1,1,1,3],[3,3,3,3,3,3,3,3,3,3,3,3,3]
     ])
   ];
 
@@ -860,13 +803,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let lives = 3;
   let levelIndex = 0;
   let bricks = [];
-  let ball = null;
   let balls = [];
   let paddle = { x: W / 2, w: PADDLE_W, h: PADDLE_H, y: PADDLE_Y, vx: 0 };
   let powerUps = [];
   let activePowers = {};
   let enemies = [];
   let bullets = [];
+  let rockets = [];
   let particles = [];
   let floatingTexts = [];
   let enemySpawnTimer = 0;
@@ -877,14 +820,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let paddleStuck = false;
   let mouseX = null;
   let touchX = null;
-  let inputMode = 'keyboard'; // 'keyboard' | 'mouse' | 'touch'
+  let inputMode = 'keyboard';
+  let levelCompletePending = false;
+  let levelBanner = { text: '', life: 0, maxLife: 1.8 };
 
-  // Keys
   const keys = {};
 
   // ======================= УТИЛИТЫ =======================
   function rand(min, max) { return Math.random() * (max - min) + min; }
-
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
   function addParticles(x, y, color, count, speed) {
@@ -911,6 +854,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function showLevelBanner(text) {
+    levelBanner.text = text;
+    levelBanner.life = levelBanner.maxLife;
+  }
+
   // ======================= ИНИЦИАЛИЗАЦИЯ УРОВНЯ =======================
   function initLevel() {
     const layout = LEVELS[levelIndex % LEVELS.length];
@@ -926,38 +874,29 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (t === 4) { hp = 1; type = 'gold'; }
 
         bricks.push({
-          x: c * BRICK_W,
-          y: BRICK_TOP + r * BRICK_H,
-          w: BRICK_W - 2,
-          h: BRICK_H - 2,
-          hp: hp,
-          maxHp: hp,
-          type: type,
-          col: c,
-          row: r,
-          alive: true,
-          hitTimer: 0
+          x: c * BRICK_W, y: BRICK_TOP + r * BRICK_H,
+          w: BRICK_W - 2, h: BRICK_H - 2,
+          hp, maxHp: hp, type,
+          col: c, row: r,
+          alive: true, hitTimer: 0
         });
       }
     }
 
-    // Сброс ракетки
     paddle.w = PADDLE_W;
     paddle.x = W / 2;
     paddle.y = PADDLE_Y;
 
-// Сброс мяча (resetBall сам выставит paddleStuck = true)
     balls = [];
     resetBall();
 
-    // Очистка
     powerUps = [];
     enemies = [];
     bullets = [];
+    rockets = [];
     particles = [];
     floatingTexts = [];
     activePowers = {};
-    // paddleStuck НЕ трогаем — его выставил resetBall()
     enemySpawnTimer = 3000;
 
     updateUI();
@@ -967,8 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
     balls = [{
       x: paddle.x,
       y: paddle.y - BALL_R - 2,
-      vx: 0,
-      vy: 0,
+      vx: 0, vy: 0,
       r: BALL_R,
       speed: BALL_SPEED_INIT,
       stuck: true,
@@ -985,9 +923,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('uiBest').textContent = myBest;
     document.getElementById('uiGlobal').textContent = globalBest;
     let bonusText = '—';
-    const keys = Object.keys(activePowers);
-    if (keys.length > 0) {
-      bonusText = keys.map(k => {
+    const apKeys = Object.keys(activePowers);
+    if (apKeys.length > 0) {
+      bonusText = apKeys.map(k => {
         const p = POWER_TYPES.find(t => t.id === k);
         return p ? p.label : k;
       }).join(' ');
@@ -996,7 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ======================= УПРАВЛЕНИЕ =======================
-document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', (e) => {
     const k = e.key;
     keys[k] = true;
 
@@ -1004,56 +942,42 @@ document.addEventListener('keydown', (e) => {
     const isSpace = (k === ' ' || k === 'Spacebar' || e.code === 'Space');
     const isWASD  = (k === 'a' || k === 'A' || k === 'd' || k === 'D' || k === 'w' || k === 'W');
 
-    // Не даём странице скроллиться
     if (isArrow || isSpace) e.preventDefault();
-
-    // Любая клавиша движения переключает режим на клавиатуру
     if (isArrow || isWASD) inputMode = 'keyboard';
-
-    if (k === 'Escape') {
-      if (state === 'playing') { /* pause */ }
-    }
 
     if (isSpace || k === 'Enter') {
       if (state === 'splash') startGame();
       else if (state === 'gameover') restartGame();
-      else if (state === 'playing') {
-      if (balls.some(b => b.stuck)) launchBall();
-    }
+      else if (state === 'playing' && balls.some(b => b.stuck)) launchBall();
     }
     initAudio();
   });
   document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
-canvas.addEventListener('mousemove', (e) => {
+  // Мышь — работает по всему документу, не только над канвасом
+  document.addEventListener('mousemove', (e) => {
+    if (e.pointerType === 'touch') return;
     const rect = canvas.getBoundingClientRect();
-    mouseX = (e.clientX - rect.left) / rect.width * W;
+    const width = rect.width || 1;
+    mouseX = ((e.clientX - rect.left) / width) * W;
     inputMode = 'mouse';
   });
-  canvas.addEventListener('mouseleave', () => { mouseX = null; });
 
-canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    touchX = (e.touches[0].clientX - rect.left) / rect.width * W;
-    inputMode = 'touch';
-  }, { passive: false });
-  canvas.addEventListener('touchend', () => { touchX = null; });
+  // Тач по канвасу
   canvas.addEventListener('touchstart', (e) => {
     inputMode = 'touch';
     initAudio();
     if (state === 'splash') startGame();
   }, { passive: true });
 
-canvas.addEventListener('click', () => {
+  canvas.addEventListener('click', () => {
     canvas.blur();
     initAudio();
     if (state === 'splash') startGame();
     else if (state === 'playing' && balls.some(b => b.stuck)) launchBall();
   });
 
-  // Тач-кнопки
-  // ===== Касания работают по всему экрану, а не только над канвасом =====
+  // Касания — по всему экрану (кроме UI-элементов)
   function isUiTarget(el) {
     if (!el) return false;
     return !!(el.closest('button') || el.closest('.chip') || el.closest('header') ||
@@ -1063,9 +987,9 @@ canvas.addEventListener('click', () => {
   function updateTouchFromEvent(e) {
     if (!e.touches || !e.touches[0]) return;
     const rect = canvas.getBoundingClientRect();
+    const width = rect.width || 1;
     const clientX = e.touches[0].clientX - rect.left;
-    // Не ограничиваем — если палец ушёл за левый/правый край, ракетка всё равно следует
-    touchX = (clientX / rect.width) * W;
+    touchX = (clientX / width) * W;
     inputMode = 'touch';
   }
 
@@ -1073,7 +997,6 @@ canvas.addEventListener('click', () => {
     if (isUiTarget(e.target)) return;
     initAudio();
     if (state === 'splash') { startGame(); return; }
-    // Тап во время игры — запуск прилипшего мяча
     if (state === 'playing' && balls.some(b => b.stuck)) {
       launchBall();
     }
@@ -1097,8 +1020,10 @@ canvas.addEventListener('click', () => {
     lives = 3;
     levelIndex = 0;
     milestonesReached = {};
+    levelCompletePending = false;
     state = 'playing';
     initLevel();
+    showLevelBanner('УРОВЕНЬ 1');
     initAudio();
     lastTime = performance.now();
     requestAnimationFrame(gameLoop);
@@ -1109,7 +1034,7 @@ canvas.addEventListener('click', () => {
     startGame();
   }
 
-function launchBall() {
+  function launchBall() {
     let launched = false;
     for (const b of balls) {
       if (b.stuck) {
@@ -1130,12 +1055,9 @@ function launchBall() {
     if (activePowers['killAliens']) return;
     const isBird = Math.random() > 0.5;
     enemies.push({
-      x: rand(60, W - 60),
-      y: -30,
-      vx: rand(-1.2, 1.2),
-      vy: rand(0.3, 0.8),
-      w: isBird ? 36 : 32,
-      h: isBird ? 24 : 28,
+      x: rand(60, W - 60), y: -30,
+      vx: rand(-1.2, 1.2), vy: rand(0.3, 0.8),
+      w: isBird ? 36 : 32, h: isBird ? 24 : 28,
       type: isBird ? 'bird' : 'ufo',
       hp: 1,
       bombTimer: rand(2000, 5000),
@@ -1148,12 +1070,9 @@ function launchBall() {
   function spawnPowerUp(x, y) {
     const type = POWER_TYPES[Math.floor(Math.random() * POWER_TYPES.length)];
     powerUps.push({
-      x: x, y: y,
-      w: 28, h: 28,
+      x, y, w: 28, h: 28,
       vy: 1.5,
-      type: type,
-      alive: true,
-      rot: 0
+      type, alive: true, rot: 0
     });
   }
 
@@ -1202,10 +1121,12 @@ function launchBall() {
         break;
       }
       case 'rocket':
-        levelIndex++;
-        if (levelIndex >= LEVELS.length) levelIndex = 0;
-        addFloatingText(W/2, H/2, 'УРОВЕНЬ ' + (levelIndex + 1), '#ffe94d');
-        setTimeout(() => { if (state === 'playing') initLevel(); }, 300);
+        rockets.push({
+          x: paddle.x, y: paddle.y - 20,
+          vx: 0, vy: -11,
+          trail: [], alive: true
+        });
+        sfxRocket();
         break;
       case 'points':
         score += 5000;
@@ -1222,6 +1143,20 @@ function launchBall() {
     updateUI();
   }
 
+  function completeLevel() {
+    if (levelCompletePending) return;
+    levelCompletePending = true;
+    levelIndex++;
+    if (levelIndex >= LEVELS.length) levelIndex = 0;
+    score += 1000;
+    showLevelBanner('УРОВЕНЬ ' + (levelIndex + 1));
+    sfxMilestone();
+    setTimeout(() => {
+      if (state === 'playing') initLevel();
+      levelCompletePending = false;
+    }, 1800);
+  }
+
   // ======================= ОБНОВЛЕНИЕ =======================
   function update(dt) {
     if (state !== 'playing') return;
@@ -1234,24 +1169,17 @@ function launchBall() {
     if (keys['ArrowLeft'] || keys['a'] || keys['A']) targetX -= PADDLE_SPEED * 60 * sec;
     if (keys['ArrowRight'] || keys['d'] || keys['D']) targetX += PADDLE_SPEED * 60 * sec;
 
-    // Мышь/тач применяются только если это последний использованный способ ввода
     if (inputMode === 'mouse' && mouseX !== null) targetX = mouseX;
     else if (inputMode === 'touch' && touchX !== null) targetX = touchX;
 
     paddle.x = clamp(targetX, paddle.w / 2, W - paddle.w / 2);
 
-    // --- Огонь (пушка) ---
-    if ((keys[' '] || keys['Space'] || keys['w'] || keys['W']) && activePowers['gun']) {
-      if (!window._gunCooldown || gameTime - window._gunCooldown > 250) {
+    // --- Пушка (автоматическая стрельба, когда активна) ---
+    if (activePowers['gun'] && !levelCompletePending) {
+      if (!window._gunCooldown || gameTime - window._gunCooldown > 280) {
         window._gunCooldown = gameTime;
-        bullets.push({
-          x: paddle.x - 10, y: paddle.y - 5,
-          vx: 0, vy: -10, r: 4, alive: true
-        });
-        bullets.push({
-          x: paddle.x + 10, y: paddle.y - 5,
-          vx: 0, vy: -10, r: 4, alive: true
-        });
+        bullets.push({ x: paddle.x - 10, y: paddle.y - 5, vx: 0, vy: -10, r: 4, alive: true });
+        bullets.push({ x: paddle.x + 10, y: paddle.y - 5, vx: 0, vy: -10, r: 4, alive: true });
         sfxShoot();
       }
     }
@@ -1264,18 +1192,15 @@ function launchBall() {
         continue;
       }
 
-      // Движение с подшаговой точностью
       const steps = Math.ceil(Math.max(Math.abs(b.vx), Math.abs(b.vy)) / 3);
       for (let s = 0; s < steps; s++) {
         b.x += b.vx / steps;
         b.y += b.vy / steps;
 
-        // Стены
         if (b.x - b.r <= 0) { b.x = b.r; b.vx = Math.abs(b.vx); sfxWall(); }
         if (b.x + b.r >= W) { b.x = W - b.r; b.vx = -Math.abs(b.vx); sfxWall(); }
         if (b.y - b.r <= 0) { b.y = b.r; b.vy = Math.abs(b.vy); sfxWall(); }
 
-        // Ракетка
         if (b.vy > 0 &&
             b.y + b.r >= paddle.y &&
             b.y - b.r <= paddle.y + paddle.h &&
@@ -1288,7 +1213,6 @@ function launchBall() {
           b.speed = spd;
           b.vx = Math.cos(angle) * spd;
           b.vy = Math.sin(angle) * spd;
-
           if (activePowers['catch']) {
             b.stuck = true;
             paddleStuck = true;
@@ -1297,13 +1221,11 @@ function launchBall() {
           sfxPaddle();
         }
 
-        // Блоки
         for (const br of bricks) {
           if (!br.alive || br.type === 'solid') continue;
           if (b.x + b.r > br.x && b.x - b.r < br.x + br.w &&
               b.y + b.r > br.y && b.y - b.r < br.y + br.h) {
 
-            // Определяем сторону
             const overlapL = (b.x + b.r) - br.x;
             const overlapR = (br.x + br.w) - (b.x - b.r);
             const overlapT = (b.y + b.r) - br.y;
@@ -1315,7 +1237,6 @@ function launchBall() {
             else if (minOverlap === overlapT) { b.y = br.y - b.r; b.vy = -Math.abs(b.vy); }
             else { b.y = br.y + br.h + b.r; b.vy = Math.abs(b.vy); }
 
-            // Урон
             if (!activePowers['smash']) {
               br.hp--;
               br.hitTimer = 150;
@@ -1326,26 +1247,17 @@ function launchBall() {
                 addParticles(br.x + br.w/2, br.y + br.h/2, BRICK_COLORS[br.type].fill, 10, 5);
                 addFloatingText(br.x + br.w/2, br.y, '+' + pts, BRICK_COLORS[br.type].fill);
                 sfxBreak();
+                if (br.type === 'gold') spawnPowerUp(br.x + br.w/2, br.y);
+                else if (Math.random() < 0.12) spawnPowerUp(br.x + br.w/2, br.y);
 
-                // Бонус из золотого блока
-                if (br.type === 'gold') {
-                  spawnPowerUp(br.x + br.w/2, br.y);
-                } else if (Math.random() < 0.12) {
-                  spawnPowerUp(br.x + br.w/2, br.y);
-                }
-
-                // Milestone каждые 100 очков
                 const ms = Math.floor(score / 100) * 100;
                 if (ms > 0 && !milestonesReached[ms]) {
                   milestonesReached[ms] = true;
                   addFloatingText(W/2, H/2, 'РУБЕЖ ' + ms + '!', '#ffe94d');
                   sfxMilestone();
                 }
-              } else {
-                sfxHit();
-              }
+              } else sfxHit();
             } else {
-              // Сокрушающий мяч — уничтожает всё
               br.alive = false;
               score += 100;
               addParticles(br.x + br.w/2, br.y + br.h/2, '#ff3355', 8, 5);
@@ -1354,7 +1266,6 @@ function launchBall() {
           }
         }
 
-        // Враги
         for (const e of enemies) {
           if (!e.alive) continue;
           if (b.x + b.r > e.x && b.x - b.r < e.x + e.w &&
@@ -1364,25 +1275,19 @@ function launchBall() {
             addParticles(e.x + e.w/2, e.y + e.h/2, '#ff00d4', 15, 6);
             addFloatingText(e.x + e.w/2, e.y, '+300', '#ff00d4');
             sfxBreak();
-            // Отскок
             b.vy = -b.vy;
           }
         }
       }
 
-      // След мяча
       b.trail.push({ x: b.x, y: b.y, life: 0.3 });
       if (b.trail.length > 12) b.trail.shift();
       for (const t of b.trail) t.life -= sec;
       b.trail = b.trail.filter(t => t.life > 0);
 
-      // Падение
-      if (b.y - b.r > H + 20) {
-        b.alive = false;
-      }
+      if (b.y - b.r > H + 20) b.alive = false;
     }
 
-    // Убираем упавшие мячи
     balls = balls.filter(b => b.alive !== false);
     if (balls.length === 0) {
       lives--;
@@ -1393,7 +1298,6 @@ function launchBall() {
         updateUI();
         return;
       }
-      // Сброс бонусов при потере жизни
       activePowers = {};
       paddle.w = PADDLE_W;
       resetBall();
@@ -1416,19 +1320,12 @@ function launchBall() {
       if (e.x < 10 || e.x + e.w > W - 10) e.vx *= -1;
       if (e.y > H * 0.6) e.vy = -Math.abs(e.vy) * 0.5;
 
-      // Бомбы
       e.bombTimer -= dt;
       if (e.bombTimer <= 0 && e.y > 0) {
         e.bombTimer = rand(2000, 4500);
-        // Бомба летит вниз
-        bullets.push({
-          x: e.x + e.w/2, y: e.y + e.h,
-          vx: 0, vy: 4, r: 5, alive: true,
-          isBomb: true
-        });
+        bullets.push({ x: e.x + e.w/2, y: e.y + e.h, vx: 0, vy: 4, r: 5, alive: true, isBomb: true });
       }
 
-      // Соприкосновение с ракеткой (птица/НЛО)
       if (e.y + e.h > paddle.y && e.y < paddle.y + paddle.h &&
           e.x + e.w > paddle.x - paddle.w/2 && e.x < paddle.x + paddle.w/2) {
         e.alive = false;
@@ -1448,7 +1345,6 @@ function launchBall() {
       p.y += p.vy * 60 * sec;
 
       if (p.isBomb) {
-        // Бомба попадает в ракетку
         if (p.y + p.r > paddle.y && p.y - p.r < paddle.y + paddle.h &&
             p.x > paddle.x - paddle.w/2 && p.x < paddle.x + paddle.w/2) {
           p.alive = false;
@@ -1458,7 +1354,6 @@ function launchBall() {
         }
         if (p.y > H + 20) p.alive = false;
       } else {
-        // Пуля игрока
         for (const br of bricks) {
           if (!br.alive) continue;
           if (p.x > br.x && p.x < br.x + br.w && p.y > br.y && p.y < br.y + br.h) {
@@ -1493,6 +1388,69 @@ function launchBall() {
     }
     bullets = bullets.filter(p => p.alive);
 
+    // --- Ракеты ---
+    for (const r of rockets) {
+      if (!r.alive) continue;
+      r.trail.push({ x: r.x, y: r.y, life: 0.55 });
+      if (r.trail.length > 25) r.trail.shift();
+      for (const t of r.trail) t.life -= sec;
+      r.trail = r.trail.filter(t => t.life > 0);
+
+      r.y += r.vy * 60 * sec;
+
+      if (r.y < 70) {
+        r.alive = false;
+        // Большой взрыв
+        const palette = ['#ffe94d','#ff3355','#ff00d4','#00f0ff','#00ff88','#a855ff'];
+        for (let i = 0; i < 90; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const s = rand(2, 13);
+          particles.push({
+            x: r.x, y: r.y,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s,
+            life: rand(0.6, 1.6),
+            maxLife: 1.6,
+            color: palette[Math.floor(Math.random() * palette.length)],
+            size: rand(2, 7)
+          });
+        }
+        // Световая вспышка
+        particles.push({
+          x: r.x, y: r.y, vx: 0, vy: 0,
+          life: 0.5, maxLife: 0.5,
+          color: '#ffffff', size: 100, isFlash: true
+        });
+
+        // Уничтожаем блоки в колонке ±2
+        for (const br of bricks) {
+          if (!br.alive || br.type === 'solid') continue;
+          if (Math.abs((br.x + br.w/2) - r.x) < BRICK_W * 2.5) {
+            br.alive = false;
+            score += 100;
+            addParticles(br.x + br.w/2, br.y + br.h/2, BRICK_COLORS[br.type].fill, 8, 5);
+          }
+        }
+        addFloatingText(r.x, r.y - 20, 'БУМ!', '#ffe94d');
+        sfxBreak();
+
+        // Переход на следующий уровень
+        if (!levelCompletePending) {
+          levelCompletePending = true;
+          levelIndex++;
+          if (levelIndex >= LEVELS.length) levelIndex = 0;
+          setTimeout(() => {
+            if (state === 'playing') {
+              showLevelBanner('УРОВЕНЬ ' + (levelIndex + 1));
+              initLevel();
+            }
+            levelCompletePending = false;
+          }, 1500);
+        }
+      }
+    }
+    rockets = rockets.filter(r => r.alive);
+
     // --- Бонусы ---
     for (const pu of powerUps) {
       if (!pu.alive) continue;
@@ -1521,6 +1479,7 @@ function launchBall() {
 
     // --- Частицы ---
     for (const p of particles) {
+      if (p.isFlash) { p.life -= sec; continue; }
       p.x += p.vx * 60 * sec;
       p.y += p.vy * 60 * sec;
       p.vy += 5 * sec;
@@ -1528,21 +1487,20 @@ function launchBall() {
     }
     particles = particles.filter(p => p.life > 0);
 
-    // --- Тексты ---
+    // --- Всплывающие тексты ---
     for (const ft of floatingTexts) {
       ft.y += ft.vy * 60 * sec;
       ft.life -= sec;
     }
     floatingTexts = floatingTexts.filter(f => f.life > 0);
 
-    // --- Проверка победы на уровне ---
-    const aliveBricks = bricks.filter(b => b.alive && b.type !== 'solid').length;
-    if (aliveBricks === 0) {
-      levelIndex++;
-      if (levelIndex >= LEVELS.length) levelIndex = 0;
-      addFloatingText(W/2, H/2, 'УРОВЕНЬ ' + (levelIndex + 1), '#00ff88');
-      score += 1000;
-      setTimeout(() => { if (state === 'playing') initLevel(); }, 500);
+    // --- Баннер уровня ---
+    if (levelBanner.life > 0) levelBanner.life -= sec;
+
+    // --- Проверка победы ---
+    if (!levelCompletePending) {
+      const aliveBricks = bricks.filter(b => b.alive && b.type !== 'solid').length;
+      if (aliveBricks === 0) completeLevel();
     }
 
     updateUI();
@@ -1559,15 +1517,11 @@ function launchBall() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // Сетка (неоновая)
+    // Сетка
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 40) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-    }
-    for (let y = 0; y < H; y += 40) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    }
+    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
     // Блоки
     for (const br of bricks) {
@@ -1577,23 +1531,19 @@ function launchBall() {
       ctx.shadowColor = col.glow;
       ctx.shadowBlur = br.hitTimer > 0 ? 25 : 10;
 
-      // Градиент блока
       const bg = ctx.createLinearGradient(br.x, br.y, br.x, br.y + br.h);
       bg.addColorStop(0, col.fill);
       bg.addColorStop(1, col.fill + '88');
       ctx.fillStyle = bg;
       ctx.fillRect(br.x, br.y, br.w, br.h);
 
-      // Рамка
       ctx.strokeStyle = col.fill;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(br.x, br.y, br.w, br.h);
 
-      // Блик
       ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.fillRect(br.x + 2, br.y + 2, br.w - 4, 4);
 
-      // Повреждение
       if (br.type === 'strong' && br.hp < br.maxHp) {
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.fillRect(br.x + 2, br.y + 2, (br.w - 4) * (1 - br.hp / br.maxHp), br.h - 4);
@@ -1611,7 +1561,6 @@ function launchBall() {
       ctx.shadowBlur = 15;
 
       if (e.type === 'ufo') {
-        // НЛО
         ctx.fillStyle = '#ff00d4';
         ctx.beginPath();
         ctx.ellipse(e.x + e.w/2, e.y + e.h/2, e.w/2, e.h/3, 0, 0, Math.PI * 2);
@@ -1620,7 +1569,6 @@ function launchBall() {
         ctx.beginPath();
         ctx.arc(e.x + e.w/2, e.y + e.h/3, e.w/5, 0, Math.PI * 2);
         ctx.fill();
-        // Огни
         ctx.fillStyle = '#00f0ff';
         for (let i = 0; i < 3; i++) {
           ctx.beginPath();
@@ -1628,7 +1576,6 @@ function launchBall() {
           ctx.fill();
         }
       } else {
-        // Птица
         ctx.fillStyle = '#ff3355';
         ctx.beginPath();
         ctx.moveTo(e.x + e.w/2, e.y);
@@ -1668,6 +1615,48 @@ function launchBall() {
       ctx.restore();
     }
 
+    // Ракеты
+    for (const r of rockets) {
+      if (!r.alive) continue;
+      // Шлейф
+      for (const t of r.trail) {
+        const a = t.life / 0.55;
+        ctx.save();
+        ctx.globalAlpha = a * 0.85;
+        ctx.shadowColor = '#ffe94d';
+        ctx.shadowBlur = 22;
+        ctx.fillStyle = a > 0.5 ? '#ffe94d' : '#ff3355';
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 6 * a, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      // Корпус
+      ctx.save();
+      ctx.shadowColor = '#ff3355';
+      ctx.shadowBlur = 28;
+      ctx.fillStyle = '#ffe94d';
+      ctx.beginPath();
+      ctx.moveTo(r.x, r.y - 22);
+      ctx.lineTo(r.x - 9, r.y + 12);
+      ctx.lineTo(r.x + 9, r.y + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ff3355';
+      ctx.beginPath();
+      ctx.moveTo(r.x - 9, r.y + 12);
+      ctx.lineTo(r.x, r.y + 24);
+      ctx.lineTo(r.x + 9, r.y + 12);
+      ctx.closePath();
+      ctx.fill();
+      // Иллюминатор
+      ctx.fillStyle = '#00f0ff';
+      ctx.beginPath();
+      ctx.arc(r.x, r.y + 2, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     // Ракетка
     ctx.save();
     ctx.shadowColor = activePowers['gun'] ? '#ff00d4' : '#00f0ff';
@@ -1685,7 +1674,6 @@ function launchBall() {
     ctx.roundRect(paddle.x - paddle.w/2, paddle.y, paddle.w, paddle.h, 6);
     ctx.fill();
 
-    // Пушка
     if (activePowers['gun']) {
       ctx.fillStyle = '#ffe94d';
       ctx.fillRect(paddle.x - 12, paddle.y - 6, 4, 8);
@@ -1695,7 +1683,6 @@ function launchBall() {
 
     // Мячи
     for (const b of balls) {
-      // След
       for (const t of b.trail) {
         ctx.save();
         ctx.globalAlpha = t.life / 0.3 * 0.3;
@@ -1705,7 +1692,6 @@ function launchBall() {
         ctx.fill();
         ctx.restore();
       }
-
       ctx.save();
       ctx.shadowColor = activePowers['smash'] ? '#ff3355' : '#00f0ff';
       ctx.shadowBlur = 18;
@@ -1746,6 +1732,19 @@ function launchBall() {
     // Частицы
     for (const p of particles) {
       ctx.save();
+      if (p.isFlash) {
+        const a = p.life / p.maxLife;
+        const rad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * (1.2 - a));
+        rad.addColorStop(0, `rgba(255,255,255,${a * 0.9})`);
+        rad.addColorStop(0.4, `rgba(255,233,77,${a * 0.6})`);
+        rad.addColorStop(1, 'rgba(255,51,85,0)');
+        ctx.fillStyle = rad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (1.2 - a), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        continue;
+      }
       ctx.globalAlpha = p.life / p.maxLife;
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
@@ -1762,20 +1761,70 @@ function launchBall() {
       ctx.globalAlpha = ft.life / ft.maxLife;
       ctx.fillStyle = ft.color;
       ctx.shadowColor = ft.color;
-      ctx.shadowBlur = 12;
-      ctx.font = 'bold 18px sans-serif';
+      ctx.shadowBlur = 14;
+      ctx.font = 'bold 22px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(ft.text, ft.x, ft.y);
       ctx.restore();
     }
 
-    // Граница игрового поля
+    // Баннер уровня
+    if (levelBanner.life > 0) {
+      const t = levelBanner.life / levelBanner.maxLife;
+      const fadeIn = Math.min(1, (1 - t) * 4);
+      const fadeOut = Math.min(1, t * 3);
+      const alpha = Math.min(fadeIn, fadeOut);
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      // Затемнённая полоса
+      ctx.fillStyle = 'rgba(5, 6, 15, 0.88)';
+      ctx.fillRect(0, H/2 - 70, W, 140);
+
+      // Верхняя и нижняя неоновые линии
+      const lineGrad = ctx.createLinearGradient(0, 0, W, 0);
+      lineGrad.addColorStop(0, 'rgba(0,240,255,0)');
+      lineGrad.addColorStop(0.5, 'rgba(0,240,255,1)');
+      lineGrad.addColorStop(1, 'rgba(255,0,212,0)');
+
+      ctx.strokeStyle = lineGrad;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 25;
+      ctx.beginPath();
+      ctx.moveTo(0, H/2 - 70);
+      ctx.lineTo(W, H/2 - 70);
+      ctx.moveTo(0, H/2 + 70);
+      ctx.lineTo(W, H/2 + 70);
+      ctx.stroke();
+
+      // Текст
+      ctx.fillStyle = '#00f0ff';
+      ctx.font = 'bold 64px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 45;
+      ctx.fillText(levelBanner.text, W/2, H/2 - 5);
+
+      // Подзаголовок
+      ctx.fillStyle = '#ff00d4';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.shadowColor = '#ff00d4';
+      ctx.shadowBlur = 18;
+      ctx.letterSpacing = '4px';
+      ctx.fillText('ПОЕХАЛИ!', W/2, H/2 + 45);
+
+      ctx.restore();
+    }
+
+    // Граница поля
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, W - 2, H - 2);
   }
 
-  // roundRect polyfill
   if (!CanvasRenderingContext2D.prototype.roundRect) {
     CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
       if (r > w/2) r = w/2;
@@ -1795,15 +1844,13 @@ function launchBall() {
     if (state !== 'playing') return;
     const dt = Math.min(timestamp - lastTime, 50);
     lastTime = timestamp;
-
     update(dt);
     draw();
-
     requestAnimationFrame(gameLoop);
   }
 
   // ======================= СТАРТ =======================
-document.getElementById('startBtn')?.addEventListener('click', function () {
+  document.getElementById('startBtn')?.addEventListener('click', function () {
     this.blur();
     initAudio();
     startGame();
