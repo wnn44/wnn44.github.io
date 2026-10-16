@@ -114,8 +114,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;   /* прижимаем к верху — низ свободен под управление */
     padding: 4px;
+    overflow: hidden;
   }
 
   /* ====== ВЕРХНИЙ UI (2 строки) ====== */
@@ -379,8 +380,32 @@
   /* ====== АДАПТИВ ====== */
   @media (max-width: 600px) {
     header { padding: 4px 8px; min-height: 38px; }
-    #gameWrap { top: 38px; }
+    #gameWrap { top: 38px; justify-content: flex-start; }
     .chip { padding: 3px 8px; font-size: 10px; }
+  }
+  
+    /* Подсветка зоны управления внизу — только на тач-устройствах */
+  @media (pointer: coarse) {
+    body::after {
+      content: '';
+      position: fixed;
+      left: 0; right: 0;
+      bottom: 33%;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent,
+        rgba(0, 240, 255, 0.35) 20%,
+        rgba(255, 0, 212, 0.35) 80%,
+        transparent);
+      pointer-events: none;
+      z-index: 50;
+      animation: touchZonePulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes touchZonePulse {
+      0%, 100% { opacity: 0.35; }
+      50%      { opacity: 0.7; }
+    }
   }
 </style>
 </head>
@@ -556,7 +581,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
-  // ===== Адаптивные размеры: на мобильном портрете растягиваем H, чтобы занять экран =====
+  // ===== Адаптивные размеры =====
+  // На мобильном портрете игровое поле занимает ~2/3 высоты под шапкой,
+  // а нижняя треть остаётся пустой — это зона управления пальцем (touchpad).
   let W = 800;
   let H = 600;
   (function computeDimensions() {
@@ -564,11 +591,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const vpH = window.innerHeight || 600;
     const isMobilePortrait = vpW < 768 && vpH > vpW;
     if (isMobilePortrait) {
-      // Игровой буфер: W фиксировано, H подгоняем под пропорции экрана (с потолком).
-      const targetRatio = vpH / vpW;          // напр. 2.0 для 400×800
-      H = Math.round(W * targetRatio);
-      H = Math.min(H, 1300);                  // разумный предел
-      H = Math.max(H, 600);                   // не меньше базового
+      const headerH = 44;              // высота шапки
+      const uiH = 55;                  // две строки верхнего UI
+      const wrapH = vpH - headerH;     // всё, что ниже шапки
+      // На игру (canvas + UI) отводим 2/3 оставшейся высоты.
+      const gameZoneH = wrapH * 2 / 3;
+      const canvasDisplayH = Math.max(280, gameZoneH - uiH);
+      const displayW = Math.min(vpW - 8, 900);
+      H = Math.round(W * canvasDisplayH / displayW);
+      H = Math.max(560, Math.min(H, 1100));
     }
   })();
   canvas.width = W;
