@@ -62,7 +62,8 @@ window.GAMES = [
 	  url:         'FlyingShark.html',
 	  icon:        '💥',
 	  color:       '#00f0ff',
-	  tags:        ['shooter', 'arcade', 'vertical', 'retro'],
+	  tags:        ['shooter', 'arcade', '
+	  vertical', 'retro'],
 	  preview:     { type: 'video', src: 'previews/FlyingShark.mp4' }
   },
   {
