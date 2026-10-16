@@ -56,13 +56,13 @@ window.GAMES = [
 	  preview:     { type: 'video', src: 'previews/pheenix.mp4' }
   },
   {
-	  id:          'flyingshark',
+	  id:          'flying-shark',
 	  title:       'NEON FLYING SHARK',
-	  description: 'Классический вертикальный шутер',
+	  description: 'Вертикальный неоновый шутер-биплан: 4 уровня, боссы, бонусы и умные бомбы.',
 	  url:         'FlyingShark.html',
-	  icon:        '🔥',
+	  icon:        '💥',
 	  color:       '#00f0ff',
-	  tags:        ['shooter', 'arcade', 'retro'],
+	  tags:        ['shooter', 'arcade', 'vertical', 'retro'],
 	  preview:     { type: 'video', src: 'previews/FlyingShark.mp4' }
   },
   {
