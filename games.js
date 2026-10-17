@@ -46,6 +46,16 @@ window.GAMES = [
     preview:     { type: 'video', src: 'previews/2048.mp4' },
   },
   {
+	  id:          'neon-orbit',
+	  title:       'NEON ORBIT',
+	  description: 'Вращай пять неоновых колец, совмещай шарики по радиусу и дуге, сжигай тройки на время — с бонусом за скорость и штрафом за промах.',
+	  url:         'neon-orbit.html',
+	  icon:        '🌀',
+	  color:       '#00f0ff',
+	  tags:        ['три-в-ряд', 'головоломка', 'неон', 'кольца', 'на-время'],
+	  preview:     { type: 'video', src: 'previews/neon-orbit.mp4' }
+  },
+  {
 	  id:          'pheenix',
 	  title:       'NEON PHEENIX',
 	  description: 'Классический фиксированный шутер: уничтожьте пять волн космических птиц и материнский корабль.',
