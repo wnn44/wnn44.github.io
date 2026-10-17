@@ -38,7 +38,6 @@
     height: 100vh; height: 100dvh;
   }
 
-  /* Header */
   header {
     display: flex;
     align-items: center;
@@ -77,7 +76,6 @@
   .chip.user { color: var(--purple); border-color: rgba(168,85,255,0.5); background: rgba(168,85,255,0.08); text-shadow: 0 0 6px rgba(168,85,255,0.5); }
   .chip.menu { color: var(--magenta); border-color: rgba(255,0,212,0.5); background: rgba(255,0,212,0.08); text-shadow: 0 0 6px rgba(255,0,212,0.5); }
 
-  /* HUD */
   #hud {
     display: flex;
     align-items: center;
@@ -147,7 +145,6 @@
   }
   #soundBtn:active { transform: scale(0.94); }
 
-  /* Canvas */
   #gameWrap {
     flex: 1;
     min-height: 0;
@@ -166,7 +163,6 @@
   }
   #game:active { cursor: grabbing; }
 
-  /* Overlays */
   .overlay {
     position: fixed; inset: 0;
     display: flex;
@@ -229,10 +225,7 @@
     line-height: 1.5;
     color: var(--text);
   }
-  .instr .sect {
-    margin: 0 0 6px;
-    padding: 0;
-  }
+  .instr .sect { margin: 0 0 6px; padding: 0; }
   .instr .sect:last-child { margin-bottom: 0; }
   .instr .sect-title {
     color: var(--yellow);
@@ -337,7 +330,6 @@
   </div>
 </div>
 
-<!-- Splash -->
 <div class="overlay" id="splash">
   <div class="overlay-inner">
     <h1 class="overlay-title">NEON ORBIT</h1>
@@ -393,7 +385,6 @@
   </div>
 </div>
 
-<!-- Game over -->
 <div class="overlay hidden" id="gameover">
   <div class="overlay-inner">
     <h1 class="overlay-title" style="color:var(--magenta);text-shadow:0 0 12px var(--magenta),0 0 28px var(--magenta);">ИГРА ОКОНЧЕНА</h1>
@@ -415,12 +406,12 @@ const S = 12;
 const COLORS = ['#00f0ff', '#ff00d4', '#a855ff', '#ffe94d', '#00ff88'];
 const SECTOR_ANGLE = (Math.PI * 2) / S;
 
-const BASE_TIME = 5000;      // 5 секунд на ход
-const MAX_TIME  = 30000;     // максимальный запас времени
-const PENALTY   = 2000;      // штраф за непродуктивный ход
-const HINT_AT   = 2000;      // подсказка за 2 секунды до конца
+const BASE_TIME = 5000;
+const MAX_TIME  = 30000;
+const PENALTY   = 2000;
+const HINT_AT   = 2000;
+const SUBMIT_TIMEOUT = 4000;
 
-// ---------- DOM ----------
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('scoreVal');
@@ -437,7 +428,6 @@ const recordLineEl = document.getElementById('recordLine');
 const reasonLineEl = document.getElementById('reasonLine');
 const userChip = document.getElementById('userChip');
 
-// ---------- State ----------
 let balls = [];
 let nextBallId = 1;
 let offset = [0, 0, 0, 0, 0];
@@ -449,37 +439,30 @@ let playing = false;
 let busy = false;
 let gameEnding = false;
 
-// Timer
 let timeBudget = BASE_TIME;
 let turnBudget = BASE_TIME;
 let timeLeft = BASE_TIME;
 let turnStart = 0;
 let lastTickSec = -1;
 
-// Effects
 let particles = [];
 let floaters = [];
 let shake = 0;
 
-// Background ghosts
 let ghostBalls = [];
 let ghostParticles = [];
 
-// Selection & hint
 let selectedRing = 4;
 let hintRing = -1;
 let dragState = null;
 
-// Leaderboard
 let currentPlayer = null;
 let best = 0;
 let muted = false;
 let audioCtx = null;
 
-// Metrics
 let CW = 0, CH = 0, cx = 0, cy = 0, R0 = 0, STEP = 0, BALL_R = 0, HALF_W = 0;
 
-// ---------- Utils ----------
 function randColor() { return COLORS[(Math.random() * COLORS.length) | 0]; }
 function easeOutCubic(k) { return 1 - Math.pow(1 - k, 3); }
 function tween(duration, onUpdate) {
@@ -509,7 +492,6 @@ function rgba(hex, a) {
   return `rgba(${num >> 16},${(num >> 8) & 0xff},${num & 0xff},${a})`;
 }
 
-// ---------- Audio ----------
 function initAudio() {
   if (audioCtx) return;
   try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
@@ -539,7 +521,6 @@ const snd = {
   deny() { beep(200, 0.10, 'sawtooth', 0.08); setTimeout(() => beep(140, 0.12, 'sawtooth', 0.10), 60); },
 };
 
-// ---------- Canvas ----------
 function resize() {
   const wrap = canvas.parentElement;
   const rect = wrap.getBoundingClientRect();
@@ -568,7 +549,6 @@ function ringFromRadius(dist) {
   return -1;
 }
 
-// ---------- Ball model ----------
 function makeBall(r, local, color) {
   return { id: nextBallId++, color, r, local, visR: r, alpha: 1, scale: 1 };
 }
@@ -587,7 +567,6 @@ function ballPixelPos(b) {
   return { x: cx + Math.cos(a) * rad, y: cy + Math.sin(a) * rad };
 }
 
-// ---------- Background ghosts ----------
 function spawnGhostBall() {
   if (CW < 10 || CH < 10) return;
   for (let attempt = 0; attempt < 24; attempt++) {
@@ -697,7 +676,6 @@ function drawGhosts() {
   ctx.shadowBlur = 0;
 }
 
-// ---------- Board ----------
 function generateBoard() {
   balls = [];
   nextBallId = 1;
@@ -723,7 +701,6 @@ function popFeeder(w) {
   return c;
 }
 
-// ---------- Match detection ----------
 function findMatches() {
   const matched = new Set();
   for (let w = 0; w < S; w++) {
@@ -778,7 +755,6 @@ function findValidMove() {
 }
 function hasValidMove() { return !!findValidMove(); }
 
-// ---------- Effects ----------
 function spawnParticles(x, y, color, count) {
   for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2;
@@ -812,7 +788,6 @@ function spawnMilestoneBurst() {
   }
 }
 
-// ---------- HUD / Timer ----------
 function updateHUD() {
   scoreEl.textContent = score;
   bestEl.textContent = Math.max(best, score);
@@ -883,14 +858,12 @@ function updateTimer() {
     return;
   }
 
-  // Подсказка за 2 секунды до конца хода
   if (hintRing === -1 && timeLeft <= HINT_AT) {
     const m = findValidMove();
     if (m) hintRing = m.ring;
   }
 }
 
-// ---------- Rotate ----------
 async function rotateRing(ring, dir) {
   if (busy || !playing || gameEnding || ring < 0) return;
   busy = true;
@@ -911,10 +884,8 @@ async function rotateRing(ring, dir) {
   });
   visualOffset[ring] = newOff;
 
-  // Проверка: есть ли матч после этого хода?
   const firstMatch = findMatches();
   if (firstMatch.size === 0) {
-    // Непродуктивный ход: откат + штраф −2 сек
     snd.deny();
     spawnFloater(cx, cy - 60, 'НЕТ СОВПАДЕНИЙ −2с', '#ff3355', 18);
     shake = Math.max(shake, 8);
@@ -925,7 +896,6 @@ async function rotateRing(ring, dir) {
     });
     visualOffset[ring] = oldOff;
 
-    // Списываем 2 секунды (за откат анимации время не считаем)
     const newRemaining = remaining - PENALTY;
     if (newRemaining <= 0) {
       timeBudget = 0;
@@ -934,13 +904,11 @@ async function rotateRing(ring, dir) {
       gameOver('ВРЕМЯ ВЫШЛО');
       return;
     }
-    // Корректируем старт хода так, чтобы осталось ровно newRemaining
     turnStart = performance.now() - (elapsed + PENALTY);
     busy = false;
     return;
   }
 
-  // Продуктивный ход
   await resolveBoard(ring);
 
   if (!hasValidMove()) {
@@ -957,7 +925,6 @@ async function rotateRing(ring, dir) {
   startTurnTimer();
 }
 
-// ---------- Resolve cascade ----------
 async function resolveBoard(movedRing) {
   let cascade = 0;
   const perBall = (Math.max(0, Math.min(R - 1, movedRing)) + 1) * 10;
@@ -1044,7 +1011,6 @@ function animateCompactAndRefill() {
   });
 }
 
-// ---------- Reshuffle ----------
 async function reshuffle() {
   spawnFloater(cx, cy, 'ПЕРЕМЕШКА!', '#ffe94d', 28);
   snd.shuffle();
@@ -1063,7 +1029,6 @@ async function reshuffle() {
   await resolveBoard(0);
 }
 
-// ---------- Render ----------
 function render() {
   ctx.clearRect(0, 0, CW, CH);
   drawBackground();
@@ -1237,7 +1202,6 @@ function drawFloaters() {
   ctx.shadowBlur = 0;
 }
 
-// ---------- Input ----------
 canvas.addEventListener('pointerdown', e => {
   initAudio();
   if (!playing || busy) return;
@@ -1313,8 +1277,7 @@ soundBtn.addEventListener('click', () => {
   soundBtn.textContent = muted ? '🔇' : '🔊';
 });
 
-// ---------- Game flow ----------
-async function startGame() {
+function startGame() {
   initAudio();
   snd.start();
 
@@ -1333,7 +1296,6 @@ async function startGame() {
 
   generateBoard();
 
-  // Гарантируем стартовое поле с хотя бы одним доступным ходом
   let attempts = 0;
   while (!hasValidMove() && attempts++ < 20) {
     balls.forEach(b => { b.color = randColor(); });
@@ -1349,7 +1311,8 @@ async function startGame() {
   gameover.classList.add('hidden');
 }
 
-async function gameOver(reason) {
+// ---------- Ключевое изменение: gameOver больше не блокирует UI ----------
+function gameOver(reason) {
   if (gameEnding) return;
   gameEnding = true;
   playing = false;
@@ -1357,17 +1320,20 @@ async function gameOver(reason) {
   snd.over();
   shake = 20;
 
-  if (currentPlayer && score > 0) {
-    try { await Leaderboard.submit(GAME_ID, currentPlayer, score); }
-    catch (e) { console.warn('submit fail', e); }
-    loadStats();
-  }
+  const finalScore = score;
+  const isNewRecord = finalScore > 0 && finalScore > best;
 
+  // Показываем экран через короткую паузу (для анимации смерти),
+  // но НЕ ждём отправки в лидерборд.
   setTimeout(() => {
-    finalScoreEl.textContent = score;
+    finalScoreEl.textContent = finalScore;
     reasonLineEl.textContent = reason || 'ИГРА ОКОНЧЕНА';
 
-    if (best > 0 && score > best) {
+    // Сброс цвета перед установкой нового (иначе жёлтый остаётся с прошлой партии)
+    recordLineEl.style.color = '';
+    recordLineEl.style.textShadow = '';
+
+    if (isNewRecord) {
       recordLineEl.textContent = '🏆 НОВЫЙ РЕКОРД!';
       recordLineEl.style.color = '#ffe94d';
       recordLineEl.style.textShadow = '0 0 10px #ffe94d';
@@ -1377,7 +1343,21 @@ async function gameOver(reason) {
       recordLineEl.textContent = '';
     }
     gameover.classList.remove('hidden');
-  }, 900);
+  }, 400);
+
+  // Отправка в фоне с таймаутом — не влияет на показ экрана
+  if (currentPlayer && finalScore > 0) {
+    const submitPromise = Promise.resolve()
+      .then(() => Leaderboard.submit(GAME_ID, currentPlayer, finalScore))
+      .catch(e => { console.warn('leaderboard submit fail', e); });
+
+    const timeoutPromise = new Promise(r => setTimeout(r, SUBMIT_TIMEOUT));
+
+    Promise.race([submitPromise, timeoutPromise])
+      .then(() => {
+        try { loadStats(); } catch (e) {}
+      });
+  }
 }
 
 startBtn.addEventListener('click', startGame);
@@ -1386,7 +1366,6 @@ restartBtn.addEventListener('click', () => {
   startGame();
 });
 
-// ---------- Main loop ----------
 function loop() {
   updateTimer();
 
@@ -1424,7 +1403,6 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// ---------- Stats / Leaderboard ----------
 function loadStats() {
   try {
     best = (Leaderboard.getPlayerBest(GAME_ID, currentPlayer) || 0);
@@ -1438,7 +1416,6 @@ function loadStats() {
   } catch (e) {}
 }
 
-// ---------- Init ----------
 document.addEventListener('DOMContentLoaded', () => {
   try { currentPlayer = Auth.get(); } catch (e) { currentPlayer = null; }
   if (userChip) userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
