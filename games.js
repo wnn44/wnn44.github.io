@@ -144,5 +144,15 @@ window.GAMES = [
 	color:       '#00f0ff',
 	tags:        ['аркада', 'физика', 'головоломка'],
 	preview:     { type: 'video', src: 'previews/gravity-breaker.mp4' }
- },
+  },
+  {
+	  id:          'neon-shift',
+	  title:       'NEON SHIFT',
+	  description: 'Сдвигай целые линии неоновых квадратов, собирай тройки и укладывайся в таймер.',
+	  url:         'neon-shift.html',
+	  icon:        '🔮',
+	  color:       '#00f0ff',
+	  tags:        ['три-в-ряд', 'головоломка', 'таймер'],
+	  preview:     { type: 'video', src: 'previews/neon-shift.mp4' }
+  },
 ];

@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NEON SHIFT — NEON ARCADE</title>
+<link rel="stylesheet" href="common.css">
+<script src="auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="leaderboard.js"></script>
+<script src="leaderboard-ui.js"></script>
+<style>
+  :root{
+    --cyan:#00f0ff;
+    --magenta:#ff00d4;
+    --purple:#a855ff;
+    --yellow:#ffe94d;
+    --green:#00ff88;
+    --red:#ff3355;
+    --text:#e6f7ff;
+    --panel: rgba(13,17,40,0.85);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0; padding:0;
+    height:100vh; height:100dvh;
+    overflow:hidden;
+    overscroll-behavior:none;
+    background: radial-gradient(ellipse at top, #0b0d1f, #05060f 75%);
+    color:var(--text);
+    font-family: "Segoe UI", "SF Pro Display", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-user-select:none; user-select:none;
+    touch-action: manipulation;
+  }
+
+  body{
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    z-index:0;
+  }
+
+  /* ================= ФОНОВОЕ ОФОРМЛЕНИЕ ================= */
+  .bg-layer{
+    position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none;
+  }
+  .blob{
+    position:absolute; border-radius:50%; filter:blur(60px); opacity:.35;
+    will-change:transform;
+  }
+  .b1{
+    width:46vmax; height:46vmax; left:-14vmax; top:-16vmax;
+    background:radial-gradient(circle at 40% 40%, #00f0ff, transparent 68%);
+    animation: float1 19s ease-in-out infinite;
+  }
+  .b2{
+    width:42vmax; height:42vmax; right:-16vmax; top:10vmax;
+    background:radial-gradient(circle at 60% 40%, #ff00d4, transparent 68%);
+    animation: float2 23s ease-in-out infinite;
+  }
+  .b3{
+    width:40vmax; height:40vmax; left:20vmax; bottom:-20vmax;
+    background:radial-gradient(circle at 50% 50%, #a855ff, transparent 68%);
+    animation: float3 27s ease-in-out infinite;
+  }
+  @keyframes float1{ 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(6vmax,4vmax) scale(1.15);} }
+  @keyframes float2{ 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-7vmax,6vmax) scale(1.1);} }
+  @keyframes float3{ 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(4vmax,-6vmax) scale(1.2);} }
+
+  .grid-lines{
+    position:absolute; inset:-20%;
+    background-image:
+      linear-gradient(rgba(0,240,255,0.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,0.055) 1px, transparent 1px);
+    background-size: 54px 54px;
+    transform: perspective(520px) rotateX(58deg) translateY(6%);
+    mask-image: radial-gradient(ellipse at 50% 40%, #000 12%, transparent 72%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 40%, #000 12%, transparent 72%);
+    animation: gridScroll 14s linear infinite;
+  }
+  @keyframes gridScroll{ from{ background-position:0 0,0 0; } to{ background-position:0 54px,54px 0; } }
+
+  .scan{
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(180deg, rgba(0,240,255,0.035) 0 1px, transparent 1px 3px);
+    opacity:.5; pointer-events:none;
+    animation: scanMove 8s linear infinite;
+  }
+  @keyframes scanMove{ from{ transform:translateY(0);} to{ transform:translateY(3px);} }
+
+  /* ================= ШАПКА ================= */
+  header{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px;
+    padding: 7px clamp(7px,2vw,18px);
+    border-bottom:1px solid rgba(0,240,255,0.18);
+    background: linear-gradient(180deg, rgba(0,240,255,0.07), rgba(0,0,0,0));
+    position:relative; z-index:20;
+  }
+  .logo{
+    font-weight:900;
+    letter-spacing: clamp(1px,0.35vw,3px);
+    font-size: clamp(12px, 3.1vw, 20px);
+    color:var(--cyan);
+    text-shadow: 0 0 10px var(--cyan), 0 0 26px rgba(0,240,255,0.55);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
+  }
+  .header-right{ display:flex; gap:clamp(4px,1vw,8px); align-items:center; flex:0 0 auto; }
+
+  .chip{
+    font-family:inherit;
+    font-size: clamp(9px, 2.2vw, 12px);
+    font-weight:800;
+    letter-spacing:.4px;
+    padding: clamp(4px,1vw,7px) clamp(6px,1.6vw,12px);
+    border-radius:999px;
+    border:1px solid rgba(0,240,255,0.45);
+    background: var(--panel);
+    color:var(--text);
+    cursor:pointer;
+    white-space:nowrap;
+    transition: transform .12s, box-shadow .2s, background .2s;
+    line-height:1;
+  }
+  .chip:active{ transform:scale(0.93); }
+  .chip.lb{ border-color: rgba(255,233,77,0.65); color:var(--yellow); box-shadow:0 0 12px rgba(255,233,77,0.28); }
+  .chip.user{ border-color: rgba(168,85,255,0.65); color:var(--purple); box-shadow:0 0 12px rgba(168,85,255,0.28); max-width:26vw; overflow:hidden; text-overflow:ellipsis; }
+  .chip.menu{ border-color: rgba(255,0,212,0.6); color:var(--magenta); box-shadow:0 0 12px rgba(255,0,212,0.22); }
+  .chip.sound{ padding: clamp(4px,1vw,7px) clamp(6px,1.4vw,9px); border-color: rgba(0,255,136,0.6); color:var(--green); }
+
+  /* ================= ОСНОВНОЙ БЛОК ================= */
+  main{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: clamp(4px, 1.1vh, 10px);
+    padding: clamp(5px,1.2vh,12px) clamp(6px,2vw,18px) clamp(6px,1.4vh,14px);
+    position:relative; z-index:2;
+  }
+
+  /* ================= HUD ================= */
+  .hud{
+    flex:0 0 auto;
+    width:100%;
+    max-width: 720px;
+    display:flex;
+    flex-direction:column;
+    gap: clamp(3px, 0.9vh, 9px);
+  }
+  .hud-row{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(4px, 1.4vw, 12px);
+  }
+  .stat{
+    background: var(--panel);
+    border:1px solid rgba(0,240,255,0.22);
+    border-radius: 11px;
+    padding: clamp(3px,0.85vh,8px) clamp(3px,1vw,10px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    box-shadow: inset 0 0 18px rgba(0,240,255,0.055), 0 0 12px rgba(0,240,255,0.07);
+    min-width:0;
+    overflow:hidden;
+    transition: border-color .3s, box-shadow .3s;
+  }
+  .stat.timer-warn{
+    border-color: rgba(255,233,77,0.6);
+    box-shadow: inset 0 0 20px rgba(255,233,77,0.12), 0 0 18px rgba(255,233,77,0.25);
+  }
+  .stat.timer-danger{
+    border-color: rgba(255,51,85,0.75);
+    box-shadow: inset 0 0 22px rgba(255,51,85,0.18), 0 0 22px rgba(255,51,85,0.35);
+    animation: dangerPulse .6s ease-in-out infinite;
+  }
+  @keyframes dangerPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.55; } }
+  .stat-label{
+    font-size: clamp(8px, 1.95vw, 11px);
+    font-weight:800;
+    letter-spacing: clamp(0.8px,0.25vw,2px);
+    color: rgba(230,247,255,0.52);
+    line-height:1;
+    margin-bottom: clamp(2px,0.4vh,4px);
+    white-space:nowrap;
+  }
+  .stat-value{
+    font-size: clamp(17px, 5vw, 30px);
+    font-weight:900;
+    line-height:1;
+    letter-spacing:.5px;
+    font-variant-numeric: tabular-nums;
+    white-space:nowrap;
+    transition: color .2s;
+  }
+  .stat-sub{
+    font-size: clamp(7px, 1.6vw, 10px);
+    font-weight:700;
+    color: rgba(0,255,136,0.75);
+    line-height:1;
+    margin-top:1px;
+    min-height:.9em;
+    white-space:nowrap;
+  }
+  .v-cyan{ color:var(--cyan); text-shadow:0 0 14px rgba(0,240,255,0.85); }
+  .v-yellow{ color:var(--yellow); text-shadow:0 0 14px rgba(255,233,77,0.8); }
+  .v-magenta{ color:var(--magenta); text-shadow:0 0 14px rgba(255,0,212,0.8); }
+  .v-green{ color:var(--green); text-shadow:0 0 14px rgba(0,255,136,0.8); }
+  .v-purple{ color:var(--purple); text-shadow:0 0 14px rgba(168,85,255,0.8); }
+  .v-plain{ color:var(--text); text-shadow:0 0 12px rgba(230,247,255,0.45); }
+  .v-danger{ color:var(--red) !important; text-shadow:0 0 18px rgba(255,51,85,0.95) !important; }
+
+  .pop{ animation: valPop .28s ease-out; }
+  @keyframes valPop{ 0%{ transform:scale(1); } 45%{ transform:scale(1.22); } 100%{ transform:scale(1); } }
+
+  /* ================= ПОЛЕ ================= */
+  .board-wrap{
+    flex:1 1 auto;
+    min-height:0;
+    width:100%;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .board-stage{
+    position:relative;
+    width:300px; height:300px;
+    flex:0 0 auto;
+  }
+  #game{
+    display:block;
+    width:100%; height:100%;
+    border-radius:16px;
+    background:#080b1a;
+    border:1px solid rgba(0,240,255,0.32);
+    box-shadow:
+      0 0 34px rgba(0,240,255,0.22),
+      0 0 90px rgba(255,0,212,0.12),
+      inset 0 0 60px rgba(0,240,255,0.05);
+    touch-action:none;
+    cursor:crosshair;
+    transition: border-color .3s, box-shadow .3s;
+  }
+  #game.urgent{
+    border-color: rgba(255,51,85,0.75);
+    box-shadow:
+      0 0 40px rgba(255,51,85,0.45),
+      0 0 100px rgba(255,51,85,0.18),
+      inset 0 0 60px rgba(255,51,85,0.08);
+  }
+
+  /* Уголки-декор */
+  .corner{
+    position:absolute; width:clamp(14px,3.6vw,26px); height:clamp(14px,3.6vw,26px);
+    border:2px solid var(--cyan); pointer-events:none; z-index:4;
+    opacity:.85;
+    filter: drop-shadow(0 0 6px var(--cyan));
+    animation: cornerPulse 2.6s ease-in-out infinite;
+  }
+  .corner.tl{ top:-7px; left:-7px; border-right:0; border-bottom:0; border-radius: 8px 0 0 0; }
+  .corner.tr{ top:-7px; right:-7px; border-left:0; border-bottom:0; border-radius: 0 8px 0 0; border-color:var(--magenta); filter: drop-shadow(0 0 6px var(--magenta)); }
+  .corner.bl{ bottom:-7px; left:-7px; border-right:0; border-top:0; border-radius: 0 0 0 8px; border-color:var(--purple); filter: drop-shadow(0 0 6px var(--purple)); }
+  .corner.br{ bottom:-7px; right:-7px; border-left:0; border-top:0; border-radius: 0 0 8px 0; border-color:var(--yellow); filter: drop-shadow(0 0 6px var(--yellow)); }
+  @keyframes cornerPulse{ 0%,100%{opacity:.45;} 50%{opacity:1;} }
+
+  /* ================= ОВЕРЛЕИ ================= */
+  .overlay{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    gap: clamp(5px, 1.3vh, 12px);
+    padding: clamp(8px, 2.5vw, 22px);
+    border-radius:16px;
+    background: rgba(5,6,15,0.86);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+    z-index:10;
+    overflow-y:auto;
+    animation: fadeIn .32s ease-out;
+  }
+  .overlay.hidden{ display:none; }
+  @keyframes fadeIn{ from{ opacity:0; transform:scale(0.97);} to{ opacity:1; transform:scale(1);} }
+
+  .title-wrap{ display:flex; flex-direction:column; align-items:center; gap: clamp(2px,0.6vh,6px); }
+
+  .game-title{
+    margin:0;
+    font-size: clamp(24px, 8vw, 54px);
+    font-weight:900;
+    letter-spacing: clamp(2px, 0.9vw, 6px);
+    line-height:.92;
+    background: linear-gradient(180deg, #ffffff 0%, #00f0ff 46%, #ff00d4 100%);
+    -webkit-background-clip:text; background-clip:text;
+    color:transparent;
+    filter: drop-shadow(0 0 12px rgba(0,240,255,0.85)) drop-shadow(0 0 30px rgba(255,0,212,0.45));
+    animation: titlePulse 2.6s ease-in-out infinite;
+  }
+  @keyframes titlePulse{
+    0%,100%{ transform:scale(1); filter: drop-shadow(0 0 10px rgba(0,240,255,0.7)) drop-shadow(0 0 24px rgba(255,0,212,0.35)); }
+    50%{ transform:scale(1.03); filter: drop-shadow(0 0 22px rgba(0,240,255,1)) drop-shadow(0 0 46px rgba(255,0,212,0.65)); }
+  }
+  .title-sub{
+    font-size: clamp(9px, 2.4vw, 13px);
+    letter-spacing: clamp(2px, 0.9vw, 6px);
+    font-weight:800;
+    color: var(--magenta);
+    text-shadow:0 0 12px rgba(255,0,212,0.9);
+  }
+
+  .rules{
+    display:flex; flex-direction:column;
+    gap: clamp(2px, 0.6vh, 6px);
+    max-width: 96%;
+    text-align:left;
+  }
+  .rule{
+    font-size: clamp(9.5px, 2.4vw, 13px);
+    line-height:1.34;
+    color:#b7d6e6;
+    display:flex; align-items:flex-start; gap:5px;
+  }
+  .rule .ic{ flex:0 0 auto; font-size:1.1em; }
+  .rule b{ color:var(--cyan); text-shadow:0 0 8px rgba(0,240,255,0.6); }
+  .rule .r-yellow{ color:var(--yellow); }
+  .rule .r-green{ color:var(--green); }
+  .rule .r-red{ color:var(--red); }
+  .rule .r-magenta{ color:var(--magenta); }
+
+  .btn-play{
+    font-family:inherit;
+    font-size: clamp(13px, 3.5vw, 19px);
+    font-weight:900;
+    letter-spacing: clamp(1px,0.4vw,3px);
+    padding: clamp(9px, 2vh, 16px) clamp(20px, 6vw, 46px);
+    border-radius:999px;
+    border:2px solid var(--cyan);
+    color:#04141a;
+    background: linear-gradient(180deg, #a9fdff, #00f0ff 55%, #00a9c4);
+    box-shadow: 0 0 22px rgba(0,240,255,0.7), 0 0 60px rgba(0,240,255,0.3), inset 0 -3px 0 rgba(0,0,0,0.28);
+    cursor:pointer;
+    transition: transform .12s ease, box-shadow .2s;
+    animation: btnPulse 2.1s ease-in-out infinite;
+    touch-action: manipulation;
+  }
+  .btn-play:active{ transform:scale(0.95); box-shadow:0 0 12px rgba(0,240,255,0.9); }
+  @keyframes btnPulse{
+    0%,100%{ box-shadow: 0 0 18px rgba(0,240,255,0.6), 0 0 44px rgba(0,240,255,0.22), inset 0 -3px 0 rgba(0,0,0,0.28); }
+    50%{ box-shadow: 0 0 32px rgba(0,240,255,0.95), 0 0 76px rgba(0,240,255,0.42), inset 0 -3px 0 rgba(0,0,0,0.28); }
+  }
+
+  .btn-ghost{
+    font-family:inherit;
+    font-size: clamp(11px, 2.9vw, 15px);
+    font-weight:800;
+    letter-spacing:1px;
+    padding: clamp(7px,1.6vh,12px) clamp(14px,4vw,28px);
+    border-radius:999px;
+    border:1px solid rgba(255,0,212,0.65);
+    background: rgba(13,17,40,0.9);
+    color: var(--magenta);
+    cursor:pointer;
+    transition: transform .12s, box-shadow .2s;
+    box-shadow:0 0 14px rgba(255,0,212,0.25);
+  }
+  .btn-ghost:active{ transform:scale(0.94); }
+
+  .hint-small{
+    font-size: clamp(9px, 2.3vw, 12px);
+    color: rgba(230,247,255,0.55);
+    letter-spacing:.5px;
+  }
+  .hint-small b{ color: var(--yellow); text-shadow:0 0 10px rgba(255,233,77,0.7); }
+
+  /* Экран проигрыша */
+  .over-title{
+    font-size: clamp(16px, 4.6vw, 30px);
+    font-weight:900;
+    letter-spacing: clamp(1.5px,0.6vw,4px);
+    color: var(--red);
+    text-shadow: 0 0 18px rgba(255,51,85,0.9), 0 0 46px rgba(255,51,85,0.4);
+  }
+  .over-label{
+    font-size: clamp(9px,2.2vw,12px);
+    font-weight:800; letter-spacing:2.5px;
+    color: rgba(230,247,255,0.5);
+  }
+  .over-score{
+    font-size: clamp(34px, 11vw, 74px);
+    font-weight:900;
+    line-height:1;
+    color: var(--cyan);
+    text-shadow: 0 0 22px rgba(0,240,255,0.9), 0 0 60px rgba(0,240,255,0.45);
+    font-variant-numeric: tabular-nums;
+    animation: valPop .5s ease-out;
+  }
+  .over-stats{
+    display:flex; flex-wrap:wrap; justify-content:center;
+    gap: clamp(6px,2vw,18px);
+    font-size: clamp(10px, 2.6vw, 14px);
+    color: rgba(230,247,255,0.7);
+  }
+  .over-stats b{ color: var(--yellow); text-shadow:0 0 10px rgba(255,233,77,0.7); }
+  .over-badge{
+    font-size: clamp(11px, 3vw, 16px);
+    font-weight:900; letter-spacing:1.5px;
+    color: var(--green);
+    text-shadow: 0 0 16px rgba(0,255,136,0.9);
+    animation: badgePop .6s ease-out infinite alternate;
+  }
+  .over-badge.hidden{ display:none; }
+  @keyframes badgePop{ from{transform:scale(1);} to{transform:scale(1.08);} }
+  .over-btns{ display:flex; flex-wrap:wrap; gap: clamp(6px,2vw,14px); align-items:center; justify-content:center; }
+
+  @media (max-height: 600px){
+    .rule{ font-size: 9px; line-height:1.2; }
+    .game-title{ font-size: clamp(20px, 6.5vw, 38px); }
+    .hud{ gap:3px; }
+    .stat-value{ font-size: clamp(15px, 4vw, 22px); }
+    .overlay{ gap:4px; padding:8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-layer">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="grid-lines"></div>
+  <div class="scan"></div>
+</div>
+
+<header>
+  <div class="logo">NEON SHIFT</div>
+  <div class="header-right">
+    <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
+    <div class="chip user" id="userChip">ИГРОК</div>
+    <div class="chip sound" id="soundBtn">🔊</div>
+    <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
+  </div>
+</header>
+
+<main>
+  <div class="hud">
+    <div class="hud-row">
+      <div class="stat">
+        <div class="stat-label">ОЧКИ</div>
+        <div class="stat-value v-cyan" id="scoreVal">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">РЕКОРД</div>
+        <div class="stat-value v-yellow" id="bestVal">0</div>
+      </div>
+      <div class="stat" id="timerStat">
+        <div class="stat-label">ТАЙМЕР</div>
+        <div class="stat-value v-green" id="timeVal">5.0</div>
+        <div class="stat-sub" id="timeSub">запас +0.0</div>
+      </div>
+    </div>
+    <div class="hud-row">
+      <div class="stat">
+        <div class="stat-label">КОМБО</div>
+        <div class="stat-value v-green" id="comboVal">x1</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">РУБЕЖ</div>
+        <div class="stat-value v-purple" id="mileVal">100</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">ХОДЫ</div>
+        <div class="stat-value v-plain" id="movesVal">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board-stage" id="boardStage">
+      <canvas id="game"></canvas>
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+
+      <div class="overlay" id="startScreen">
+        <div class="title-wrap">
+          <h1 class="game-title">NEON<br>SHIFT</h1>
+          <div class="title-sub">ТРИ В РЯД · ЛИНИЯМИ</div>
+        </div>
+        <div class="rules">
+          <div class="rule"><span class="ic">🖱️</span><span>Свайп по ряду/колонке — сдвигается <b>вся линия</b></span></div>
+          <div class="rule"><span class="ic">⌨️</span><span>Стрелки — курсор, <b>WASD</b> — сдвиг линии</span></div>
+          <div class="rule"><span class="ic">⏱️</span><span>На ход даётся <span class="r-green">5 секунд</span>. Успел быстрее — остаток <span class="r-green">переходит на следующий ход</span></span></div>
+          <div class="rule"><span class="ic">❌</span><span>Ход без совпадений — <span class="r-red">откат</span> и <span class="r-red">−2 секунды</span></span></div>
+          <div class="rule"><span class="ic">💥</span><span>Собирай <b>3+</b> квадрата. Каскады дают больше очков</span></div>
+          <div class="rule"><span class="ic">🏆</span><span>Каждые <span class="r-yellow">100 очков</span> — новый рубеж</span></div>
+          <div class="rule"><span class="ic">💡</span><span>За <span class="r-yellow">2 секунды</span> до конца появится подсказка</span></div>
+        </div>
+        <button class="btn-play" id="playBtn">▶ ИГРАТЬ</button>
+        <div class="hint-small">Лучший результат: <b id="startBest">0</b></div>
+      </div>
+
+      <div class="overlay hidden" id="overScreen">
+        <div class="over-title">ВРЕМЯ ВЫШЛО</div>
+        <div>
+          <div class="over-label">ОЧКИ</div>
+          <div class="over-score" id="finalScore">0</div>
+        </div>
+        <div class="over-badge hidden" id="newRecordBadge">🏆 НОВЫЙ РЕКОРД!</div>
+        <div class="over-stats">
+          <div>Рекорд: <b id="finalBest">0</b></div>
+          <div>Ходов: <b id="finalMoves">0</b></div>
+          <div>Макс. комбо: <b id="finalCombo">1</b></div>
+        </div>
+        <div class="over-btns">
+          <button class="btn-play" id="againBtn">↻ ЕЩЁ РАЗ</button>
+          <button class="btn-ghost" id="toMenuBtn">◀ МЕНЮ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
+  /* ==================================================================
+     КОНСТАНТЫ
+     ================================================================== */
+  const GAME_ID           = 'neon-shift';
+  const COLS              = 8;
+  const ROWS              = 8;
+  const NCOLORS           = 5;
+  const POINTS_BALL       = 10;
+  const MILESTONE         = 100;
+  const BASE_TIME         = 5;      // секунд на ход
+  const MAX_BUDGET        = 20;     // максимум накопленного времени
+  const UNPRODUCTIVE_PEN  = 2;      // штраф за неудачный ход
+  const HINT_THRESHOLD    = 2;      // подсказка за 2 секунды до конца
+
+  const PALETTE = [
+    { main:'#00f0ff', hi:'#c4fdff', lo:'#006c78' }, // cyan
+    { main:'#ff00d4', hi:'#ffbdf4', lo:'#7a0064' }, // magenta
+    { main:'#a855ff', hi:'#e0c8ff', lo:'#4a1a85' }, // purple
+    { main:'#ffe94d', hi:'#fff8c4', lo:'#7a6800' }, // yellow
+    { main:'#00ff88', hi:'#bdffdf', lo:'#00763f' }  // green
+  ];
+
+  /* ==================================================================
+     ПЛАТФОРМА
+     ================================================================== */
+  let currentPlayer = null;
+  try {
+    if (typeof Auth !== 'undefined' && typeof Auth.get === 'function') {
+      currentPlayer = Auth.get();
+    }
+  } catch (e) { currentPlayer = null; }
+
+  const userChip = document.getElementById('userChip');
+  if (userChip) userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
+
+  document.getElementById('lbHeaderBtn')?.addEventListener('click', () => {
+    try { LeaderboardUI.open(GAME_ID); } catch (e) { console.warn('LeaderboardUI недоступен', e); }
+  });
+
+  document.getElementById('menuBtn')?.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  let myBest = 0;
+
+  function getLocalBest() {
+    try { return parseInt(localStorage.getItem('ns-best') || '0', 10) || 0; }
+    catch (e) { return 0; }
+  }
+  function saveLocalBest(v) {
+    try { localStorage.setItem('ns-best', String(v)); } catch (e) {}
+  }
+
+  function loadStats() {
+    try {
+      if (typeof Leaderboard !== 'undefined') {
+        const pb = Leaderboard.getPlayerBest(GAME_ID, currentPlayer);
+        if (typeof pb === 'number' && isFinite(pb)) myBest = Math.max(myBest, pb);
+      }
+    } catch (e) { /* offline */ }
+    myBest = Math.max(myBest, getLocalBest());
+    updateHUD();
+    const sb = document.getElementById('startBest');
+    if (sb) sb.textContent = myBest;
+  }
+
+  window.addEventListener('leaderboard-updated', loadStats);
+
+  async function submitScore(finalScore) {
+    if (currentPlayer && finalScore > 0) {
+      try {
+        if (typeof Leaderboard !== 'undefined') {
+          await Leaderboard.submit(GAME_ID, currentPlayer, finalScore);
+          loadStats();
+        }
+      } catch (e) { console.warn('submit failed', e); }
+    }
+  }
+
+  /* ==================================================================
+     ЗВУК
+     ================================================================== */
+  let audioCtx = null;
+  let muted = false;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try { audioCtx = new AC(); } catch (e) { audioCtx = null; return; }
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  }
+
+  function tone(freq, dur, type, vol, when, freqEnd) {
+    if (muted || !audioCtx) return;
+    const t0 = audioCtx.currentTime + (when || 0);
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol || 0.12, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.03);
+  }
+
+  const sfx = {
+    shift:    () => tone(520, 0.075, 'triangle', 0.09, 0, 700),
+    match:    (c) => {
+      const scale = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.5];
+      const f = scale[Math.min(scale.length - 1, c - 1)];
+      tone(f, 0.16, 'sine', 0.13, 0);
+      tone(f * 1.5, 0.13, 'triangle', 0.07, 0.03);
+      if (c >= 3) tone(f * 2, 0.18, 'sine', 0.06, 0.07);
+    },
+    milestone: () => { [659.25, 830.61, 987.77, 1318.5].forEach((f, i) => tone(f, 0.24, 'sine', 0.10, i * 0.055)); },
+    record:    () => { [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, 0.3, 'triangle', 0.10, i * 0.07)); },
+    gameOver:  () => { [440, 349.23, 293.66, 220].forEach((f, i) => tone(f, 0.34, 'sawtooth', 0.07, i * 0.13)); },
+    start:     () => { [392, 523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.22, 'sine', 0.11, i * 0.06)); },
+    rollback:  () => { tone(220, 0.12, 'sawtooth', 0.10, 0); tone(165, 0.18, 'sawtooth', 0.09, 0.1); },
+    tick:      () => tone(1200, 0.04, 'square', 0.04, 0),
+    hint:      () => { tone(1046.5, 0.18, 'sine', 0.06, 0); tone(1318.5, 0.22, 'sine', 0.05, 0.08); },
+    bonus:     () => { tone(783.99, 0.12, 'sine', 0.08, 0); tone(1046.5, 0.15, 'sine', 0.07, 0.06); }
+  };
+
+  const soundBtn = document.getElementById('soundBtn');
+  try { muted = localStorage.getItem('ns-muted') === '1'; } catch (e) {}
+  function refreshSoundBtn() { if (soundBtn) soundBtn.textContent = muted ? '🔇' : '🔊'; }
+  refreshSoundBtn();
+  soundBtn?.addEventListener('click', () => {
+    muted = !muted;
+    try { localStorage.setItem('ns-muted', muted ? '1' : '0'); } catch (e) {}
+    refreshSoundBtn();
+    if (!muted) { initAudio(); tone(660, 0.1, 'sine', 0.1, 0); }
+  });
+
+  /* ==================================================================
+     DOM
+     ================================================================== */
+  const canvas      = document.getElementById('game');
+  const ctx         = canvas.getContext('2d');
+  const boardWrap   = document.getElementById('boardWrap');
+  const boardStage  = document.getElementById('boardStage');
+  const startScreen = document.getElementById('startScreen');
+  const overScreen  = document.getElementById('overScreen');
+  const timerStat   = document.getElementById('timerStat');
+
+  const scoreEl  = document.getElementById('scoreVal');
+  const bestEl   = document.getElementById('bestVal');
+  const timeEl   = document.getElementById('timeVal');
+  const timeSub  = document.getElementById('timeSub');
+  const comboEl  = document.getElementById('comboVal');
+  const mileEl   = document.getElementById('mileVal');
+  const movesEl  = document.getElementById('movesVal');
+
+  const finalScoreEl = document.getElementById('finalScore');
+  const finalBestEl  = document.getElementById('finalBest');
+  const finalMovesEl = document.getElementById('finalMoves');
+  const finalComboEl = document.getElementById('finalCombo');
+  const newRecordBadge = document.getElementById('newRecordBadge');
+
+  /* ==================================================================
+     ГЕОМЕТРИЯ
+     ================================================================== */
+  let BOARD_PX = 320;
+  let CELL = 40;
+  let squareSprites = [];
+
+  function roundRectPath(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.lineTo(x + w - r, y);
+    c.quadraticCurveTo(x + w, y, x + w, y + r);
+    c.lineTo(x + w, y + h - r);
+    c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    c.lineTo(x + r, y + h);
+    c.quadraticCurveTo(x, y + h, x, y + h - r);
+    c.lineTo(x, y + r);
+    c.quadraticCurveTo(x, y, x + r, y);
+    c.closePath();
+  }
+
+  function hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+
+  function buildSprites() {
+    squareSprites = PALETTE.map(p => {
+      const size = CELL * 1.7;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const cv = document.createElement('canvas');
+      cv.width  = Math.max(2, Math.round(size * dpr));
+      cv.height = Math.max(2, Math.round(size * dpr));
+      const c2 = cv.getContext('2d');
+      c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const cx = size / 2, cy = size / 2;
+      const half = CELL * 0.40;
+      const rad = CELL * 0.13;
+
+      // Внешнее свечение
+      const glow = c2.createRadialGradient(cx, cy, half * 0.6, cx, cy, half * 1.7);
+      glow.addColorStop(0, hexA(p.main, 0.55));
+      glow.addColorStop(0.6, hexA(p.main, 0.16));
+      glow.addColorStop(1, hexA(p.main, 0));
+      c2.fillStyle = glow;
+      c2.beginPath();
+      c2.arc(cx, cy, half * 1.7, 0, Math.PI * 2);
+      c2.fill();
+
+      // Выпуклое тело — радиальный градиент со смещением влево-вверх
+      const body = c2.createRadialGradient(
+        cx - half * 0.35, cy - half * 0.35, half * 0.05,
+        cx, cy, half * 1.25
+      );
+      body.addColorStop(0, p.hi);
+      body.addColorStop(0.45, p.main);
+      body.addColorStop(1, p.lo);
+
+      roundRectPath(c2, cx - half, cy - half, half * 2, half * 2, rad);
+      c2.fillStyle = body;
+      c2.fill();
+
+      // Блик сверху-слева
+      const sheen = c2.createLinearGradient(
+        cx - half, cy - half,
+        cx + half * 0.3, cy + half * 0.3
+      );
+      sheen.addColorStop(0, 'rgba(255,255,255,0.55)');
+      sheen.addColorStop(0.6, 'rgba(255,255,255,0.0)');
+      roundRectPath(c2, cx - half * 0.86, cy - half * 0.86, half * 1.48, half * 1.0, rad * 0.7);
+      c2.fillStyle = sheen;
+      c2.fill();
+
+      // Светлый ободок
+      c2.strokeStyle = 'rgba(255,255,255,0.32)';
+      c2.lineWidth = Math.max(1, CELL * 0.022);
+      roundRectPath(c2, cx - half, cy - half, half * 2, half * 2, rad);
+      c2.stroke();
+
+      // Внутренняя тёмная окантовка (для объёма)
+      c2.strokeStyle = hexA(p.lo, 0.6);
+      c2.lineWidth = Math.max(1, CELL * 0.018);
+      roundRectPath(c2, cx - half + 2, cy - half + 2, half * 2 - 4, half * 2 - 4, rad * 0.85);
+      c2.stroke();
+
+      return { canvas: cv, size: size };
+    });
+  }
+
+  function resize() {
+    const availW = boardWrap.clientWidth  || window.innerWidth;
+    const availH = boardWrap.clientHeight || window.innerHeight * 0.6;
+    const size = Math.max(180, Math.floor(Math.min(availW, availH)) - 8);
+
+    boardStage.style.width  = size + 'px';
+    boardStage.style.height = size + 'px';
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = Math.max(1, Math.round(size * dpr));
+    canvas.height = Math.max(1, Math.round(size * dpr));
+    canvas.style.width  = size + 'px';
+    canvas.style.height = size + 'px';
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    BOARD_PX = size;
+    CELL = size / COLS;
+
+    buildSprites();
+  }
+
+  /* ==================================================================
+     АНИМАЦИИ
+     ================================================================== */
+  const tweens = [];
+  const easeOutQuad  = p => 1 - (1 - p) * (1 - p);
+  const easeOutCubic = p => 1 - Math.pow(1 - p, 3);
+  const easeInQuad   = p => p * p;
+  const easeOutBack  = p => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
+
+  function tween(obj, props, dur, ease, onDone) {
+    const t = {
+      obj: obj,
+      from: {}, to: {},
+      dur: Math.max(0.001, dur),
+      t: 0,
+      ease: ease || easeOutQuad,
+      onDone: onDone || null
+    };
+    for (const k in props) { t.from[k] = obj[k]; t.to[k] = props[k]; }
+    tweens.push(t);
+    return t;
+  }
+
+  function updateTweens(dt) {
+    for (let i = tweens.length - 1; i >= 0; i--) {
+      const t = tweens[i];
+      t.t += dt;
+      let p = t.t / t.dur;
+      if (p > 1) p = 1;
+      const e = t.ease(p);
+      for (const k in t.to) t.obj[k] = t.from[k] + (t.to[k] - t.from[k]) * e;
+      if (p >= 1) {
+        tweens.splice(i, 1);
+        if (t.onDone) t.onDone();
+      }
+    }
+  }
+
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+
+  /* ==================================================================
+     СОСТОЯНИЕ ИГРЫ
+     ================================================================== */
+  let grid = [];
+  let running = false;
+  let busy = false;
+  let token = 0;
+
+  let score = 0;
+  let moves = 0;
+  let combo = 0;
+  let bestCombo = 1;
+  let nextMilestone = MILESTONE;
+  let recordBeaten = false;
+  let lastMilestoneSfx = 0;
+
+  let turnBudget = BASE_TIME;   // полный бюджет текущего хода
+  let turnElapsed = 0;          // сколько уже прошло в текущем ходу
+  let lastTimerDisplay = '';
+  let lastTickSec = null;
+  let hintCache = null;
+  let hintShown = false;
+
+  let cursor = { r: 4, c: 4 };
+  let particles = [];
+  let floaters = [];
+  let shakeT = 0;
+  let flashAlpha = 0;
+  let flashColor = '#00f0ff';
+  let urgentGlow = 0;
+
+  /* ==================================================================
+     СОЗДАНИЕ ПОЛЯ
+     ================================================================== */
+  function makeBall(r, c) {
+    return { color: Math.floor(Math.random() * NCOLORS), x: c, y: r, scale: 1, alpha: 1 };
+  }
+
+  function createsMatch(r, c, color) {
+    if (c >= 2 && grid[r][c - 1] && grid[r][c - 2] &&
+        grid[r][c - 1].color === color && grid[r][c - 2].color === color) return true;
+    if (r >= 2 && grid[r - 1] && grid[r - 1][c] && grid[r - 2] && grid[r - 2][c] &&
+        grid[r - 1][c].color === color && grid[r - 2][c].color === color) return true;
+    return false;
+  }
+
+  function newBoard() {
+    grid = [];
+    for (let r = 0; r < ROWS; r++) {
+      const row = [];
+      grid.push(row);
+      for (let c = 0; c < COLS; c++) {
+        let color = 0, guard = 0;
+        do {
+          color = Math.floor(Math.random() * NCOLORS);
+          guard++;
+        } while (guard < 60 && createsMatch(r, c, color));
+        row.push({ color: color, x: c, y: r, scale: 1, alpha: 1 });
+      }
+    }
+  }
+
+  /* ==================================================================
+     ПОИСК СОВПАДЕНИЙ
+     ================================================================== */
+  function findMatches() {
+    const set = new Set();
+
+    for (let r = 0; r < ROWS; r++) {
+      let run = 1;
+      for (let c = 1; c <= COLS; c++) {
+        const same = (c < COLS) &&
+                     grid[r][c] && grid[r][c - 1] &&
+                     grid[r][c].color === grid[r][c - 1].color;
+        if (same) {
+          run++;
+        } else {
+          if (run >= 3) {
+            for (let k = c - run; k < c; k++) set.add(r * COLS + k);
+          }
+          run = 1;
+        }
+      }
+    }
+
+    for (let c = 0; c < COLS; c++) {
+      let run = 1;
+      for (let r = 1; r <= ROWS; r++) {
+        const same = (r < ROWS) &&
+                     grid[r][c] && grid[r - 1][c] &&
+                     grid[r][c].color === grid[r - 1][c].color;
+        if (same) {
+          run++;
+        } else {
+          if (run >= 3) {
+            for (let k = r - run; k < r; k++) set.add(k * COLS + c);
+          }
+          run = 1;
+        }
+      }
+    }
+
+    return set;
+  }
+
+  /* ==================================================================
+     ПОДСКАЗКА (поиск продуктивного хода)
+     ================================================================== */
+  function findMatchesInColors(colors) {
+    for (let r = 0; r < ROWS; r++) {
+      let run = 1;
+      for (let c = 1; c < COLS; c++) {
+        if (colors[r][c] === colors[r][c - 1] && colors[r][c] !== -1) {
+          run++;
+          if (run >= 3) return true;
+        } else { run = 1; }
+      }
+    }
+    for (let c = 0; c < COLS; c++) {
+      let run = 1;
+      for (let r = 1; r < ROWS; r++) {
+        if (colors[r][c] === colors[r - 1][c] && colors[r][c] !== -1) {
+          run++;
+          if (run >= 3) return true;
+        } else { run = 1; }
+      }
+    }
+    return false;
+  }
+
+  function findHint() {
+    const colors = [];
+    for (let r = 0; r < ROWS; r++) {
+      const row = [];
+      for (let c = 0; c < COLS; c++) row.push(grid[r][c] ? grid[r][c].color : -1);
+      colors.push(row);
+    }
+
+    // Поиск по строкам
+    for (let r = 0; r < ROWS; r++) {
+      for (const dir of [1, -1]) {
+        const test = colors.map(row => row.slice());
+        const oldRow = test[r].slice();
+        for (let c = 0; c < COLS; c++) {
+          test[r][(c + dir + COLS) % COLS] = oldRow[c];
+        }
+        if (findMatchesInColors(test)) return { type: 'row', idx: r, dir: dir };
+      }
+    }
+
+    // Поиск по колонкам
+    for (let c = 0; c < COLS; c++) {
+      for (const dir of [1, -1]) {
+        const test = colors.map(row => row.slice());
+        const oldCol = [];
+        for (let r = 0; r < ROWS; r++) oldCol.push(test[r][c]);
+        for (let r = 0; r < ROWS; r++) {
+          test[(r + dir + ROWS) % ROWS][c] = oldCol[r];
+        }
+        if (findMatchesInColors(test)) return { type: 'col', idx: c, dir: dir };
+      }
+    }
+
+    return null;
+  }
+
+  /* ==================================================================
+     ЭФФЕКТЫ
+     ================================================================== */
+  function spawnParticles(cx, cy, color, count, speed) {
+    const sp = speed || CELL * 3.2;
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = (0.4 + Math.random() * 1.8) * sp;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v - CELL * 1.2,
+        life: 0.42 + Math.random() * 0.45,
+        maxLife: 0.87,
+        color: color,
+        size: CELL * (0.055 + Math.random() * 0.085)
+      });
+    }
+  }
+
+  function addFloater(x, y, text, color, size, life) {
+    floaters.push({
+      x: x, y: y, text: text, color: color,
+      size: size || CELL * 0.5,
+      life: life || 1.0,
+      maxLife: life || 1.0
+    });
+  }
+
+  function flashScreen(color, a) {
+    flashColor = color;
+    flashAlpha = Math.max(flashAlpha, a);
+  }
+
+  function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += CELL * 5.5 * dt;
+      p.vx *= 0.985;
+      p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  function updateFloaters(dt) {
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      f.y -= CELL * 1.25 * dt;
+      f.life -= dt;
+      if (f.life <= 0) floaters.splice(i, 1);
+    }
+  }
+
+  /* ==================================================================
+     HUD
+     ================================================================== */
+  function popEl(el) {
+    if (!el) return;
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+  }
+
+  function updateHUD(doPop) {
+    if (scoreEl) scoreEl.textContent = score;
+    if (bestEl)  bestEl.textContent  = Math.max(myBest, score);
+    if (comboEl) comboEl.textContent = 'x' + Math.max(1, combo);
+    if (mileEl)  mileEl.textContent  = nextMilestone;
+    if (movesEl) movesEl.textContent = moves;
+    if (doPop) popEl(scoreEl);
+  }
+
+  function updateTimerDisplay(remaining) {
+    if (!timeEl) return;
+    const rem = Math.max(0, remaining);
+    const display = rem.toFixed(1);
+
+    if (display !== lastTimerDisplay) {
+      lastTimerDisplay = display;
+      timeEl.textContent = display;
+
+      timeEl.classList.remove('v-green', 'v-yellow', 'v-magenta', 'v-danger');
+      if (rem <= 1)        timeEl.classList.add('v-danger');
+      else if (rem <= 2)   timeEl.classList.add('v-magenta');
+      else if (rem <= 3)   timeEl.classList.add('v-yellow');
+      else                 timeEl.classList.add('v-green');
+    }
+
+    // Класс таймерной ячейки
+    if (timerStat) {
+      timerStat.classList.remove('timer-warn', 'timer-danger');
+      if (rem <= 2) timerStat.classList.add('timer-danger');
+      else if (rem <= 3.5) timerStat.classList.add('timer-warn');
+    }
+
+    // Класс поля
+    if (canvas) {
+      if (rem <= 2) canvas.classList.add('urgent');
+      else canvas.classList.remove('urgent');
+    }
+
+    // Запас (сумма сверх базы)
+    if (timeSub) {
+      const bonus = Math.max(0, turnBudget - BASE_TIME);
+      timeSub.textContent = 'запас +' + bonus.toFixed(1);
+      timeSub.style.color = bonus > 0.05 ? 'rgba(0,255,136,0.8)' : 'rgba(230,247,255,0.35)';
+    }
+
+    // Тикающий звук в последние секунды
+    const sec = Math.ceil(rem);
+    if (sec !== lastTickSec && sec <= 3 && sec > 0) {
+      lastTickSec = sec;
+      if (!busy) sfx.tick();
+    }
+
+    urgentGlow = rem <= 2 ? (0.5 + 0.5 * Math.sin(performance.now() / 120)) : 0;
+  }
+
+  /* ==================================================================
+     ОЧКИ / РУБЕЖИ
+     ================================================================== */
+  function addScore(n) {
+    score += n;
+
+    while (score >= nextMilestone) {
+      triggerMilestone(nextMilestone);
+      nextMilestone += MILESTONE;
+    }
+
+    if (!recordBeaten && myBest > 0 && score > myBest) {
+      recordBeaten = true;
+      addFloater(BOARD_PX / 2, BOARD_PX * 0.32, '🏆 РЕКОРД ПОБИТ!', '#00ff88', CELL * 0.62, 1.8);
+      flashScreen('#00ff88', 0.22);
+      sfx.record();
+    }
+
+    updateHUD(true);
+  }
+
+  function triggerMilestone(ms) {
+    flashScreen('#ffe94d', 0.26);
+    shakeT = Math.max(shakeT, 0.35);
+    addFloater(BOARD_PX / 2, BOARD_PX / 2 - CELL * 0.6, 'РУБЕЖ ' + ms + '!', '#ffe94d', CELL * 0.66, 1.25);
+    addFloater(BOARD_PX / 2, BOARD_PX / 2, '+' + MILESTONE, '#00f0ff', CELL * 0.45, 1.0);
+
+    // Дождь частиц
+    for (let i = 0; i < 18; i++) {
+      const x = Math.random() * BOARD_PX;
+      const y = -CELL * 0.5;
+      particles.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * CELL * 2,
+        vy: CELL * (2 + Math.random() * 3),
+        life: 0.9 + Math.random() * 0.6,
+        maxLife: 1.5,
+        color: ['#ffe94d', '#00f0ff', '#ff00d4'][Math.floor(Math.random() * 3)],
+        size: CELL * (0.06 + Math.random() * 0.08)
+      });
+    }
+
+    const now = performance.now();
+    if (now - lastMilestoneSfx > 170) {
+      lastMilestoneSfx = now;
+      sfx.milestone();
+    }
+  }
+
+  /* ==================================================================
+     СДВИГ ЛИНИИ
+     ================================================================== */
+  function shiftRow(r, dir) {
+    const oldRow = grid[r];
+    const newRow = new Array(COLS);
+    for (let c = 0; c < COLS; c++) {
+      const b = oldRow[c];
+      if (!b) continue;
+      const nc = (c + dir + COLS) % COLS;
+      newRow[nc] = b;
+      b.x = c;
+      tween(b, { x: c + dir }, 0.17, easeOutCubic, () => { b.x = nc; });
+    }
+    grid[r] = newRow;
+  }
+
+  function shiftCol(c, dir) {
+    const newCol = new Array(ROWS);
+    for (let r = 0; r < ROWS; r++) {
+      const b = grid[r][c];
+      if (!b) continue;
+      const nr = (r + dir + ROWS) % ROWS;
+      newCol[nr] = b;
+      b.y = r;
+      tween(b, { y: r + dir }, 0.17, easeOutCubic, () => { b.y = nr; });
+    }
+    for (let r = 0; r < ROWS; r++) grid[r][c] = newCol[r];
+  }
+
+  /* ==================================================================
+     ГРАВИТАЦИЯ
+     ================================================================== */
+  async function applyGravity(tk) {
+    let maxDur = 0;
+
+    for (let c = 0; c < COLS; c++) {
+      let write = ROWS - 1;
+
+      for (let r = ROWS - 1; r >= 0; r--) {
+        const b = grid[r][c];
+        if (!b) continue;
+        if (r !== write) {
+          grid[write][c] = b;
+          grid[r][c] = null;
+          const dist = write - r;
+          const dur = Math.min(0.45, 0.12 + dist * 0.045);
+          if (dur > maxDur) maxDur = dur;
+          tween(b, { y: write }, dur, easeInQuad);
+        }
+        write--;
+      }
+
+      const count = write + 1;
+      if (count <= 0) continue;
+
+      const durNew = Math.min(0.5, 0.16 + count * 0.05);
+      if (durNew > maxDur) maxDur = durNew;
+
+      for (let r = write; r >= 0; r--) {
+        const b = makeBall(r, c);
+        b.y = r - count;
+        grid[r][c] = b;
+        tween(b, { y: r }, durNew, easeOutQuad);
+      }
+    }
+
+    await delay(Math.round(maxDur * 1000) + 40);
+    if (tk !== token || !running) return;
+  }
+
+  /* ==================================================================
+     РАЗРЕШЕНИЕ ПОЛЯ (каскады)
+     ================================================================== */
+  async function resolveBoard(tk) {
+    let cascade = 0;
+
+    while (true) {
+      const matches = findMatches();
+      if (matches.size === 0) break;
+      if (tk !== token || !running) return;
+
+      cascade++;
+      combo = cascade;
+      if (combo > bestCombo) bestCombo = combo;
+      updateHUD();
+
+      const gained = matches.size * POINTS_BALL * cascade;
+
+      for (const key of matches) {
+        const r = Math.floor(key / COLS);
+        const c = key % COLS;
+        const b = grid[r][c];
+        if (!b) continue;
+
+        const cx = b.x * CELL + CELL / 2;
+        const cy = b.y * CELL + CELL / 2;
+        spawnParticles(cx, cy, PALETTE[b.color].main, 7 + Math.min(8, cascade * 2));
+
+        const bb = b;
+        tween(bb, { scale: 1.4 }, 0.11, easeOutBack, () => {
+          tween(bb, { scale: 0, alpha: 0 }, 0.18, easeOutQuad);
+        });
+      }
+
+      // Вспышка по цвету первого совпадения
+      const firstKey = matches.values().next().value;
+      const fr = Math.floor(firstKey / COLS), fc = firstKey % COLS;
+      const firstColor = grid[fr] && grid[fr][fc] ? PALETTE[grid[fr][fc].color].main : '#00f0ff';
+      flashScreen(firstColor, 0.10 + Math.min(0.14, cascade * 0.035));
+      shakeT = Math.max(shakeT, 0.12 + Math.min(0.25, cascade * 0.06));
+
+      addScore(gained);
+      sfx.match(cascade);
+
+      addFloater(
+        BOARD_PX / 2,
+        BOARD_PX * 0.42,
+        '+' + gained,
+        cascade > 1 ? '#ff00d4' : '#00f0ff',
+        CELL * (0.46 + Math.min(0.3, cascade * 0.07)),
+        0.95
+      );
+
+      if (cascade >= 3) {
+        addFloater(BOARD_PX / 2, BOARD_PX * 0.55, 'КОМБО x' + cascade + '!', '#00ff88', CELL * 0.52, 1.1);
+      }
+
+      await delay(300);
+      if (tk !== token || !running) return;
+
+      for (const key of matches) {
+        const r = Math.floor(key / COLS);
+        const c = key % COLS;
+        grid[r][c] = null;
+      }
+
+      await applyGravity(tk);
+      if (tk !== token || !running) return;
+    }
+
+    combo = 0;
+    updateHUD();
+  }
+
+  /* ==================================================================
+     ХОД
+     ================================================================== */
+  async function doMove(type, idx, dir) {
+    if (!running || busy) return;
+    busy = true;
+    const tk = token;
+    const elapsed = turnElapsed;
+
+    // Сброс подсказки
+    hintCache = null;
+    hintShown = false;
+
+    initAudio();
+    sfx.shift();
+
+    // Прямой сдвиг
+    if (type === 'row') shiftRow(idx, dir);
+    else shiftCol(idx, dir);
+
+    // Трейл-частицы вдоль линии
+    for (let i = 0; i < 5; i++) {
+      const bx = type === 'row' ? (Math.random() * BOARD_PX) : (idx * CELL + CELL / 2);
+      const by = type === 'row' ? (idx * CELL + CELL / 2) : (Math.random() * BOARD_PX);
+      particles.push({
+        x: bx, y: by,
+        vx: type === 'row' ? dir * CELL * 2 : (Math.random() - 0.5) * CELL,
+        vy: type === 'col' ? dir * CELL * 2 : (Math.random() - 0.5) * CELL,
+        life: 0.25 + Math.random() * 0.2,
+        maxLife: 0.45,
+        color: '#00f0ff',
+        size: CELL * 0.05
+      });
+    }
+
+    await delay(180);
+    if (tk !== token || !running) { busy = false; return; }
+
+    // Проверка на продуктивность
+    const matches = findMatches();
+
+    if (matches.size === 0) {
+      // ===== НЕПРОДУКТИВНЫЙ ХОД =====
+      if (type === 'row') shiftRow(idx, -dir);
+      else shiftCol(idx, -dir);
+
+      await delay(180);
+      if (tk !== token || !running) { busy = false; return; }
+
+      // Штраф: потраченное время + 2 секунды
+      const penalty = elapsed + UNPRODUCTIVE_PEN;
+      turnBudget -= penalty;
+      turnElapsed = 0;
+
+      // Эффекты отката
+      shakeT = 0.5;
+      flashScreen('#ff3355', 0.32);
+      addFloater(BOARD_PX / 2, BOARD_PX / 2, 'ОТКАТ', '#ff3355', CELL * 0.6, 1.0);
+      addFloater(BOARD_PX / 2, BOARD_PX / 2 + CELL * 0.8, '−' + UNPRODUCTIVE_PEN + 'с', '#ff3355', CELL * 0.5, 1.0);
+      sfx.rollback();
+
+      // Частицы «ошибки»
+      for (let i = 0; i < 14; i++) {
+        const a = Math.random() * Math.PI * 2;
+        particles.push({
+          x: BOARD_PX / 2, y: BOARD_PX / 2,
+          vx: Math.cos(a) * CELL * 3.5,
+          vy: Math.sin(a) * CELL * 3.5,
+          life: 0.35 + Math.random() * 0.25,
+          maxLife: 0.6,
+          color: '#ff3355',
+          size: CELL * (0.05 + Math.random() * 0.06)
+        });
+      }
+
+      updateHUD(true);
+
+      if (turnBudget <= 0) {
+        turnBudget = 0;
+        updateTimerDisplay(0);
+        await delay(220);
+        if (tk !== token || !running) { busy = false; return; }
+        endGame();
+        return;
+      }
+
+      lastTickSec = null;
+      busy = false;
+      return;
+    }
+
+    // ===== ПРОДУКТИВНЫЙ ХОД =====
+    moves++;
+
+    // Расчёт нового бюджета: база 5 + остаток от текущего
+    const remaining = Math.max(0, turnBudget - elapsed);
+    const carried = Math.max(0, remaining);
+    turnBudget = Math.min(MAX_BUDGET, BASE_TIME + carried);
+    turnElapsed = 0;
+
+    // Показать бонус времени
+    if (carried > 0.1) {
+      addFloater(
+        BOARD_PX - CELL,
+        CELL * 0.6,
+        '+' + carried.toFixed(1) + 'с',
+        '#00ff88',
+        CELL * 0.42,
+        1.0
+      );
+      sfx.bonus();
+    }
+
+    updateHUD();
+
+    // Разрешить каскады
+    await resolveBoard(tk);
+    if (tk !== token || !running) { busy = false; return; }
+
+    lastTickSec = null;
+    turnElapsed = 0;
+    busy = false;
+  }
+
+  /* ==================================================================
+     ОТРИСОВКА
+     ================================================================== */
+  function drawSpriteAt(spr, cx, cy, scale, alpha) {
+    if (alpha <= 0.01 || scale <= 0.01) return;
+    const sz = spr.size * scale;
+    ctx.globalAlpha = Math.min(1, alpha);
+    ctx.drawImage(spr.canvas, cx - sz / 2, cy - sz / 2, sz, sz);
+  }
+
+  function drawBall(b, tSec) {
+    const spr = squareSprites[b.color];
+    if (!spr) return;
+
+    let sc = b.scale;
+    if (!running) {
+      sc *= 1 + 0.035 * Math.sin(tSec * 2.0 + b.x * 0.9 + b.y * 1.3);
+    }
+
+    const cx = b.x * CELL + CELL / 2;
+    const cy = b.y * CELL + CELL / 2;
+    const W = BOARD_PX;
+
+    drawSpriteAt(spr, cx, cy, sc, b.alpha);
+
+    // «Бесшовные» копии при сдвиге через край
+    if (cx < CELL)          drawSpriteAt(spr, cx + W, cy, sc, b.alpha);
+    else if (cx > W - CELL) drawSpriteAt(spr, cx - W, cy, sc, b.alpha);
+
+    if (cy < CELL)          drawSpriteAt(spr, cx, cy + W, sc, b.alpha);
+    else if (cy > W - CELL) drawSpriteAt(spr, cx, cy - W, sc, b.alpha);
+
+    ctx.globalAlpha = 1;
+  }
+
+  function drawChevron(c, x, y, angle, size, alpha) {
+    c.save();
+    c.globalAlpha = alpha;
+    c.translate(x, y);
+    c.rotate(angle);
+    c.beginPath();
+    c.moveTo(-size * 0.55, -size * 0.55);
+    c.lineTo(size * 0.45, 0);
+    c.lineTo(-size * 0.55, size * 0.55);
+    c.stroke();
+    c.restore();
+  }
+
+  function drawHint(tSec) {
+    if (!hintCache || !running || busy) return;
+    const h = hintCache;
+    const pulse = 0.5 + 0.5 * Math.sin(tSec * 8);
+
+    ctx.save();
+
+    if (h.type === 'row') {
+      const y = h.idx * CELL;
+
+      ctx.strokeStyle = 'rgba(255,233,77,' + (0.5 + pulse * 0.5).toFixed(3) + ')';
+      ctx.shadowColor = '#ffe94d';
+      ctx.shadowBlur = 15 + pulse * 15;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(2, y + 2, BOARD_PX - 4, CELL - 4);
+
+      // Волна шевронов
+      const midY = y + CELL / 2;
+      for (let i = 0; i < 5; i++) {
+        const bx = (i + 0.5) * BOARD_PX / 5;
+        const phase = tSec * 5 - i * 0.7 * h.dir;
+        const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(phase));
+        ctx.strokeStyle = 'rgba(255,233,77,' + a.toFixed(2) + ')';
+        drawChevron(ctx, bx, midY, h.dir > 0 ? 0 : Math.PI, CELL * 0.22, a);
+      }
+    } else {
+      const x = h.idx * CELL;
+
+      ctx.strokeStyle = 'rgba(255,233,77,' + (0.5 + pulse * 0.5).toFixed(3) + ')';
+      ctx.shadowColor = '#ffe94d';
+      ctx.shadowBlur = 15 + pulse * 15;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 2, 2, CELL - 4, BOARD_PX - 4);
+
+      const midX = x + CELL / 2;
+      for (let i = 0; i < 5; i++) {
+        const by = (i + 0.5) * BOARD_PX / 5;
+        const phase = tSec * 5 - i * 0.7 * h.dir;
+        const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(phase));
+        ctx.strokeStyle = 'rgba(255,233,77,' + a.toFixed(2) + ')';
+        drawChevron(ctx, midX, by, h.dir > 0 ? Math.PI / 2 : -Math.PI / 2, CELL * 0.22, a);
+      }
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  function render() {
+    const W = BOARD_PX;
+    const tSec = performance.now() / 1000;
+
+    ctx.clearRect(0, 0, W, W);
+
+    ctx.save();
+    if (shakeT > 0) {
+      const amp = shakeT * CELL * 0.9;
+      ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
+    }
+
+    // Фон поля
+    const bg = ctx.createLinearGradient(0, 0, W, W);
+    bg.addColorStop(0, '#0a0f22');
+    bg.addColorStop(0.5, '#080b1a');
+    bg.addColorStop(1, '#0d0a20');
+    ctx.fillStyle = bg;
+    ctx.fillRect(-4, -4, W + 8, W + 8);
+
+    // Сетка
+    ctx.strokeStyle = 'rgba(0,240,255,0.075)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 1; i < COLS; i++) {
+      ctx.moveTo(i * CELL + 0.5, 0);
+      ctx.lineTo(i * CELL + 0.5, W);
+      ctx.moveTo(0, i * CELL + 0.5);
+      ctx.lineTo(W, i * CELL + 0.5);
+    }
+    ctx.stroke();
+
+    // Курсор (только при игре)
+    if (running && !busy) {
+      const pulse = 0.5 + 0.5 * Math.sin(tSec * 3.4);
+
+      ctx.fillStyle = 'rgba(0,240,255,' + (0.045 + 0.035 * pulse).toFixed(3) + ')';
+      ctx.fillRect(0, cursor.r * CELL, W, CELL);
+
+      ctx.fillStyle = 'rgba(255,0,212,' + (0.040 + 0.030 * pulse).toFixed(3) + ')';
+      ctx.fillRect(cursor.c * CELL, 0, CELL, W);
+
+      ctx.strokeStyle = 'rgba(0,240,255,' + (0.55 + 0.4 * pulse).toFixed(3) + ')';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 12;
+      ctx.strokeRect(cursor.c * CELL + 2, cursor.r * CELL + 2, CELL - 4, CELL - 4);
+      ctx.shadowBlur = 0;
+    }
+
+    // Шарики
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, W);
+    ctx.clip();
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const b = grid[r] && grid[r][c];
+        if (b) drawBall(b, tSec);
+      }
+    }
+
+    // Частицы
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const a = Math.max(0, Math.min(1, p.life / p.maxLife));
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = CELL * 0.25;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * (0.4 + a * 0.8), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+
+    // Подсказка
+    drawHint(tSec);
+
+    // Всплывающие тексты
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < floaters.length; i++) {
+      const f = floaters[i];
+      const p = f.life / f.maxLife;
+      const a = p > 0.65 ? (1 - p) / 0.35 : p / 0.65;
+      ctx.globalAlpha = Math.max(0, Math.min(1, a));
+      ctx.font = '900 ' + Math.round(f.size) + 'px "Segoe UI", Roboto, sans-serif';
+      ctx.shadowColor = f.color;
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+
+    // Вспышка
+    if (flashAlpha > 0.005) {
+      ctx.globalAlpha = flashAlpha;
+      ctx.fillStyle = flashColor;
+      ctx.fillRect(0, 0, W, W);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+
+    // Рамка поля
+    ctx.strokeStyle = urgentGlow > 0
+      ? 'rgba(255,51,85,' + (0.25 + urgentGlow * 0.5).toFixed(2) + ')'
+      : 'rgba(0,240,255,0.28)';
+    ctx.lineWidth = urgentGlow > 0 ? 3 : 2;
+    ctx.strokeRect(1, 1, W - 2, W - 2);
+
+    // Красное свечение при опасности
+    if (urgentGlow > 0.01) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,51,85,' + (urgentGlow * 0.35).toFixed(2) + ')';
+      ctx.lineWidth = 6;
+      ctx.shadowColor = '#ff3355';
+      ctx.shadowBlur = 20;
+      ctx.strokeRect(4, 4, W - 8, W - 8);
+      ctx.restore();
+    }
+  }
+
+  /* ==================================================================
+     ЦИКЛ
+     ================================================================== */
+  let lastT = performance.now();
+
+  function loop(now) {
+    let dt = (now - lastT) / 1000;
+    lastT = now;
+    if (!isFinite(dt) || dt < 0) dt = 0;
+    if (dt > 0.05) dt = 0.05;
+
+    updateTweens(dt);
+    updateParticles(dt);
+    updateFloaters(dt);
+
+    // Таймер активен только когда идёт игра и нет анимации хода
+    if (running && !busy) {
+      turnElapsed += dt;
+      const remaining = turnBudget - turnElapsed;
+
+      if (remaining <= 0) {
+        turnBudget = 0;
+        updateTimerDisplay(0);
+        endGame();
+      } else {
+        updateTimerDisplay(remaining);
+
+        // Подсказка за 2 секунды до конца
+        if (remaining < HINT_THRESHOLD && !hintCache && !hintShown) {
+          hintShown = true;
+          hintCache = findHint();
+          if (hintCache) {
+            sfx.hint();
+            addFloater(BOARD_PX / 2, CELL * 1.6, '💡 ПОДСКАЗКА', '#ffe94d', CELL * 0.52, 1.4);
+          }
+        }
+      }
+    }
+
+    if (shakeT > 0) shakeT = Math.max(0, shakeT - dt * 3.2);
+    if (flashAlpha > 0) flashAlpha = Math.max(0, flashAlpha - dt * 2.0);
+
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  /* ==================================================================
+     СТАРТ / КОНЕЦ
+     ================================================================== */
+  function startGame() {
+    token++;
+    initAudio();
+    sfx.start();
+
+    running = true;
+    busy = false;
+
+    score = 0;
+    moves = 0;
+    combo = 0;
+    bestCombo = 1;
+    nextMilestone = MILESTONE;
+    recordBeaten = false;
+
+    turnBudget = BASE_TIME;
+    turnElapsed = 0;
+    lastTimerDisplay = '';
+    lastTickSec = null;
+    hintCache = null;
+    hintShown = false;
+
+    particles.length = 0;
+    floaters.length = 0;
+    tweens.length = 0;
+    shakeT = 0;
+    flashAlpha = 0;
+
+    cursor = { r: Math.floor(ROWS / 2), c: Math.floor(COLS / 2) };
+
+    newBoard();
+    updateHUD();
+    updateTimerDisplay(BASE_TIME);
+
+    startScreen.classList.add('hidden');
+    overScreen.classList.add('hidden');
+
+    // Скрыть браузерные панели на мобильных
+    if ('ontouchstart' in window) {
+      try {
+        const el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } catch (e) {}
+    }
+  }
+
+  async function endGame() {
+    if (!running) return;
+    running = false;
+    busy = false;
+    token++;
+
+    sfx.gameOver();
+
+    const finalScore = score;
+    const isNewRecord = finalScore > myBest;
+
+    if (finalScore > myBest) {
+      myBest = finalScore;
+      saveLocalBest(myBest);
+    }
+
+    if (finalScoreEl) finalScoreEl.textContent = finalScore;
+    if (finalBestEl)  finalBestEl.textContent  = myBest;
+    if (finalMovesEl) finalMovesEl.textContent = moves;
+    if (finalComboEl) finalComboEl.textContent = bestCombo;
+    if (newRecordBadge) newRecordBadge.classList.toggle('hidden', !(isNewRecord && finalScore > 0));
+
+    if (timerStat) timerStat.classList.remove('timer-warn', 'timer-danger');
+    if (canvas) canvas.classList.remove('urgent');
+
+    updateHUD();
+
+    await delay(420);
+    overScreen.classList.remove('hidden');
+
+    submitScore(finalScore);
+  }
+
+  /* ==================================================================
+     ВВОД
+     ================================================================== */
+  function cellFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+    const c = Math.floor(x / (rect.width / COLS));
+    const r = Math.floor(y / (rect.height / ROWS));
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
+    return { r: r, c: c };
+  }
+
+  let dragState = null;
+
+  function onPointerDown(e) {
+    if (!running) return;
+    e.preventDefault();
+    initAudio();
+    const p = cellFromEvent(e);
+    if (!p) return;
+
+    cursor.r = p.r;
+    cursor.c = p.c;
+
+    dragState = { x: e.clientX, y: e.clientY, r: p.r, c: p.c };
+
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  function onPointerMove(e) {
+    if (!dragState || !running) return;
+    const dx = e.clientX - dragState.x;
+    const dy = e.clientY - dragState.y;
+    const th = Math.max(16, CELL * 0.48);
+
+    if (Math.abs(dx) < th && Math.abs(dy) < th) return;
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      doMove('row', dragState.r, dx > 0 ? 1 : -1);
+    } else {
+      doMove('col', dragState.c, dy > 0 ? 1 : -1);
+    }
+    dragState = null;
+  }
+
+  function onPointerUp() { dragState = null; }
+
+  canvas.addEventListener('pointerdown', onPointerDown, { passive: false });
+  canvas.addEventListener('pointermove', onPointerMove, { passive: false });
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerUp);
+  canvas.addEventListener('pointerleave', onPointerUp);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Клавиатура
+  window.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+
+    if (!running) {
+      if (k === 'enter' || k === ' ') {
+        if (!overScreen.classList.contains('hidden') || !startScreen.classList.contains('hidden')) {
+          e.preventDefault();
+          startGame();
+        }
+      }
+      return;
+    }
+
+    // Стрелки — курсор, Shift+стрелка — сдвиг
+    if (k === 'arrowleft') {
+      e.preventDefault();
+      if (e.shiftKey) doMove('row', cursor.r, -1);
+      else cursor.c = Math.max(0, cursor.c - 1);
+      return;
+    }
+    if (k === 'arrowright') {
+      e.preventDefault();
+      if (e.shiftKey) doMove('row', cursor.r, 1);
+      else cursor.c = Math.min(COLS - 1, cursor.c + 1);
+      return;
+    }
+    if (k === 'arrowup') {
+      e.preventDefault();
+      if (e.shiftKey) doMove('col', cursor.c, -1);
+      else cursor.r = Math.max(0, cursor.r - 1);
+      return;
+    }
+    if (k === 'arrowdown') {
+      e.preventDefault();
+      if (e.shiftKey) doMove('col', cursor.c, 1);
+      else cursor.r = Math.min(ROWS - 1, cursor.r + 1);
+      return;
+    }
+
+    // WASD — сдвиг линий
+    if (k === 'a' || k === 'ф') { e.preventDefault(); doMove('row', cursor.r, -1); return; }
+    if (k === 'd' || k === 'в') { e.preventDefault(); doMove('row', cursor.r, 1);  return; }
+    if (k === 'w' || k === 'ц') { e.preventDefault(); doMove('col', cursor.c, -1); return; }
+    if (k === 's' || k === 'ы') { e.preventDefault(); doMove('col', cursor.c, 1);  return; }
+
+    if (k === 'escape') {
+      window.location.href = 'index.html';
+    }
+  });
+
+  /* ==================================================================
+     КНОПКИ
+     ================================================================== */
+  document.getElementById('playBtn')?.addEventListener('click', () => {
+    initAudio();
+    startGame();
+  });
+
+  document.getElementById('againBtn')?.addEventListener('click', () => {
+    initAudio();
+    startGame();
+  });
+
+  document.getElementById('toMenuBtn')?.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  /* ==================================================================
+     RESIZE
+     ================================================================== */
+  let resizeTimer = null;
+  function handleResize() {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { resize(); }, 60);
+  }
+
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('orientationchange', () => setTimeout(handleResize, 220));
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleResize);
+  }
+
+  /* ==================================================================
+     ИНИЦИАЛИЗАЦИЯ
+     ================================================================== */
+  resize();
+  newBoard();
+  loadStats();
+  updateHUD();
+  updateTimerDisplay(BASE_TIME);
+
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
