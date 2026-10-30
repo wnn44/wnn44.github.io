@@ -155,4 +155,14 @@ window.GAMES = [
 	  tags:        ['три-в-ряд', 'головоломка', 'таймер'],
 	  preview:     { type: 'video', src: 'previews/neon-shift.mp4' }
   },
+{
+    id:          'neon-sokoban',
+    title:       'NEON SOKOBAN',
+    description: 'Классическая головоломка с неоновыми ящиками в киберпанк-стиле — 50 сложных уровней!',
+    url:         'neon-sokoban.html',
+    icon:        '📦',
+    color:       '#00f0ff',
+    tags:        ['головоломка', 'логика', 'классика'],
+    preview:     { type: 'video', src: 'previews/neon-sokoban.mp4' }
+  },
 ];
