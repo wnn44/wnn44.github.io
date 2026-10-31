@@ -40,7 +40,6 @@
             position: relative;
         }
 
-        /* Анимированный фон */
         body::before {
             content: '';
             position: fixed;
@@ -55,7 +54,6 @@
             z-index: 0;
         }
 
-        /* CRT scanlines */
         body::after {
             content: '';
             position: fixed;
@@ -78,7 +76,6 @@
             100% { transform: translate(60px, 60px); }
         }
 
-        /* Header */
         header {
             background: var(--panel-bg);
             backdrop-filter: blur(10px);
@@ -190,7 +187,6 @@
             box-shadow: 0 0 22px rgba(255, 0, 212, 0.6);
         }
 
-        /* Main Container */
         .game-container {
             flex: 1;
             display: flex;
@@ -200,7 +196,6 @@
             z-index: 1;
         }
 
-        /* Game UI Panel */
         .game-ui {
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
@@ -290,7 +285,6 @@
             text-shadow: 0 0 14px rgba(168, 85, 255, 0.8);
         }
 
-        /* Canvas Container */
         .canvas-wrapper {
             flex: 1;
             display: flex;
@@ -308,7 +302,6 @@
             overflow: hidden;
         }
 
-        /* Corner brackets */
         .canvas-wrapper::before,
         .canvas-wrapper::after {
             content: '';
@@ -345,7 +338,24 @@
             touch-action: none;
         }
 
-        /* Control Buttons */
+        /* Save indicator */
+        .save-indicator {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            font-size: 0.68rem;
+            color: rgba(0, 255, 136, 0.95);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.45s;
+            z-index: 5;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.7);
+        }
+        .save-indicator.show { opacity: 1; }
+
         .controls {
             display: flex;
             justify-content: center;
@@ -407,7 +417,6 @@
             box-shadow: 0 0 26px rgba(255, 0, 212, 0.6), inset 0 0 16px rgba(255, 0, 212, 0.14);
         }
 
-        /* Intro Screen */
         .intro-screen {
             position: fixed;
             inset: 0;
@@ -489,6 +498,15 @@
             box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
         }
 
+        /* Intro buttons block */
+        .intro-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 1.8rem;
+        }
+
         .start-btn {
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
             border: none;
@@ -500,7 +518,6 @@
             font-size: clamp(1rem, 4vw, 1.4rem);
             font-weight: bold;
             text-transform: uppercase;
-            margin-top: 1.8rem;
             box-shadow: 0 0 34px rgba(0, 240, 255, 0.6);
             transition: all 0.3s cubic-bezier(.2,.8,.3,1);
             letter-spacing: 3px;
@@ -527,7 +544,24 @@
             box-shadow: 0 0 60px rgba(0, 240, 255, 0.85);
         }
 
-        /* Victory Screen */
+        #newGameBtn {
+            background: linear-gradient(135deg, var(--neon-magenta), var(--neon-red));
+            font-size: clamp(0.75rem, 3vw, 0.9rem);
+            padding: 0.55rem 1.5rem;
+            letter-spacing: 2px;
+            box-shadow: 0 0 22px rgba(255, 51, 85, 0.5);
+        }
+        #newGameBtn::after { animation: none; }
+
+        #saveResumeInfo {
+            font-size: clamp(0.7rem, 2.6vw, 0.8rem);
+            color: var(--neon-yellow);
+            margin: 0;
+            text-shadow: 0 0 8px rgba(255, 233, 77, 0.5);
+            text-align: center;
+            line-height: 1.4;
+        }
+
         .victory-screen {
             position: fixed;
             inset: 0;
@@ -578,34 +612,16 @@
             text-shadow: 0 0 12px var(--neon-yellow);
         }
 
-        /* Mobile Optimizations */
         @media (max-width: 768px) {
-            header {
-                padding: 0.5rem;
-            }
-
-            .logo {
-                font-size: 1rem;
-            }
-
-            .chip {
-                padding: 0.35rem 0.7rem;
-                font-size: 0.68rem;
-            }
-
-            .game-ui {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            body::after {
-                display: none;
-            }
+            header { padding: 0.5rem; }
+            .logo { font-size: 1rem; }
+            .chip { padding: 0.35rem 0.7rem; font-size: 0.68rem; }
+            .game-ui { grid-template-columns: repeat(3, 1fr); }
+            body::after { display: none; }
         }
 
         @media screen and (orientation: portrait) {
-            body {
-                height: 100vh;
-            }
+            body { height: 100vh; }
         }
     </style>
 </head>
@@ -624,7 +640,11 @@
             <p><span class="key">Z</span> — отмена хода | <span class="key">R</span> — рестарт уровня</p>
             <p><strong>Мобильные:</strong> свайпы для движения</p>
             <p>Пройди все 50 уровней и побей рекорд!</p>
-            <button class="start-btn" id="startBtn">▶ НАЧАТЬ ИГРУ</button>
+            <div class="intro-buttons">
+                <button class="start-btn" id="startBtn">▶ НАЧАТЬ ИГРУ</button>
+                <button class="start-btn" id="newGameBtn" style="display:none;">🔄 НАЧАТЬ С НАЧАЛА</button>
+                <p id="saveResumeInfo" style="display:none;"></p>
+            </div>
         </div>
     </div>
 
@@ -639,7 +659,6 @@
         <button class="start-btn" id="restartBtn">🔄 ИГРАТЬ СНОВА</button>
     </div>
 
-    <!-- Header -->
     <header>
         <div class="logo">NEON SOKOBAN</div>
         <div class="header-right">
@@ -649,9 +668,7 @@
         </div>
     </header>
 
-    <!-- Game Container -->
     <div class="game-container">
-        <!-- Game UI -->
         <div class="game-ui">
             <div class="stat-box">
                 <div class="stat-label">Уровень</div>
@@ -675,12 +692,11 @@
             </div>
         </div>
 
-        <!-- Canvas Wrapper -->
         <div class="canvas-wrapper">
+            <div class="save-indicator" id="saveIndicator">💾 сохранено</div>
             <canvas id="gameCanvas"></canvas>
         </div>
 
-        <!-- Controls -->
         <div class="controls">
             <button class="control-btn" id="undoBtn">↶ ОТМЕНА</button>
             <button class="control-btn" id="restartLevelBtn">🔄 РЕСТАРТ</button>
@@ -709,50 +725,60 @@
             };
         }
 
-// ==================== GAME DATA ====================
-const LEVELS = []; // Теперь заполняется динамически
-const SASQUATCH_URL = 'https://raw.githubusercontent.com/OMerkel/Sokoban/master/3rdParty/Levels/Sasquatch%20II.txt';
+        // ==================== GAME DATA ====================
+        const LEVELS = [];
+        const SASQUATCH_URL = 'https://raw.githubusercontent.com/OMerkel/Sokoban/master/3rdParty/Levels/Sasquatch%20II.txt';
 
-async function loadSasquatchLevels() {
-    try {
-        const response = await fetch(SASQUATCH_URL);
-        const text = await response.text();
-        
-        // Очищаем от комментариев и разбиваем на блоки по номерам уровней
-        const cleaned = text.replace(/;.*$/gm, '').trim();
-        const levelBlocks = cleaned.split(/\n\s*\d+\s+/).filter(b => b.trim().length > 0);
-        
-        // Преобразуем каждый блок в строку, понятную игре
-        levelBlocks.forEach(block => {
-            const lines = block.split('\n')
-                .map(l => l.trimEnd())
-                .filter(l => l.length > 0);
-            if (lines.length > 0) {
-                LEVELS.push(lines.join('\n'));
+        function parseXSB(text) {
+            const rawLines = text.split(/\r?\n/);
+            const levels = [];
+            let current = [];
+
+            const flush = () => {
+                if (current.length) {
+                    const joined = current.join('\n');
+                    if (/#/.test(joined)) levels.push(joined);
+                    current = [];
+                }
+            };
+
+            const isNumberLine  = (l) => /^\s*\d+[.:]?\s*$/.test(l);
+            const isCommentLine = (l) => {
+                const t = l.trimStart();
+                return t.startsWith(';') || t.startsWith('//');
+            };
+
+            for (const raw of rawLines) {
+                const line = raw.replace(/\s+$/, '');
+                if (isCommentLine(line) || isNumberLine(line) || line.trim() === '') {
+                    flush();
+                    continue;
+                }
+                current.push(line);
             }
-        });
-        
-        console.log(`Загружено ${LEVELS.length} уровней Sasquatch II`);
-        
-        // Если игра уже была запущена — перезапускаем первый уровень
-        if (gameStarted) {
-            currentLevel = 0;
-            score = 0;
-            totalMoves = 0;
-            loadLevel(0);
+            flush();
+            return levels;
         }
-    } catch (e) {
-        console.error('Не удалось загрузить уровни Sasquatch II:', e);
-        // Резервный вариант: несколько простых уровней, если сеть недоступна
-        LEVELS.push(
-            `#####\n# . #\n# $ #\n# @ #\n#####`,
-            `######\n#    #\n# $@ #\n# .  #\n######`
-        );
-    }
-}
 
-// Вызываем загрузку сразу после инициализации
-loadSasquatchLevels();
+        async function loadSasquatchLevels() {
+            try {
+                const response = await fetch(SASQUATCH_URL);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const text = await response.text();
+                parseXSB(text).forEach(lvl => LEVELS.push(lvl));
+                console.log(`Загружено ${LEVELS.length} уровней Sasquatch II`);
+            } catch (e) {
+                console.error('Не удалось загрузить уровни Sasquatch II:', e);
+                LEVELS.push(
+                    `#####\n# . #\n# $ #\n# @ #\n#####`,
+                    `######\n#    #\n# $@ #\n# .  #\n######`
+                );
+            }
+            // Обновляем кнопку на интро с учётом сохранения
+            if (typeof refreshStartButton === 'function') refreshStartButton();
+        }
+
+        loadSasquatchLevels();
 
         // ==================== GAME STATE ====================
         const GAME_ID = 'neon-sokoban';
@@ -764,7 +790,6 @@ loadSasquatchLevels();
         let gameStarted = false;
         let history = [];
 
-        // Grid state
         let grid = [];
         let playerPos = { x: 0, y: 0 };
         let boxes = [];
@@ -774,7 +799,6 @@ loadSasquatchLevels();
         let levelHeight = 0;
         let lastLevelScore = 0;
 
-        // Render state
         let renderPlayer = { x: 0, y: 0 };
         let renderBoxes = [];
         let facing = { x: 0, y: 1 };
@@ -783,48 +807,174 @@ loadSasquatchLevels();
         let offsetY = 0;
         let viewW = 400;
         let viewH = 400;
-		
-		// Камера (плавное слежение за игроком)
-		let camX = 0;
-		let camY = 0;
-		const MIN_CELL = 24;   // минимальный комфортный размер клетки
-		const MAX_CELL = 64;   // максимум для маленьких уровней
 
-        // Effects
+        let camX = 0;
+        let camY = 0;
+        const MIN_CELL = 24;
+        const MAX_CELL = 64;
+
         let particles = [];
         let shake = 0;
         let flash = 0;
         let flashColor = '0, 255, 136';
         let levelCompleteState = { active: false, t: 0 };
 
-        // Canvas
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
-        // Audio Context
         let audioCtx = null;
-
-        // Timing
         let lastTime = performance.now();
+
+        // ==================== SAVE SYSTEM ====================
+        const SAVE_KEY = 'neon-sokoban-save-v1';
+
+        function simpleHash(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+            return h;
+        }
+
+        function saveGame() {
+            if (!gameStarted) return;
+            if (levelCompleteState.active) return;
+            if (currentLevel >= LEVELS.length) return;
+            try {
+                localStorage.setItem(SAVE_KEY, JSON.stringify({
+                    v: 1,
+                    level: currentLevel,
+                    levelHash: simpleHash(LEVELS[currentLevel]),
+                    score: score,
+                    totalMoves: totalMoves,
+                    moves: moves,
+                    player: { x: playerPos.x, y: playerPos.y },
+                    boxes: boxes.map(b => ({ x: b.x, y: b.y })),
+                    history: history.slice(-30),
+                    savedAt: Date.now()
+                }));
+                showSaveIndicator();
+            } catch (e) {
+                console.warn('Save failed:', e);
+            }
+        }
+
+        function readSave() {
+            try {
+                const raw = localStorage.getItem(SAVE_KEY);
+                if (!raw) return null;
+                const d = JSON.parse(raw);
+                return (d && d.v === 1) ? d : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function clearSave() {
+            try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+        }
+
+        let saveIndicatorTimer = null;
+        function showSaveIndicator() {
+            const el = document.getElementById('saveIndicator');
+            if (!el) return;
+            el.classList.add('show');
+            clearTimeout(saveIndicatorTimer);
+            saveIndicatorTimer = setTimeout(() => el.classList.remove('show'), 1100);
+        }
+
+        function refreshStartButton() {
+            const startBtn = document.getElementById('startBtn');
+            const newGameBtn = document.getElementById('newGameBtn');
+            const infoEl = document.getElementById('saveResumeInfo');
+            if (!startBtn) return;
+
+            const save = readSave();
+            const canResume = save && save.level != null
+                && LEVELS.length > 0
+                && save.level < LEVELS.length;
+
+            if (canResume) {
+                startBtn.textContent = `▶ ПРОДОЛЖИТЬ (УР. ${save.level + 1})`;
+                if (newGameBtn) newGameBtn.style.display = 'inline-block';
+                if (infoEl) {
+                    infoEl.style.display = 'block';
+                    const d = new Date(save.savedAt || Date.now());
+                    const opts = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+                    infoEl.textContent = `${d.toLocaleString('ru-RU', opts)} · счёт ${save.score || 0} · ходов ${save.totalMoves || 0}`;
+                }
+            } else {
+                startBtn.textContent = '▶ НАЧАТЬ ИГРУ';
+                if (newGameBtn) newGameBtn.style.display = 'none';
+                if (infoEl) infoEl.style.display = 'none';
+            }
+        }
+
+        function restoreFromSave(save) {
+            if (!save || save.level == null || save.level >= LEVELS.length) {
+                clearSave();
+                currentLevel = 0;
+                score = 0;
+                totalMoves = 0;
+                loadLevel(0);
+                return;
+            }
+
+            const currentHash = simpleHash(LEVELS[save.level]);
+            if (save.levelHash !== currentHash) {
+                // Уровень изменился — сохранение неактуально
+                clearSave();
+                currentLevel = 0;
+                score = 0;
+                totalMoves = 0;
+                loadLevel(0);
+                return;
+            }
+
+            currentLevel = save.level;
+            score = save.score || 0;
+            totalMoves = save.totalMoves || 0;
+            moves = save.moves || 0;
+            lastLevelScore = 0;
+            levelCompleteState.active = false;
+            particles = [];
+            shake = 0;
+            flash = 0;
+
+            parseLevel(LEVELS[currentLevel]);
+
+            if (save.player) playerPos = { x: save.player.x, y: save.player.y };
+            if (Array.isArray(save.boxes) && save.boxes.length === boxes.length) {
+                boxes = save.boxes.map(b => ({ x: b.x, y: b.y }));
+            }
+            history = Array.isArray(save.history) ? save.history.slice(-30) : [];
+
+            facing = { x: 0, y: 1 };
+            renderPlayer = { x: playerPos.x, y: playerPos.y };
+            renderBoxes = boxes.map(b => ({ x: b.x, y: b.y }));
+            layoutGrid();
+            updateUI();
+        }
+
+        function startFresh() {
+            if (LEVELS.length === 0) { setTimeout(startFresh, 150); return; }
+            clearSave();
+            currentLevel = 0;
+            score = 0;
+            totalMoves = 0;
+            document.getElementById('introScreen').style.display = 'none';
+            gameStarted = true;
+            resizeCanvas();
+            loadLevel(0);
+        }
 
         // ==================== INITIALIZATION ====================
         function initGame() {
             try {
-                console.log('Initializing game...');
-
                 let currentPlayer = null;
                 try {
-                    if (typeof Auth !== 'undefined' && Auth.get) {
-                        currentPlayer = Auth.get();
-                    }
-                } catch (e) {
-                    console.warn('Auth not available:', e);
-                }
+                    if (typeof Auth !== 'undefined' && Auth.get) currentPlayer = Auth.get();
+                } catch (e) { console.warn('Auth not available:', e); }
 
                 const userChip = document.getElementById('userChip');
-                if (userChip) {
-                    userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
-                }
+                if (userChip) userChip.textContent = currentPlayer ? `👤 ${currentPlayer}` : 'ГОСТЬ';
 
                 const lbBtn = document.getElementById('lbHeaderBtn');
                 if (lbBtn) {
@@ -833,18 +983,12 @@ loadSasquatchLevels();
                             if (typeof LeaderboardUI !== 'undefined' && LeaderboardUI.open) {
                                 LeaderboardUI.open(GAME_ID);
                             }
-                        } catch (e) {
-                            console.warn('LeaderboardUI not available:', e);
-                        }
+                        } catch (e) { console.warn('LeaderboardUI not available:', e); }
                     });
                 }
 
                 const menuBtn = document.getElementById('menuBtn');
-                if (menuBtn) {
-                    menuBtn.addEventListener('click', () => {
-                        window.location.href = 'index.html';
-                    });
-                }
+                if (menuBtn) menuBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
 
                 function loadStats() {
                     try {
@@ -852,26 +996,27 @@ loadSasquatchLevels();
                             const myBest = Leaderboard.getPlayerBest(GAME_ID, currentPlayer);
                             document.getElementById('bestScoreDisplay').textContent = myBest || 0;
                         }
-                    } catch (e) {
-                        console.warn('Leaderboard not available:', e);
-                    }
+                    } catch (e) { console.warn('Leaderboard not available:', e); }
                 }
-
                 window.addEventListener('leaderboard-updated', loadStats);
                 loadStats();
 
                 const startBtn = document.getElementById('startBtn');
                 if (startBtn) startBtn.addEventListener('click', startGame);
 
+                const newGameBtn = document.getElementById('newGameBtn');
+                if (newGameBtn) newGameBtn.addEventListener('click', startFresh);
+
                 const restartBtn = document.getElementById('restartBtn');
                 if (restartBtn) {
                     restartBtn.addEventListener('click', () => {
                         document.getElementById('victoryScreen').classList.remove('active');
+                        clearSave();
                         currentLevel = 0;
                         score = 0;
                         totalMoves = 0;
                         gameStarted = true;
-                        loadLevel(currentLevel);
+                        loadLevel(0);
                     });
                 }
 
@@ -891,7 +1036,6 @@ loadSasquatchLevels();
 
                 document.addEventListener('keydown', handleKeyPress);
 
-                // Touch controls
                 let touchStartX = 0;
                 let touchStartY = 0;
 
@@ -903,32 +1047,29 @@ loadSasquatchLevels();
 
                 canvas.addEventListener('touchend', (e) => {
                     if (!gameStarted) return;
-
                     const touchEndX = e.changedTouches[0].clientX;
                     const touchEndY = e.changedTouches[0].clientY;
                     const dx = touchEndX - touchStartX;
                     const dy = touchEndY - touchStartY;
                     const minSwipeDistance = 30;
-
                     if (Math.abs(dx) > Math.abs(dy)) {
                         if (Math.abs(dx) > minSwipeDistance) {
-                            if (dx > 0) movePlayer(1, 0);
-                            else movePlayer(-1, 0);
+                            if (dx > 0) movePlayer(1, 0); else movePlayer(-1, 0);
                         }
                     } else {
                         if (Math.abs(dy) > minSwipeDistance) {
-                            if (dy > 0) movePlayer(0, 1);
-                            else movePlayer(0, -1);
+                            if (dy > 0) movePlayer(0, 1); else movePlayer(0, -1);
                         }
                     }
                     e.preventDefault();
                 }, { passive: false });
 
                 window.addEventListener('resize', resizeCanvas);
+                window.addEventListener('beforeunload', saveGame);
+
                 resizeCanvas();
                 requestAnimationFrame(animate);
-
-                console.log('Game initialized successfully!');
+                refreshStartButton();
             } catch (error) {
                 console.error('Error initializing game:', error);
             }
@@ -942,18 +1083,24 @@ loadSasquatchLevels();
 
         // ==================== GAME FUNCTIONS ====================
         function startGame() {
+            if (LEVELS.length === 0) { setTimeout(startGame, 150); return; }
             document.getElementById('introScreen').style.display = 'none';
             gameStarted = true;
             resizeCanvas();
-            loadLevel(currentLevel);
+
+            const save = readSave();
+            if (save && save.level != null && save.level < LEVELS.length) {
+                restoreFromSave(save);
+            } else {
+                currentLevel = 0;
+                score = 0;
+                totalMoves = 0;
+                loadLevel(0);
+            }
         }
 
         function loadLevel(levelIndex) {
-            if (levelIndex >= LEVELS.length) {
-                showVictory();
-                return;
-            }
-
+            if (levelIndex >= LEVELS.length) { showVictory(); return; }
             currentLevel = levelIndex;
             moves = 0;
             history = [];
@@ -963,6 +1110,7 @@ loadSasquatchLevels();
             levelCompleteState.active = false;
             parseLevel(LEVELS[levelIndex]);
             updateUI();
+            saveGame();
         }
 
         function parseLevel(levelStr) {
@@ -995,6 +1143,10 @@ loadSasquatchLevels();
                         boxes.push({ x, y });
                         targets.push({ x, y });
                         grid[y][x] = '.';
+                    } else if (char === '+') {
+                        playerPos = { x, y };
+                        targets.push({ x, y });
+                        grid[y][x] = '.';
                     }
                 }
             }
@@ -1003,55 +1155,45 @@ loadSasquatchLevels();
             renderPlayer = { x: playerPos.x, y: playerPos.y };
             renderBoxes = boxes.map(b => ({ x: b.x, y: b.y }));
 
+            if (!playerPos || (playerPos.x === 0 && playerPos.y === 0 &&
+                !lines.some(l => l.includes('@') || l.includes('+')))) {
+                playerPos = { x: 1, y: 1 };
+            }
+
             layoutGrid();
         }
 
-function layoutGrid() {
-    if (!levelWidth || !levelHeight) return;
+        function layoutGrid() {
+            if (!levelWidth || !levelHeight) return;
+            const availW = Math.max(80, viewW - 24);
+            const availH = Math.max(80, viewH - 24);
+            const fit = Math.min(availW / levelWidth, availH / levelHeight);
+            cellSize = Math.max(MIN_CELL, Math.min(MAX_CELL, fit));
+            cellSize = Math.round(cellSize * 10) / 10;
+            updateCamera(1);
+        }
 
-    const availW = Math.max(80, viewW - 24);
-    const availH = Math.max(80, viewH - 24);
+        function updateCamera(t) {
+            if (!levelWidth || !levelHeight) return;
+            const gridW = levelWidth * cellSize;
+            const gridH = levelHeight * cellSize;
+            const pcx = (renderPlayer.x + 0.5) * cellSize;
+            const pcy = (renderPlayer.y + 0.5) * cellSize;
 
-    // Пытаемся вписать весь уровень, но не мельче MIN_CELL
-    const fit = Math.min(availW / levelWidth, availH / levelHeight);
-    cellSize = Math.max(MIN_CELL, Math.min(MAX_CELL, fit));
-    cellSize = Math.round(cellSize * 10) / 10;
+            let tx = pcx - viewW / 2;
+            let ty = pcy - viewH / 2;
 
-    updateCamera(1); // мгновенно центрируем/позиционируем
-}
+            if (gridW <= viewW) tx = (gridW - viewW) / 2;
+            else tx = Math.max(0, Math.min(gridW - viewW, tx));
 
-function updateCamera(t) {
-    if (!levelWidth || !levelHeight) return;
+            if (gridH <= viewH) ty = (gridH - viewH) / 2;
+            else ty = Math.max(0, Math.min(gridH - viewH, ty));
 
-    const gridW = levelWidth * cellSize;
-    const gridH = levelHeight * cellSize;
-
-    // Центр игрока в мировых координатах
-    const pcx = (renderPlayer.x + 0.5) * cellSize;
-    const pcy = (renderPlayer.y + 0.5) * cellSize;
-
-    let tx = pcx - viewW / 2;
-    let ty = pcy - viewH / 2;
-
-    // Если уровень меньше экрана — центрируем его
-    if (gridW <= viewW) {
-        tx = (gridW - viewW) / 2;
-    } else {
-        tx = Math.max(0, Math.min(gridW - viewW, tx));
-    }
-    if (gridH <= viewH) {
-        ty = (gridH - viewH) / 2;
-    } else {
-        ty = Math.max(0, Math.min(gridH - viewH, ty));
-    }
-
-    // Плавное сглаживание
-    camX += (tx - camX) * t;
-    camY += (ty - camY) * t;
-
-    offsetX = -camX;
-    offsetY = -camY;
-}
+            camX += (tx - camX) * t;
+            camY += (ty - camY) * t;
+            offsetX = -camX;
+            offsetY = -camY;
+        }
 
         function gridToCanvas(gx, gy) {
             return {
@@ -1062,16 +1204,12 @@ function updateCamera(t) {
 
         function movePlayer(dx, dy) {
             if (!gameStarted || levelCompleteState.active) return;
-
             facing = { x: dx, y: dy };
-
             const newX = playerPos.x + dx;
             const newY = playerPos.y + dy;
 
             if (walls.some(w => w.x === newX && w.y === newY)) {
-                playSound('wall');
-                shake = Math.max(shake, 3);
-                return;
+                playSound('wall'); shake = Math.max(shake, 3); return;
             }
 
             const boxIndex = boxes.findIndex(b => b.x === newX && b.y === newY);
@@ -1082,28 +1220,22 @@ function updateCamera(t) {
 
                 if (walls.some(w => w.x === boxNewX && w.y === boxNewY) ||
                     boxes.some(b => b.x === boxNewX && b.y === boxNewY)) {
-                    playSound('wall');
-                    shake = Math.max(shake, 4);
-                    return;
+                    playSound('wall'); shake = Math.max(shake, 4); return;
                 }
 
                 history.push({
                     player: { ...playerPos },
                     boxes: boxes.map(b => ({ ...b })),
-                    moves: moves,
-                    score: score
+                    moves, score
                 });
 
                 const wasOnTarget = targets.some(t => t.x === boxes[boxIndex].x && t.y === boxes[boxIndex].y);
-
                 boxes[boxIndex].x = boxNewX;
                 boxes[boxIndex].y = boxNewY;
-
                 const nowOnTarget = targets.some(t => t.x === boxNewX && t.y === boxNewY);
 
                 playSound('push');
                 shake = Math.max(shake, 6);
-
                 const p = gridToCanvas(boxNewX, boxNewY);
                 spawnParticles(p.x, p.y, nowOnTarget ? '#00ff88' : '#ff00d4', 10, 130);
 
@@ -1117,13 +1249,11 @@ function updateCamera(t) {
                 history.push({
                     player: { ...playerPos },
                     boxes: boxes.map(b => ({ ...b })),
-                    moves: moves,
-                    score: score
+                    moves, score
                 });
                 playSound('move');
             }
 
-            // Trail dust behind the player
             const old = gridToCanvas(playerPos.x, playerPos.y);
             spawnParticles(old.x, old.y, 'rgba(0, 240, 255, 0.9)', 3, 45);
 
@@ -1132,11 +1262,9 @@ function updateCamera(t) {
             moves++;
             totalMoves++;
 
-            if (checkWin()) {
-                levelComplete();
-            }
-
+            if (checkWin()) levelComplete();
             updateUI();
+            saveGame();
         }
 
         function checkWin() {
@@ -1149,26 +1277,23 @@ function updateCamera(t) {
             score += lastLevelScore;
 
             playSound('levelComplete');
-
             levelCompleteState = { active: true, t: 0 };
             flash = 0.9;
             flashColor = '0, 255, 136';
             shake = 8;
 
-            // Burst of confetti from every target
             targets.forEach(t => {
                 const p = gridToCanvas(t.x, t.y);
                 spawnParticles(p.x, p.y, '#00ff88', 26, 260);
                 spawnParticles(p.x, p.y, '#ffe94d', 14, 190);
             });
 
-            if (score >= 100 && score % 100 < 50) {
-                playSound('milestone');
-            }
+            if (score >= 100 && score % 100 < 50) playSound('milestone');
         }
 
         function showVictory() {
             gameStarted = false;
+            clearSave();
             document.getElementById('finalScore').textContent = score;
             document.getElementById('levelsCompleted').textContent = LEVELS.length;
             document.getElementById('totalMoves').textContent = totalMoves;
@@ -1181,22 +1306,19 @@ function updateCamera(t) {
                         Leaderboard.submit(GAME_ID, currentPlayer, score);
                     }
                 }
-            } catch (e) {
-                console.warn('Could not submit score:', e);
-            }
+            } catch (e) { console.warn('Could not submit score:', e); }
         }
 
         function undoMove() {
             if (history.length === 0 || levelCompleteState.active) return;
-
             const state = history.pop();
             playerPos = state.player;
             boxes = state.boxes;
             moves = state.moves;
             score = state.score;
-
             playSound('undo');
             updateUI();
+            saveGame();
         }
 
         function toggleSound() {
@@ -1237,14 +1359,12 @@ function updateCamera(t) {
         function resizeCanvas() {
             const wrapper = document.querySelector('.canvas-wrapper');
             if (!wrapper) return;
-
             const style = getComputedStyle(wrapper);
             const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
             const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
 
             let w = wrapper.clientWidth - padX;
             let h = wrapper.clientHeight - padY;
-
             if (!w || w < 100) w = wrapper.clientWidth || 400;
             if (!h || h < 100) h = 400;
 
@@ -1266,13 +1386,8 @@ function updateCamera(t) {
         function animate(now) {
             const dt = Math.min(0.05, (now - lastTime) / 1000);
             lastTime = now;
-
             updateAnimations(dt, now / 1000);
-
-            if (gameStarted && grid.length) {
-                render(now / 1000);
-            }
-
+            if (gameStarted && grid.length) render(now / 1000);
             requestAnimationFrame(animate);
         }
 
@@ -1292,19 +1407,15 @@ function updateCamera(t) {
             } else {
                 renderBoxes = boxes.map(b => ({ x: b.x, y: b.y }));
             }
-			
-			updateCamera(t);
 
+            updateCamera(t);
             if (shake > 0) shake = Math.max(0, shake - dt * 45);
             if (flash > 0) flash = Math.max(0, flash - dt * 2.2);
 
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.life += dt;
-                if (p.life >= p.maxLife) {
-                    particles.splice(i, 1);
-                    continue;
-                }
+                if (p.life >= p.maxLife) { particles.splice(i, 1); continue; }
                 p.x += p.vx * dt;
                 p.y += p.vy * dt;
                 const damp = Math.pow(0.12, dt);
@@ -1343,25 +1454,16 @@ function updateCamera(t) {
         // ==================== RENDERING ====================
         function render(time = performance.now() / 1000) {
             if (!viewW || !viewH) return;
-
             ctx.save();
 
-            // Screen shake
             if (shake > 0.1) {
                 const s = shake * 0.6;
-                ctx.translate(
-                    (Math.random() - 0.5) * s,
-                    (Math.random() - 0.5) * s
-                );
+                ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
             }
 
             drawBackground(time);
 
-            if (!grid.length) {
-                ctx.restore();
-                drawOverlays(time);
-                return;
-            }
+            if (!grid.length) { ctx.restore(); drawOverlays(time); return; }
 
             drawFloorGlow();
             drawTargets(time);
@@ -1371,12 +1473,10 @@ function updateCamera(t) {
             drawParticles();
 
             ctx.restore();
-
             drawOverlays(time);
         }
 
         function drawBackground(time) {
-            // Base gradient
             const g = ctx.createRadialGradient(
                 viewW / 2, viewH * 0.25, 0,
                 viewW / 2, viewH / 2, Math.max(viewW, viewH) * 0.9
@@ -1387,32 +1487,21 @@ function updateCamera(t) {
             ctx.fillStyle = g;
             ctx.fillRect(0, 0, viewW, viewH);
 
-            // Moving perspective grid
             const spacing = 46;
             const drift = (time * 14) % spacing;
-
             ctx.save();
             ctx.lineWidth = 1;
-
             for (let x = -spacing + drift; x < viewW + spacing; x += spacing) {
                 const dist = Math.abs(x - viewW / 2) / viewW;
                 ctx.strokeStyle = `rgba(0, 240, 255, ${0.045 - dist * 0.02})`;
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, viewH);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, viewH); ctx.stroke();
             }
-
             for (let y = -spacing + drift; y < viewH + spacing; y += spacing) {
                 ctx.strokeStyle = 'rgba(168, 85, 255, 0.035)';
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(viewW, y);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(viewW, y); ctx.stroke();
             }
             ctx.restore();
 
-            // Slow sweeping light beam
             ctx.save();
             const beamPos = ((time * 40) % (viewW + 300)) - 150;
             const beam = ctx.createLinearGradient(beamPos - 120, 0, beamPos + 120, 0);
@@ -1423,7 +1512,6 @@ function updateCamera(t) {
             ctx.fillRect(0, 0, viewW, viewH);
             ctx.restore();
 
-            // Corner vignette
             const vig = ctx.createRadialGradient(
                 viewW / 2, viewH / 2, Math.min(viewW, viewH) * 0.3,
                 viewW / 2, viewH / 2, Math.max(viewW, viewH) * 0.78
@@ -1447,7 +1535,6 @@ function updateCamera(t) {
             ctx.fill();
             ctx.restore();
 
-            // Board border
             ctx.save();
             ctx.strokeStyle = 'rgba(0, 240, 255, 0.16)';
             ctx.lineWidth = 1.5;
@@ -1465,10 +1552,8 @@ function updateCamera(t) {
                 const occupied = boxes.some(b => b.x === t.x && b.y === t.y);
                 const phase = time * 2.4 + idx * 0.9;
                 const pulse = 0.5 + 0.5 * Math.sin(phase);
-
                 const baseColor = occupied ? '0, 255, 136' : '255, 233, 77';
 
-                // Halo
                 ctx.save();
                 ctx.shadowBlur = occupied ? 34 : 20 + pulse * 14;
                 ctx.shadowColor = `rgba(${baseColor}, 1)`;
@@ -1478,7 +1563,6 @@ function updateCamera(t) {
                 ctx.fill();
                 ctx.restore();
 
-                // Rotating dashed ring
                 ctx.save();
                 ctx.strokeStyle = `rgba(${baseColor}, ${0.35 + pulse * 0.45})`;
                 ctx.lineWidth = Math.max(1, cellSize * 0.035);
@@ -1490,7 +1574,6 @@ function updateCamera(t) {
                 ctx.stroke();
                 ctx.restore();
 
-                // Outer breathing ring
                 ctx.save();
                 ctx.strokeStyle = `rgba(${baseColor}, ${0.12 + pulse * 0.18})`;
                 ctx.lineWidth = 1;
@@ -1509,7 +1592,6 @@ function updateCamera(t) {
                 const size = cellSize - pad * 2;
                 const r = cellSize * 0.16;
 
-                // Glow pass
                 ctx.save();
                 ctx.shadowBlur = cellSize * 0.35;
                 ctx.shadowColor = 'rgba(168, 85, 255, 0.75)';
@@ -1519,7 +1601,6 @@ function updateCamera(t) {
                 ctx.fill();
                 ctx.restore();
 
-                // Body gradient
                 ctx.save();
                 const g = ctx.createLinearGradient(x, y, x + cellSize, y + cellSize);
                 g.addColorStop(0, 'rgba(168, 85, 255, 0.55)');
@@ -1531,7 +1612,6 @@ function updateCamera(t) {
                 ctx.fill();
                 ctx.restore();
 
-                // Top light edge
                 ctx.save();
                 ctx.strokeStyle = 'rgba(210, 160, 255, 0.85)';
                 ctx.lineWidth = Math.max(1, cellSize * 0.035);
@@ -1540,7 +1620,6 @@ function updateCamera(t) {
                 ctx.stroke();
                 ctx.restore();
 
-                // Inner cross detail
                 ctx.save();
                 ctx.strokeStyle = 'rgba(220, 180, 255, 0.16)';
                 ctx.lineWidth = Math.max(1, cellSize * 0.02);
@@ -1559,32 +1638,20 @@ function updateCamera(t) {
             for (let i = 0; i < boxes.length; i++) {
                 const b = boxes[i];
                 const rb = renderBoxes[i] || b;
-
                 const cx = offsetX + rb.x * cellSize + cellSize / 2;
                 const cy = offsetY + rb.y * cellSize + cellSize / 2;
-
                 const isOnTarget = targets.some(t => t.x === b.x && t.y === b.y);
 
-                // Distance to target drives a subtle "settle" scale
-                const dx = b.x - rb.x;
-                const dy = b.y - rb.y;
-                const speed = Math.min(1, Math.hypot(dx, dy) * 4);
-                const squash = 1 + speed * 0.08;
-
                 const pad = cellSize * 0.09;
-                const size = (cellSize - pad * 2);
+                const size = cellSize - pad * 2;
                 const r = cellSize * 0.18;
-
                 const bx = cx - size / 2;
                 const by = cy - size / 2;
-
                 const glowColor = isOnTarget ? '0, 255, 136' : '255, 0, 212';
 
-                // Glow
                 ctx.save();
                 ctx.shadowBlur = (isOnTarget ? 30 : 22) + Math.sin(time * 3 + i) * 4;
                 ctx.shadowColor = `rgba(${glowColor}, 1)`;
-
                 const g = ctx.createLinearGradient(bx, by, bx + size, by + size);
                 if (isOnTarget) {
                     g.addColorStop(0, '#00ff9d');
@@ -1601,7 +1668,6 @@ function updateCamera(t) {
                 ctx.fill();
                 ctx.restore();
 
-                // Glass highlight
                 ctx.save();
                 const hg = ctx.createLinearGradient(bx, by, bx, by + size);
                 hg.addColorStop(0, 'rgba(255,255,255,0.42)');
@@ -1613,7 +1679,6 @@ function updateCamera(t) {
                 ctx.fill();
                 ctx.restore();
 
-                // Border
                 ctx.save();
                 ctx.strokeStyle = isOnTarget
                     ? 'rgba(190, 255, 225, 0.95)'
@@ -1624,7 +1689,6 @@ function updateCamera(t) {
                 ctx.stroke();
                 ctx.restore();
 
-                // Cross engraving
                 ctx.save();
                 ctx.strokeStyle = isOnTarget
                     ? 'rgba(255,255,255,0.55)'
@@ -1640,7 +1704,6 @@ function updateCamera(t) {
                 ctx.stroke();
                 ctx.restore();
 
-                // Corner accents
                 ctx.save();
                 ctx.strokeStyle = isOnTarget ? '#d9fff0' : '#ffd9f7';
                 ctx.lineWidth = Math.max(1.5, cellSize * 0.045);
@@ -1661,7 +1724,6 @@ function updateCamera(t) {
                 });
                 ctx.restore();
 
-                // Pulsing ring on target
                 if (isOnTarget) {
                     ctx.save();
                     const pulse = 0.5 + 0.5 * Math.sin(time * 4 + i);
@@ -1678,11 +1740,9 @@ function updateCamera(t) {
         function drawPlayer(time) {
             const px = offsetX + renderPlayer.x * cellSize + cellSize / 2;
             const py = offsetY + renderPlayer.y * cellSize + cellSize / 2;
-
             const radius = cellSize * 0.31;
             const breathe = 1 + 0.06 * Math.sin(time * 4.2);
 
-            // Aura
             ctx.save();
             const aura = ctx.createRadialGradient(px, py, 0, px, py, cellSize * 0.85);
             aura.addColorStop(0, 'rgba(0, 240, 255, 0.32)');
@@ -1694,7 +1754,6 @@ function updateCamera(t) {
             ctx.fill();
             ctx.restore();
 
-            // Outer breathing ring
             ctx.save();
             ctx.strokeStyle = 'rgba(0, 240, 255, 0.28)';
             ctx.lineWidth = 1.2;
@@ -1703,27 +1762,22 @@ function updateCamera(t) {
             ctx.stroke();
             ctx.restore();
 
-            // Rotating arcs
             ctx.save();
             ctx.strokeStyle = 'rgba(0, 240, 255, 0.95)';
             ctx.lineWidth = Math.max(2, cellSize * 0.05);
             ctx.lineCap = 'round';
             ctx.shadowBlur = 16;
             ctx.shadowColor = '#00f0ff';
-
             const a0 = time * 2.2;
             const rr = radius * 1.45 * breathe;
-
             ctx.beginPath();
             ctx.arc(px, py, rr, a0, a0 + Math.PI * 0.55);
             ctx.stroke();
-
             ctx.beginPath();
             ctx.arc(px, py, rr, a0 + Math.PI, a0 + Math.PI * 1.55);
             ctx.stroke();
             ctx.restore();
 
-            // Body orb
             ctx.save();
             ctx.shadowBlur = 34;
             ctx.shadowColor = '#00f0ff';
@@ -1741,7 +1795,6 @@ function updateCamera(t) {
             ctx.fill();
             ctx.restore();
 
-            // Rim light
             ctx.save();
             ctx.strokeStyle = 'rgba(180, 250, 255, 0.9)';
             ctx.lineWidth = Math.max(1.2, cellSize * 0.028);
@@ -1750,7 +1803,6 @@ function updateCamera(t) {
             ctx.stroke();
             ctx.restore();
 
-            // Eyes
             const eyeShiftX = facing.x * radius * 0.22;
             const eyeShiftY = facing.y * radius * 0.22;
             const eyeR = radius * 0.145;
@@ -1765,7 +1817,6 @@ function updateCamera(t) {
             ctx.fill();
             ctx.restore();
 
-            // Eye glints
             ctx.save();
             ctx.fillStyle = 'rgba(180, 250, 255, 0.95)';
             ctx.beginPath();
@@ -1791,7 +1842,6 @@ function updateCamera(t) {
         }
 
         function drawOverlays(time) {
-            // Impact flash
             if (flash > 0.01) {
                 ctx.save();
                 ctx.fillStyle = `rgba(${flashColor}, ${flash * 0.28})`;
@@ -1799,7 +1849,6 @@ function updateCamera(t) {
                 ctx.restore();
             }
 
-            // Level complete banner
             if (levelCompleteState.active) {
                 const t = levelCompleteState.t;
                 let alpha = 0;
@@ -1814,9 +1863,7 @@ function updateCamera(t) {
                     ctx.fillRect(0, 0, viewW, viewH);
                     ctx.restore();
 
-                    const pop = t < 0.35
-                        ? 0.7 + (t / 0.35) * 0.3
-                        : 1;
+                    const pop = t < 0.35 ? 0.7 + (t / 0.35) * 0.3 : 1;
 
                     ctx.save();
                     ctx.globalAlpha = alpha;
@@ -1844,12 +1891,8 @@ function updateCamera(t) {
 
         // ==================== AUDIO ====================
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
         function playSound(type) {
@@ -1858,10 +1901,8 @@ function updateCamera(t) {
 
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
             const now = audioCtx.currentTime;
 
             switch (type) {
@@ -1871,20 +1912,14 @@ function updateCamera(t) {
                     oscillator.frequency.exponentialRampToValueAtTime(640, now + 0.09);
                     gainNode.gain.setValueAtTime(0.07, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.1);
-                    break;
-
+                    oscillator.start(now); oscillator.stop(now + 0.1); break;
                 case 'push':
                     oscillator.type = 'triangle';
                     oscillator.frequency.setValueAtTime(300, now);
                     oscillator.frequency.exponentialRampToValueAtTime(520, now + 0.14);
                     gainNode.gain.setValueAtTime(0.13, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.15);
-                    break;
-
+                    oscillator.start(now); oscillator.stop(now + 0.15); break;
                 case 'target':
                     oscillator.type = 'sine';
                     oscillator.frequency.setValueAtTime(660, now);
@@ -1892,19 +1927,13 @@ function updateCamera(t) {
                     oscillator.frequency.setValueAtTime(1100, now + 0.16);
                     gainNode.gain.setValueAtTime(0.14, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.25);
-                    break;
-
+                    oscillator.start(now); oscillator.stop(now + 0.25); break;
                 case 'wall':
                     oscillator.type = 'square';
                     oscillator.frequency.setValueAtTime(160, now);
                     gainNode.gain.setValueAtTime(0.06, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.1);
-                    break;
-
+                    oscillator.start(now); oscillator.stop(now + 0.1); break;
                 case 'levelComplete':
                     oscillator.type = 'triangle';
                     oscillator.frequency.setValueAtTime(523, now);
@@ -1913,10 +1942,7 @@ function updateCamera(t) {
                     oscillator.frequency.setValueAtTime(1047, now + 0.3);
                     gainNode.gain.setValueAtTime(0.18, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.5);
-                    break;
-
+                    oscillator.start(now); oscillator.stop(now + 0.5); break;
                 case 'milestone':
                     oscillator.type = 'sine';
                     oscillator.frequency.setValueAtTime(784, now);
@@ -1924,77 +1950,35 @@ function updateCamera(t) {
                     oscillator.frequency.setValueAtTime(1175, now + 0.2);
                     gainNode.gain.setValueAtTime(0.22, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.32);
-                    break;
-
+                    oscillator.start(now); oscillator.stop(now + 0.32); break;
                 case 'undo':
                     oscillator.type = 'sine';
                     oscillator.frequency.setValueAtTime(620, now);
                     oscillator.frequency.exponentialRampToValueAtTime(380, now + 0.1);
                     gainNode.gain.setValueAtTime(0.08, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.11);
-                    break;
-
+                    oscillator.start(now); oscillator.stop(now + 0.11); break;
                 default:
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.05);
+                    oscillator.start(now); oscillator.stop(now + 0.05);
             }
         }
 
-        // ==================== INPUT HANDLING ====================
+        // ==================== INPUT ====================
         function handleKeyPress(e) {
             if (!gameStarted) return;
-
             switch (e.key) {
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                case 'ц':
-                case 'Ц':
-                    e.preventDefault();
-                    movePlayer(0, -1);
-                    break;
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                case 'ы':
-                case 'Ы':
-                    e.preventDefault();
-                    movePlayer(0, 1);
-                    break;
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                case 'ф':
-                case 'Ф':
-                    e.preventDefault();
-                    movePlayer(-1, 0);
-                    break;
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                case 'в':
-                case 'В':
-                    e.preventDefault();
-                    movePlayer(1, 0);
-                    break;
-                case 'z':
-                case 'Z':
-                case 'я':
-                case 'Я':
-                    e.preventDefault();
-                    undoMove();
-                    break;
-                case 'r':
-                case 'R':
-                case 'к':
-                case 'К':
-                    e.preventDefault();
-                    if (!levelCompleteState.active) loadLevel(currentLevel);
-                    break;
+                case 'ArrowUp': case 'w': case 'W': case 'ц': case 'Ц':
+                    e.preventDefault(); movePlayer(0, -1); break;
+                case 'ArrowDown': case 's': case 'S': case 'ы': case 'Ы':
+                    e.preventDefault(); movePlayer(0, 1); break;
+                case 'ArrowLeft': case 'a': case 'A': case 'ф': case 'Ф':
+                    e.preventDefault(); movePlayer(-1, 0); break;
+                case 'ArrowRight': case 'd': case 'D': case 'в': case 'В':
+                    e.preventDefault(); movePlayer(1, 0); break;
+                case 'z': case 'Z': case 'я': case 'Я':
+                    e.preventDefault(); undoMove(); break;
+                case 'r': case 'R': case 'к': case 'К':
+                    e.preventDefault(); if (!levelCompleteState.active) loadLevel(currentLevel); break;
             }
         }
     </script>
