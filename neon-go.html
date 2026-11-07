@@ -45,7 +45,7 @@ header{
   color:var(--cyan);text-shadow:0 0 8px var(--cyan),0 0 22px rgba(0,240,255,.5);
   white-space:nowrap;
 }
-.header-right{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.header-right{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
 .chip{
   padding:6px 12px;border-radius:20px;font-size:clamp(10px,2vw,12px);font-weight:700;
   letter-spacing:.5px;cursor:pointer;background:var(--panel);color:var(--text);
@@ -59,6 +59,11 @@ header{
 .chip.user:hover{box-shadow:0 0 15px rgba(168,85,255,.45);border-color:var(--purple)}
 .chip.menu{border-color:rgba(255,0,212,.4);color:var(--magenta)}
 .chip.menu:hover{box-shadow:0 0 15px rgba(255,0,212,.45);border-color:var(--magenta)}
+.chip.mute{
+  border-color:rgba(0,255,136,.4);color:var(--green);
+  padding:6px 10px;min-width:34px;text-align:center;
+}
+.chip.mute:hover{box-shadow:0 0 15px rgba(0,255,136,.5);border-color:var(--green)}
 
 #scoreUI{width:100%;max-width:900px;padding:0 16px 8px;z-index:10;position:relative;display:flex;flex-direction:column;gap:6px}
 .score-row{display:flex;align-items:center;gap:10px}
@@ -101,14 +106,6 @@ header{
   box-shadow:0 0 30px rgba(0,240,255,.25),0 0 60px rgba(168,85,255,.15),inset 0 0 20px rgba(0,240,255,.05);
   touch-action:none;cursor:pointer;
 }
-#muteBtn{
-  position:absolute;top:8px;right:8px;z-index:15;
-  width:36px;height:36px;border-radius:50%;cursor:pointer;
-  background:rgba(13,17,40,.9);border:1px solid rgba(0,240,255,.4);color:var(--cyan);
-  font-size:16px;display:flex;align-items:center;justify-content:center;
-  transition:all .2s;backdrop-filter:blur(8px);
-}
-#muteBtn:hover{box-shadow:0 0 15px rgba(0,240,255,.6);border-color:var(--cyan)}
 
 #status{
   text-align:center;padding:4px 16px;font-size:clamp(11px,2vw,13px);
@@ -213,6 +210,7 @@ label.btn{display:flex;align-items:center;gap:6px;user-select:none}
   header{padding:8px 10px;gap:4px}
   .logo{letter-spacing:1px}
   .chip{padding:5px 8px;font-size:10px}
+  .chip.mute{padding:5px 8px;min-width:30px}
   #scoreUI{padding:0 10px 6px;gap:4px}
   .score-label{font-size:9px;letter-spacing:1px}
   .live-score{font-size:16px;min-width:48px}
@@ -221,7 +219,6 @@ label.btn{display:flex;align-items:center;gap:6px;user-select:none}
   #bottomBar{padding:4px 8px 10px;gap:4px}
   .btn{padding:6px 9px;font-size:11px}
   #boardWrap{width:min(94vw,calc(100dvh - 240px))}
-  #muteBtn{width:30px;height:30px;font-size:14px;top:6px;right:6px}
 }
 </style>
 </head>
@@ -230,6 +227,7 @@ label.btn{display:flex;align-items:center;gap:6px;user-select:none}
 <header>
   <div class="logo">NEON GO</div>
   <div class="header-right">
+    <div class="chip mute" id="muteBtn" title="Звук">🔊</div>
     <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
     <div class="chip user" id="userChip">ИГРОК</div>
     <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
@@ -260,7 +258,6 @@ label.btn{display:flex;align-items:center;gap:6px;user-select:none}
 <div id="gameArea">
   <div id="boardWrap">
     <canvas id="board"></canvas>
-    <button id="muteBtn" title="Звук">🔊</button>
   </div>
 </div>
 
@@ -787,7 +784,6 @@ function computeLiveScore() {
 
 function updateScoreUI() {
   const s = scoreBoard(board);
-  // bar 1 - счёт (камни+территория black vs white+KOMI)
   const bScore = s.black;
   const wScore = s.white + KOMI;
   const tScore = bScore + wScore;
@@ -796,18 +792,15 @@ function updateScoreUI() {
   document.getElementById('barScoreWhite').style.width = (100 - bPct) + '%';
   document.getElementById('numScore').textContent = bScore + ':' + s.white;
 
-  // bar 2 - пленные
   const tCap = capturedByBlack + capturedByWhite;
   const bCapPct = tCap === 0 ? 50 : (capturedByBlack / tCap) * 100;
   document.getElementById('barCapBlack').style.width = bCapPct + '%';
   document.getElementById('barCapWhite').style.width = (100 - bCapPct) + '%';
   document.getElementById('numCap').textContent = capturedByBlack + ':' + capturedByWhite;
 
-  // live score
   const ls = computeLiveScore();
   liveScoreEl.textContent = ls;
 
-  // milestone
   const milestone = Math.floor(ls / 100) * 100;
   if (milestone > 0 && !milestonesFired.has(milestone)) {
     milestonesFired.add(milestone);
@@ -837,7 +830,6 @@ function fireMilestone(value) {
    ОТРИСОВКА ДОСКИ
    ============================================================ */
 function drawBoardBg() {
-  // Фон доски с неоновым градиентом
   const grad = ctx.createRadialGradient(PX/2, PX/2, 20, PX/2, PX/2, PX);
   grad.addColorStop(0, '#0d1132');
   grad.addColorStop(0.6, '#0a0d24');
@@ -845,7 +837,6 @@ function drawBoardBg() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, PX, PX);
 
-  // неоновая сетка
   ctx.strokeStyle = 'rgba(0,240,255,0.25)';
   ctx.lineWidth = 1;
   ctx.shadowColor = 'rgba(0,240,255,0.4)';
@@ -858,7 +849,6 @@ function drawBoardBg() {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // звёзды
   ctx.fillStyle = 'rgba(0,240,255,0.7)';
   ctx.shadowColor = 'rgba(0,240,255,0.9)';
   ctx.shadowBlur = 8;
@@ -872,7 +862,6 @@ function drawBoardBg() {
 
 function drawStone(x, y, color) {
   const r = CS * 0.44;
-  // тень
   ctx.beginPath();
   ctx.arc(x, y + 2, r, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(0,0,0,.5)';
@@ -898,7 +887,6 @@ function drawStone(x, y, color) {
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  // ободок
   ctx.strokeStyle = color === BLACK ? 'rgba(255,0,212,0.8)' : 'rgba(0,240,255,0.9)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
@@ -924,7 +912,6 @@ function computeQualityMap() {
 function render() {
   drawBoardBg();
 
-  // ховер-призрак
   if (hover >= 0 && board[hover] === EMPTY && !thinking && !gameOver
       && player === humanColor && !capturePreview && state === 'playing') {
     ctx.fillStyle = 'rgba(0,240,255,0.2)';
@@ -933,12 +920,10 @@ function render() {
     ctx.fill();
   }
 
-  // камни
   for (let i = 0; i < NN; i++) {
     if (board[i] !== EMPTY) drawStone(px(i), py(i), board[i]);
   }
 
-  // маркер последнего хода
   if (lastMove >= 0 && board[lastMove] !== EMPTY && !capturePreview) {
     ctx.strokeStyle = '#ffe94d';
     ctx.lineWidth = 2.5;
@@ -950,7 +935,6 @@ function render() {
     ctx.shadowBlur = 0;
   }
 
-  // обучение
   if (learningMode && !gameOver && !capturePreview) {
     if (player === humanColor && !thinking && state === 'playing') {
       if (!qualityCache) qualityCache = computeQualityMap();
@@ -987,7 +971,6 @@ function render() {
     ctx.shadowBlur = 0;
   }
 
-  // превью взятия
   if (capturePreview) {
     const t = performance.now() / 200;
     const pulse = 0.5 + 0.5 * Math.sin(t);
@@ -1037,7 +1020,6 @@ function applyMove(idx) {
   render();
   updateScoreUI();
 
-  // Эффекты
   Sound.place();
   if (r.capturedStones.length > 0) {
     Sound.capture();
@@ -1386,10 +1368,8 @@ if (window.matchMedia('(max-width: 700px)').matches) {
   }, { passive: true, once: true });
 }
 
-// Первый клик инициализирует звук (нужен user gesture)
 document.addEventListener('pointerdown', () => Sound.init(), { once: true });
 
-// Финальный рендер
 render();
 updateScoreUI();
 });
