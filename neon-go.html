@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d1f">
+<title>NEON GO — NEON ARCADE</title>
+<link rel="stylesheet" href="common.css">
+<script src="auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="leaderboard.js"></script>
+<script src="leaderboard-ui.js"></script>
+<style>
+:root{
+  --cyan:#00f0ff; --magenta:#ff00d4; --purple:#a855ff;
+  --yellow:#ffe94d; --green:#00ff88; --red:#ff3355;
+  --text:#e6f7ff; --panel:rgba(13,17,40,0.85);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  background:radial-gradient(ellipse at top,#0b0d1f,#05060f 75%);
+  color:var(--text);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  user-select:none;-webkit-user-select:none;
+  display:flex;flex-direction:column;align-items:center;
+  min-height:100dvh;touch-action:manipulation;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(circle at 20% 30%,rgba(0,240,255,.08),transparent 50%),
+    radial-gradient(circle at 80% 70%,rgba(255,0,212,.08),transparent 50%),
+    radial-gradient(circle at 50% 100%,rgba(168,85,255,.06),transparent 60%);
+  animation:bgPulse 8s ease-in-out infinite;
+}
+@keyframes bgPulse{0%,100%{opacity:.55}50%{opacity:1}}
+
+header{
+  width:100%;max-width:900px;display:flex;justify-content:space-between;
+  align-items:center;padding:10px 16px;z-index:10;position:relative;gap:8px;
+}
+.logo{
+  font-size:clamp(15px,3vw,22px);font-weight:900;letter-spacing:2px;
+  color:var(--cyan);text-shadow:0 0 8px var(--cyan),0 0 22px rgba(0,240,255,.5);
+  white-space:nowrap;
+}
+.header-right{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chip{
+  padding:6px 12px;border-radius:20px;font-size:clamp(10px,2vw,12px);font-weight:700;
+  letter-spacing:.5px;cursor:pointer;background:var(--panel);color:var(--text);
+  border:1px solid rgba(0,240,255,.3);transition:all .2s;white-space:nowrap;
+  backdrop-filter:blur(8px);
+}
+.chip:hover{border-color:var(--cyan);box-shadow:0 0 15px rgba(0,240,255,.45)}
+.chip.lb{border-color:rgba(255,233,77,.4);color:var(--yellow)}
+.chip.lb:hover{box-shadow:0 0 15px rgba(255,233,77,.45);border-color:var(--yellow)}
+.chip.user{border-color:rgba(168,85,255,.4);color:var(--purple)}
+.chip.user:hover{box-shadow:0 0 15px rgba(168,85,255,.45);border-color:var(--purple)}
+.chip.menu{border-color:rgba(255,0,212,.4);color:var(--magenta)}
+.chip.menu:hover{box-shadow:0 0 15px rgba(255,0,212,.45);border-color:var(--magenta)}
+
+#scoreUI{width:100%;max-width:900px;padding:0 16px 8px;z-index:10;position:relative;display:flex;flex-direction:column;gap:6px}
+.score-row{display:flex;align-items:center;gap:10px}
+.score-label{
+  font-size:10px;font-weight:700;letter-spacing:1.5px;
+  color:rgba(230,247,255,.6);text-transform:uppercase;flex-shrink:0;
+}
+.live-score{
+  font-size:clamp(18px,4vw,24px);font-weight:900;color:var(--yellow);
+  text-shadow:0 0 10px var(--yellow),0 0 20px rgba(255,233,77,.4);
+  font-variant-numeric:tabular-nums;min-width:60px;
+}
+.score-bar{
+  flex:1;height:24px;display:flex;border-radius:12px;overflow:hidden;
+  background:rgba(13,17,40,.85);border:1px solid rgba(0,240,255,.15);
+  box-shadow:inset 0 0 12px rgba(0,0,0,.5);min-width:60px;
+}
+.score-fill-black{
+  background:linear-gradient(90deg,rgba(255,0,212,.85),rgba(168,85,255,.85));
+  box-shadow:0 0 12px rgba(255,0,212,.6);transition:width .5s cubic-bezier(.4,0,.2,1);
+}
+.score-fill-white{
+  background:linear-gradient(90deg,rgba(0,240,255,.7),rgba(0,240,255,.35));
+  box-shadow:0 0 12px rgba(0,240,255,.5);transition:width .5s cubic-bezier(.4,0,.2,1);
+}
+.score-num{
+  font-size:clamp(13px,3vw,16px);font-weight:900;font-variant-numeric:tabular-nums;
+  color:var(--cyan);text-shadow:0 0 8px rgba(0,240,255,.6);min-width:56px;
+  text-align:right;
+}
+.score-num.magenta{color:var(--magenta);text-shadow:0 0 8px rgba(255,0,212,.6)}
+
+#gameArea{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:6px;position:relative;z-index:5;min-height:0}
+#boardWrap{
+  position:relative;aspect-ratio:1;
+  width:min(92vw,calc(100dvh - 250px));max-width:540px;
+}
+#board{
+  width:100%;height:100%;display:block;border-radius:12px;
+  box-shadow:0 0 30px rgba(0,240,255,.25),0 0 60px rgba(168,85,255,.15),inset 0 0 20px rgba(0,240,255,.05);
+  touch-action:none;cursor:pointer;
+}
+#muteBtn{
+  position:absolute;top:8px;right:8px;z-index:15;
+  width:36px;height:36px;border-radius:50%;cursor:pointer;
+  background:rgba(13,17,40,.9);border:1px solid rgba(0,240,255,.4);color:var(--cyan);
+  font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;backdrop-filter:blur(8px);
+}
+#muteBtn:hover{box-shadow:0 0 15px rgba(0,240,255,.6);border-color:var(--cyan)}
+
+#status{
+  text-align:center;padding:4px 16px;font-size:clamp(11px,2vw,13px);
+  color:rgba(230,247,255,.75);min-height:20px;z-index:10;position:relative;
+  max-width:900px;width:100%;
+}
+#status b{color:var(--text)}
+.hl-cyan{color:var(--cyan);text-shadow:0 0 8px var(--cyan)}
+.hl-mag{color:var(--magenta);text-shadow:0 0 8px var(--magenta)}
+.hl-green{color:var(--green);text-shadow:0 0 8px var(--green)}
+.hl-red{color:var(--red);text-shadow:0 0 8px var(--red)}
+.hl-yellow{color:var(--yellow);text-shadow:0 0 8px var(--yellow)}
+
+#bottomBar{
+  width:100%;max-width:900px;padding:6px 12px 12px;display:flex;gap:6px;
+  justify-content:center;flex-wrap:wrap;z-index:10;position:relative;
+}
+.btn{
+  padding:8px 14px;background:var(--panel);border:1px solid rgba(0,240,255,.3);
+  color:var(--text);border-radius:8px;font-size:clamp(11px,2vw,13px);font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.5px;backdrop-filter:blur(8px);
+  font-family:inherit;
+}
+.btn:hover:not(:disabled){border-color:var(--cyan);box-shadow:0 0 15px rgba(0,240,255,.45);transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.mag{border-color:rgba(255,0,212,.35);color:var(--magenta)}
+.btn.mag:hover:not(:disabled){border-color:var(--magenta);box-shadow:0 0 15px rgba(255,0,212,.5)}
+.btn.yel{border-color:rgba(255,233,77,.35);color:var(--yellow)}
+.btn.yel:hover:not(:disabled){border-color:var(--yellow);box-shadow:0 0 15px rgba(255,233,77,.5)}
+.btn.grn{border-color:rgba(0,255,136,.35);color:var(--green)}
+.btn.grn:hover:not(:disabled){border-color:var(--green);box-shadow:0 0 15px rgba(0,255,136,.5)}
+select.btn{
+  appearance:none;-webkit-appearance:none;padding-right:28px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300f0ff'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+}
+label.btn{display:flex;align-items:center;gap:6px;user-select:none}
+
+.overlay{
+  position:fixed;inset:0;background:rgba(5,6,15,.93);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  z-index:100;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(12px);
+}
+.overlay.active{opacity:1;pointer-events:all}
+.overlay-content{
+  background:var(--panel);border:2px solid var(--cyan);border-radius:16px;
+  padding:24px;max-width:480px;width:100%;text-align:center;
+  box-shadow:0 0 40px rgba(0,240,255,.45),0 0 80px rgba(168,85,255,.25);
+  position:relative;overflow:hidden;max-height:90dvh;overflow-y:auto;
+}
+.overlay-content::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg,rgba(0,240,255,.12),transparent 50%,rgba(255,0,212,.12));
+}
+.overlay-content h2{
+  font-size:clamp(24px,6vw,36px);font-weight:900;letter-spacing:3px;color:var(--cyan);
+  text-shadow:0 0 20px var(--cyan),0 0 40px rgba(0,240,255,.5);margin-bottom:16px;
+  position:relative;
+}
+.instructions{
+  text-align:left;font-size:clamp(12px,2.5vw,14px);line-height:1.7;
+  color:rgba(230,247,255,.85);margin-bottom:20px;position:relative;
+}
+.instructions b{color:var(--cyan)}
+.instructions .m{color:var(--magenta)} .instructions .y{color:var(--yellow)}
+.instructions .g{color:var(--green)} .instructions .r{color:var(--red)}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;position:relative}
+.big-btn{
+  padding:14px 32px;font-size:clamp(13px,3vw,16px);font-weight:900;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));color:#05060f;
+  border:none;border-radius:10px;cursor:pointer;transition:all .2s;text-transform:uppercase;
+  box-shadow:0 0 25px rgba(0,240,255,.6);
+}
+.big-btn:hover{transform:translateY(-2px);box-shadow:0 0 35px rgba(0,240,255,.9)}
+.big-btn.mag{background:linear-gradient(135deg,var(--magenta),var(--purple));box-shadow:0 0 25px rgba(255,0,212,.6)}
+.big-btn.mag:hover{box-shadow:0 0 35px rgba(255,0,212,.9)}
+.final-score{
+  font-size:clamp(44px,14vw,72px);font-weight:900;color:var(--yellow);
+  text-shadow:0 0 20px var(--yellow),0 0 45px rgba(255,233,77,.55);
+  margin:10px 0;font-variant-numeric:tabular-nums;position:relative;
+}
+.final-label{font-size:11px;letter-spacing:2px;color:rgba(230,247,255,.5);text-transform:uppercase;position:relative}
+.record-line{font-size:clamp(12px,2.5vw,14px);margin-top:12px;color:rgba(230,247,255,.75);position:relative}
+.record-line b{color:var(--yellow)}
+.new-record{
+  color:var(--green);font-weight:900;font-size:clamp(14px,3vw,18px);
+  text-shadow:0 0 15px var(--green);animation:recordPulse .8s ease-in-out infinite;
+  margin-top:8px;letter-spacing:2px;position:relative;
+}
+@keyframes recordPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+#flash{position:fixed;inset:0;pointer-events:none;z-index:50;opacity:0}
+#flash.fire{animation:flashPulse .8s ease-out}
+@keyframes flashPulse{
+  0%{opacity:0;background:radial-gradient(circle,rgba(0,240,255,.85),transparent 70%)}
+  40%{opacity:1;background:radial-gradient(circle,rgba(0,240,255,.45),transparent 70%)}
+  100%{opacity:0;background:radial-gradient(circle,rgba(0,240,255,.85),transparent 70%)}
+}
+#fxCanvas{position:fixed;inset:0;pointer-events:none;z-index:40}
+
+@media (max-width:600px){
+  header{padding:8px 10px;gap:4px}
+  .logo{letter-spacing:1px}
+  .chip{padding:5px 8px;font-size:10px}
+  #scoreUI{padding:0 10px 6px;gap:4px}
+  .score-label{font-size:9px;letter-spacing:1px}
+  .live-score{font-size:16px;min-width:48px}
+  .score-bar{height:20px;border-radius:10px}
+  .score-num{font-size:12px;min-width:50px}
+  #bottomBar{padding:4px 8px 10px;gap:4px}
+  .btn{padding:6px 9px;font-size:11px}
+  #boardWrap{width:min(94vw,calc(100dvh - 240px))}
+  #muteBtn{width:30px;height:30px;font-size:14px;top:6px;right:6px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NEON GO</div>
+  <div class="header-right">
+    <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
+    <div class="chip user" id="userChip">ИГРОК</div>
+    <div class="chip menu" id="menuBtn">◀ МЕНЮ</div>
+  </div>
+</header>
+
+<div id="scoreUI">
+  <div class="score-row">
+    <span class="score-label">Очки</span>
+    <span class="live-score" id="liveScore">0</span>
+    <span class="score-label">Счёт</span>
+    <div class="score-bar">
+      <div class="score-fill-black" id="barScoreBlack" style="width:50%"></div>
+      <div class="score-fill-white" id="barScoreWhite" style="width:50%"></div>
+    </div>
+    <span class="score-num" id="numScore">0:0</span>
+  </div>
+  <div class="score-row">
+    <span class="score-label">Пленные</span>
+    <div class="score-bar">
+      <div class="score-fill-black" id="barCapBlack" style="width:50%"></div>
+      <div class="score-fill-white" id="barCapWhite" style="width:50%"></div>
+    </div>
+    <span class="score-num magenta" id="numCap">0:0</span>
+  </div>
+</div>
+
+<div id="gameArea">
+  <div id="boardWrap">
+    <canvas id="board"></canvas>
+    <button id="muteBtn" title="Звук">🔊</button>
+  </div>
+</div>
+
+<div id="status">Нажмите СТАРТ, чтобы начать партию</div>
+
+<div id="bottomBar">
+  <select class="btn" id="levelSelect">
+    <option value="400">ЛЕГКО</option>
+    <option value="1200" selected>СРЕДНЕ</option>
+    <option value="3000">СЛОЖНО</option>
+  </select>
+  <label class="btn"><input type="checkbox" id="learnToggle" style="margin:0;cursor:pointer"> ОБУЧЕНИЕ</label>
+  <button class="btn yel" id="passBtn">ПАС</button>
+  <button class="btn" id="undoBtn">ОТМЕНА</button>
+  <button class="btn mag" id="resignBtn">СДАТЬСЯ</button>
+</div>
+
+<div id="flash"></div>
+<canvas id="fxCanvas"></canvas>
+
+<div class="overlay active" id="splash">
+  <div class="overlay-content">
+    <h2>NEON GO</h2>
+    <div class="instructions">
+      <p style="margin-bottom:10px"><b>Цель:</b> окружить больше территории, чем компьютер.</p>
+      <p>• <b>Клик / тап</b> по пересечению — поставить камень</p>
+      <p>• Окружайте пустые точки — это <span class="y">ваши очки</span></p>
+      <p>• Снимайте камни врага, лишая их дыханий</p>
+      <p>• <span class="g">Зелёные</span> и <span class="r">красные</span> кольца показывают взятия</p>
+      <p>• <span class="m">Рубежи</span> каждые 100 очков — праздник!</p>
+      <p>• Когда хороших ходов нет — жмите <b>ПАС</b></p>
+      <p>• Два паса подряд = конец партии</p>
+    </div>
+    <div class="actions">
+      <button class="big-btn" id="startBtn">▶ СТАРТ</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="gameOverOverlay">
+  <div class="overlay-content">
+    <h2 id="gameOverTitle">ИГРА ОКОНЧЕНА</h2>
+    <div class="final-label">ВАШИ ОЧКИ</div>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="record-line">🏆 Лучший: <b id="bestScore">0</b> · Глобальный: <b id="globalScore">0</b></div>
+    <div id="newRecordBadge" class="new-record" style="display:none">🎉 НОВЫЙ РЕКОРД! 🎉</div>
+    <div class="actions" style="margin-top:20px">
+      <button class="big-btn" id="playAgainBtn">ИГРАТЬ СНОВА</button>
+      <button class="big-btn mag" id="showLbBtn">ЛИДЕРЫ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+'use strict';
+
+/* ============================================================
+   ПЛАТФОРМА
+   ============================================================ */
+const GAME_ID = 'neon-go';
+let currentPlayer = null;
+try { currentPlayer = (typeof Auth !== 'undefined' && Auth.get) ? Auth.get() : null; } catch(e) { currentPlayer = null; }
+
+const userChip = document.getElementById('userChip');
+if (userChip) userChip.textContent = currentPlayer ? '👤 ' + currentPlayer : '👤 ГОСТЬ';
+
+document.getElementById('lbHeaderBtn').addEventListener('click', () => {
+  try { if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.open(GAME_ID); }
+  catch(e) { console.warn('LeaderboardUI недоступен', e); }
+});
+document.getElementById('menuBtn').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+
+let myBest = 0;
+let globalRec = { username: '', score: 0 };
+function loadStats() {
+  try {
+    if (typeof Leaderboard !== 'undefined') {
+      myBest = Leaderboard.getPlayerBest(GAME_ID, currentPlayer) || 0;
+      const gr = Leaderboard.getGlobalRecord(GAME_ID);
+      if (gr) globalRec = gr;
+    }
+  } catch(e) {}
+}
+window.addEventListener('leaderboard-updated', loadStats);
+loadStats();
+
+async function submitScore(finalScore) {
+  if (!currentPlayer || finalScore <= 0) return;
+  try {
+    if (typeof Leaderboard !== 'undefined' && Leaderboard.submit) {
+      await Leaderboard.submit(GAME_ID, currentPlayer, finalScore);
+      loadStats();
+    }
+  } catch(e) { console.warn('Ошибка отправки счёта', e); }
+}
+
+/* ============================================================
+   ЗВУК
+   ============================================================ */
+const Sound = {
+  ctx: null,
+  muted: false,
+  init() {
+    if (this.ctx) return;
+    try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { this.ctx = null; }
+  },
+  tone(freq, dur, type, vol) {
+    if (this.muted || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type || 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || 0.1, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.ctx.destination);
+    o.start(t); o.stop(t + dur);
+  },
+  place() { this.tone(620, 0.08, 'sine', 0.07); },
+  capture() {
+    this.tone(220, 0.15, 'triangle', 0.13);
+    setTimeout(() => this.tone(160, 0.22, 'triangle', 0.1), 50);
+  },
+  milestone() {
+    [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 'sine', 0.11), i * 90));
+  },
+  win() {
+    [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.35, 'sine', 0.1), i * 110));
+  },
+  lose() {
+    [400, 320, 240, 180].forEach((f, i) => setTimeout(() => this.tone(f, 0.35, 'triangle', 0.09), i * 140));
+  },
+  record() {
+    [784, 988, 1175, 1568, 1568, 1175, 1568].forEach((f, i) => setTimeout(() => this.tone(f, 0.25, 'sine', 0.12), i * 100));
+  }
+};
+
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.onclick = () => {
+  Sound.muted = !Sound.muted;
+  muteBtn.textContent = Sound.muted ? '🔇' : '🔊';
+};
+
+/* ============================================================
+   ЯДРО ГО
+   ============================================================ */
+const N = 9, NN = N * N;
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+const KOMI = 0.5;
+const EMPTY_ARR = [];
+
+const NB = [];
+for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+  const a = [];
+  if (y > 0) a.push((y-1)*N+x);
+  if (y < N-1) a.push((y+1)*N+x);
+  if (x > 0) a.push(y*N+x-1);
+  if (x < N-1) a.push(y*N+x+1);
+  NB.push(a);
+}
+
+const _mark = new Uint8Array(NN);
+const _lib = new Uint8Array(NN);
+
+function groupInfo(b, start) {
+  const color = b[start];
+  const stones = [], libs = [];
+  const stack = [start];
+  _mark[start] = 1;
+  while (stack.length) {
+    const p = stack.pop();
+    stones.push(p);
+    const nb = NB[p];
+    for (let k = 0; k < nb.length; k++) {
+      const q = nb[k], v = b[q];
+      if (v === EMPTY) { if (!_lib[q]) { _lib[q] = 1; libs.push(q); } }
+      else if (v === color && !_mark[q]) { _mark[q] = 1; stack.push(q); }
+    }
+  }
+  for (let k = 0; k < stones.length; k++) _mark[stones[k]] = 0;
+  for (let k = 0; k < libs.length; k++) _lib[libs[k]] = 0;
+  return { stones, libs };
+}
+
+function tryPlay(b, idx, player, ko) {
+  if (b[idx] !== EMPTY) return null;
+  if (idx === ko) return null;
+  const opp = 3 - player;
+  const nb = new Int8Array(b);
+  nb[idx] = player;
+  let capturedStones = null;
+  let capPos = -1;
+  const nbs = NB[idx];
+  for (let k = 0; k < nbs.length; k++) {
+    const q = nbs[k];
+    if (nb[q] === opp) {
+      const g = groupInfo(nb, q);
+      if (g.libs.length === 0) {
+        if (g.stones.length === 1) capPos = g.stones[0];
+        if (!capturedStones) capturedStones = [];
+        for (let j = 0; j < g.stones.length; j++) {
+          nb[g.stones[j]] = EMPTY;
+          capturedStones.push(g.stones[j]);
+        }
+      }
+    }
+  }
+  const own = groupInfo(nb, idx);
+  if (own.libs.length === 0) return null;
+  let newKo = -1;
+  if (capturedStones && capturedStones.length === 1 && own.stones.length === 1 && own.libs.length === 1)
+    newKo = capPos;
+  return { board: nb, ko: newKo, captured: capturedStones ? capturedStones.length : 0,
+           capturedStones: capturedStones || EMPTY_ARR };
+}
+
+function legalMoves(b, player, ko) {
+  const res = [];
+  for (let i = 0; i < NN; i++) {
+    if (b[i] !== EMPTY || i === ko) continue;
+    const nbs = NB[i];
+    let hasEmpty = false;
+    for (let k = 0; k < nbs.length; k++) if (b[nbs[k]] === EMPTY) { hasEmpty = true; break; }
+    if (hasEmpty || tryPlay(b, i, player, ko)) res.push(i);
+  }
+  return res;
+}
+
+function isOwnEye(b, i, p) {
+  const nbs = NB[i];
+  for (let k = 0; k < nbs.length; k++) if (b[nbs[k]] !== p) return false;
+  return true;
+}
+
+function isInOwnTerritory(b, i, player, maxSize) {
+  maxSize = maxSize || 6;
+  if (i < 0 || b[i] !== EMPTY) return false;
+  const nbs = NB[i];
+  for (let k = 0; k < nbs.length; k++) if (b[nbs[k]] === 3 - player) return false;
+  const visited = [i]; const stack = [i]; let size = 1;
+  while (stack.length) {
+    const p = stack.pop();
+    const pnbs = NB[p];
+    for (let k = 0; k < pnbs.length; k++) {
+      const q = pnbs[k];
+      if (visited.indexOf(q) >= 0) continue;
+      const v = b[q];
+      if (v === EMPTY) {
+        if (size >= maxSize) return false;
+        visited.push(q); stack.push(q); size++;
+      } else if (v === 3 - player) return false;
+    }
+  }
+  return true;
+}
+
+function scoreBoard(b) {
+  let black = 0, white = 0;
+  const seen = new Uint8Array(NN);
+  for (let i = 0; i < NN; i++) {
+    if (b[i] === BLACK) black++;
+    else if (b[i] === WHITE) white++;
+  }
+  for (let i = 0; i < NN; i++) {
+    if (b[i] !== EMPTY || seen[i]) continue;
+    const stack = [i]; seen[i] = 1;
+    const region = []; let tb = false, tw = false;
+    while (stack.length) {
+      const p = stack.pop(); region.push(p);
+      const nbs = NB[p];
+      for (let k = 0; k < nbs.length; k++) {
+        const q = nbs[k];
+        if (b[q] === EMPTY) { if (!seen[q]) { seen[q] = 1; stack.push(q); } }
+        else if (b[q] === BLACK) tb = true;
+        else tw = true;
+      }
+    }
+    if (tb && !tw) black += region.length;
+    else if (tw && !tb) white += region.length;
+  }
+  return { black, white };
+}
+
+function findAtari(b) {
+  const atari = new Uint8Array(NN);
+  const seen = new Uint8Array(NN);
+  for (let i = 0; i < NN; i++) {
+    if (b[i] === EMPTY || seen[i]) continue;
+    const g = groupInfo(b, i);
+    for (let k = 0; k < g.stones.length; k++) seen[g.stones[k]] = 1;
+    if (g.libs.length === 1) for (let k = 0; k < g.stones.length; k++) atari[g.stones[k]] = 1;
+  }
+  return atari;
+}
+
+/* ============================================================
+   ПЛЕЙАУТ
+   ============================================================ */
+const _order = new Int8Array(NN);
+for (let i = 0; i < NN; i++) _order[i] = i;
+
+function playoutWinner(b0, player, ko, initialPasses) {
+  initialPasses = initialPasses || 0;
+  let b = new Int8Array(b0);
+  let p = player, k = ko, passes = initialPasses, turns = 0;
+  const maxTurns = NN + 20;
+  while (turns < maxTurns && passes < 2) {
+    for (let i = NN - 1; i > 0; i--) {
+      const j = (Math.random() * (i+1)) | 0;
+      const t = _order[i]; _order[i] = _order[j]; _order[j] = t;
+    }
+    let mv = -1;
+    for (let t = 0; t < NN; t++) {
+      const i = _order[t];
+      if (b[i] !== EMPTY || i === k) continue;
+      if (isOwnEye(b, i, p)) continue;
+      if (isInOwnTerritory(b, i, p, 5)) continue;
+      if (isOwnEye(b, i, 3 - p)) continue;
+      const r = tryPlay(b, i, p, k);
+      if (r) { b = r.board; k = r.ko; mv = i; break; }
+    }
+    if (mv < 0) { passes++; k = -1; } else passes = 0;
+    p = 3 - p; turns++;
+  }
+  const s = scoreBoard(b);
+  return s.black > s.white + KOMI ? BLACK : WHITE;
+}
+
+/* ============================================================
+   MCTS
+   ============================================================ */
+class Node {
+  constructor(parent, board, playerToMove, ko, move, playerJustMoved, passes) {
+    this.parent = parent; this.board = board; this.playerToMove = playerToMove;
+    this.ko = ko; this.move = move; this.playerJustMoved = playerJustMoved;
+    this.children = []; this.untried = null;
+    this.visits = 0; this.wins = 0; this.passes = passes || 0;
+  }
+}
+const UCT_C = 1.3;
+
+function bestUCT(node) {
+  const logN = Math.log(node.visits + 1);
+  let best = null, bestVal = -Infinity;
+  for (let i = 0; i < node.children.length; i++) {
+    const ch = node.children[i];
+    const v = ch.visits > 0
+      ? ch.wins / ch.visits + UCT_C * Math.sqrt(logN / ch.visits)
+      : Infinity;
+    if (v > bestVal) { bestVal = v; best = ch; }
+  }
+  return best;
+}
+
+function iterate(root) {
+  let node = root;
+  while (true) {
+    if (node.untried === null) {
+      node.untried = legalMoves(node.board, node.playerToMove, node.ko);
+      if (node.passes < 2) node.untried.push(-1);
+    }
+    if (node.untried.length > 0) break;
+    if (node.children.length === 0) break;
+    const next = bestUCT(node);
+    if (!next) break;
+    node = next;
+  }
+  if (node.untried && node.untried.length > 0) {
+    const i = (Math.random() * node.untried.length) | 0;
+    const mv = node.untried[i];
+    node.untried[i] = node.untried[node.untried.length - 1];
+    node.untried.pop();
+    if (mv === -1) {
+      const child = new Node(node, node.board, 3 - node.playerToMove, -1, -1, node.playerToMove, node.passes + 1);
+      node.children.push(child); node = child;
+    } else {
+      const r = tryPlay(node.board, mv, node.playerToMove, node.ko);
+      if (r) {
+        const child = new Node(node, r.board, 3 - node.playerToMove, r.ko, mv, node.playerToMove, 0);
+        node.children.push(child); node = child;
+      }
+    }
+  }
+  let winner;
+  if (node.passes >= 2) {
+    const s = scoreBoard(node.board);
+    winner = s.black > s.white + KOMI ? BLACK : WHITE;
+  } else {
+    winner = playoutWinner(node.board, node.playerToMove, node.ko, node.passes);
+  }
+  let cur = node;
+  while (cur) {
+    cur.visits++;
+    if (cur.playerJustMoved === winner) cur.wins++;
+    cur = cur.parent;
+  }
+}
+
+/* ============================================================
+   КАНВАС
+   ============================================================ */
+const CS = 48, MG = 30;
+const PX = MG * 2 + CS * (N - 1);
+const cv = document.getElementById('board');
+const ctx = cv.getContext('2d');
+
+function fitCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = cv.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height, 200);
+  cv.width = Math.round(size * dpr);
+  cv.height = Math.round(size * dpr);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(cv.width / PX, cv.height / PX);
+}
+window.addEventListener('resize', () => { fitCanvas(); render(); });
+fitCanvas();
+
+function px(i) { return MG + (i % N) * CS; }
+function py(i) { return MG + Math.floor(i / N) * CS; }
+
+/* ============================================================
+   ЧАСТИЦЫ
+   ============================================================ */
+const fx = document.getElementById('fxCanvas');
+const fctx = fx.getContext('2d');
+function fitFx() {
+  fx.width = window.innerWidth;
+  fx.height = window.innerHeight;
+}
+window.addEventListener('resize', fitFx);
+fitFx();
+
+const particles = [];
+function spawnBurst(x, y, count, color, spread) {
+  spread = spread || 1;
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = (2 + Math.random() * 5) * spread;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.015 + Math.random() * 0.02,
+      color,
+      size: 2 + Math.random() * 3.5
+    });
+  }
+}
+function spawnBurstBoard(boardIdx, count, color, spread) {
+  const rect = cv.getBoundingClientRect();
+  const x = rect.left + (px(boardIdx) / PX) * rect.width;
+  const y = rect.top + (py(boardIdx) / PX) * rect.height;
+  spawnBurst(x, y, count, color, spread);
+}
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= 0.96; p.vy *= 0.96; p.vy += 0.15;
+    p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+function drawParticles() {
+  fctx.clearRect(0, 0, fx.width, fx.height);
+  for (const p of particles) {
+    fctx.globalAlpha = p.life;
+    fctx.fillStyle = p.color;
+    fctx.shadowColor = p.color;
+    fctx.shadowBlur = 12;
+    fctx.beginPath();
+    fctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    fctx.fill();
+  }
+  fctx.globalAlpha = 1;
+  fctx.shadowBlur = 0;
+}
+
+/* ============================================================
+   ИГРОВОЕ СОСТОЯНИЕ
+   ============================================================ */
+const humanColor = BLACK;
+let board = new Int8Array(NN);
+let player = BLACK;
+let ko = -1;
+let passes = 0;
+let gameOver = false;
+let lastMove = -1;
+let thinking = false;
+let history = [];
+let hover = -1;
+let gen = 0;
+let capturedByBlack = 0;
+let capturedByWhite = 0;
+let learningMode = false;
+let qualityCache = null;
+let capturePreview = null;
+let state = 'splash';
+let lastMilestone = 0;
+let milestonesFired = new Set();
+
+const statusEl = document.getElementById('status');
+const liveScoreEl = document.getElementById('liveScore');
+const levelEl = document.getElementById('levelSelect');
+const learnBox = document.getElementById('learnToggle');
+const passBtn = document.getElementById('passBtn');
+const undoBtn = document.getElementById('undoBtn');
+const resignBtn = document.getElementById('resignBtn');
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const setStatus = html => { statusEl.innerHTML = html; };
+const invalidateQuality = () => { qualityCache = null; };
+
+function computeLiveScore() {
+  const s = scoreBoard(board);
+  return s.black * 10 + capturedByBlack * 25;
+}
+
+function updateScoreUI() {
+  const s = scoreBoard(board);
+  // bar 1 - счёт (камни+территория black vs white+KOMI)
+  const bScore = s.black;
+  const wScore = s.white + KOMI;
+  const tScore = bScore + wScore;
+  const bPct = tScore === 0 ? 50 : (bScore / tScore) * 100;
+  document.getElementById('barScoreBlack').style.width = bPct + '%';
+  document.getElementById('barScoreWhite').style.width = (100 - bPct) + '%';
+  document.getElementById('numScore').textContent = bScore + ':' + s.white;
+
+  // bar 2 - пленные
+  const tCap = capturedByBlack + capturedByWhite;
+  const bCapPct = tCap === 0 ? 50 : (capturedByBlack / tCap) * 100;
+  document.getElementById('barCapBlack').style.width = bCapPct + '%';
+  document.getElementById('barCapWhite').style.width = (100 - bCapPct) + '%';
+  document.getElementById('numCap').textContent = capturedByBlack + ':' + capturedByWhite;
+
+  // live score
+  const ls = computeLiveScore();
+  liveScoreEl.textContent = ls;
+
+  // milestone
+  const milestone = Math.floor(ls / 100) * 100;
+  if (milestone > 0 && !milestonesFired.has(milestone)) {
+    milestonesFired.add(milestone);
+    fireMilestone(milestone);
+  }
+}
+
+function fireMilestone(value) {
+  Sound.milestone();
+  const flash = document.getElementById('flash');
+  flash.classList.remove('fire');
+  void flash.offsetWidth;
+  flash.classList.add('fire');
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+      spawnBurst(
+        window.innerWidth / 2 + (Math.random() - 0.5) * 200,
+        window.innerHeight / 2 + (Math.random() - 0.5) * 200,
+        25, i % 2 === 0 ? '#00f0ff' : '#ffe94d', 1.5
+      );
+    }, i * 120);
+  }
+  setStatus(`🎉 <span class="hl-yellow">РУБЕЖ ${value} ОЧКОВ!</span> Так держать!`);
+}
+
+/* ============================================================
+   ОТРИСОВКА ДОСКИ
+   ============================================================ */
+function drawBoardBg() {
+  // Фон доски с неоновым градиентом
+  const grad = ctx.createRadialGradient(PX/2, PX/2, 20, PX/2, PX/2, PX);
+  grad.addColorStop(0, '#0d1132');
+  grad.addColorStop(0.6, '#0a0d24');
+  grad.addColorStop(1, '#06080f');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, PX, PX);
+
+  // неоновая сетка
+  ctx.strokeStyle = 'rgba(0,240,255,0.25)';
+  ctx.lineWidth = 1;
+  ctx.shadowColor = 'rgba(0,240,255,0.4)';
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    ctx.moveTo(MG, MG + i * CS); ctx.lineTo(MG + (N-1)*CS, MG + i*CS);
+    ctx.moveTo(MG + i * CS, MG); ctx.lineTo(MG + i*CS, MG + (N-1)*CS);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // звёзды
+  ctx.fillStyle = 'rgba(0,240,255,0.7)';
+  ctx.shadowColor = 'rgba(0,240,255,0.9)';
+  ctx.shadowBlur = 8;
+  for (const [x, y] of [[2,2],[2,6],[6,2],[6,6],[4,4]]) {
+    ctx.beginPath();
+    ctx.arc(MG + x*CS, MG + y*CS, 3.5, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+}
+
+function drawStone(x, y, color) {
+  const r = CS * 0.44;
+  // тень
+  ctx.beginPath();
+  ctx.arc(x, y + 2, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,.5)';
+  ctx.fill();
+
+  const g = ctx.createRadialGradient(x - r*0.4, y - r*0.4, r*0.1, x, y, r);
+  if (color === BLACK) {
+    g.addColorStop(0, '#5a3a8a');
+    g.addColorStop(0.5, '#2a1a4a');
+    g.addColorStop(1, '#0a0510');
+    ctx.shadowColor = 'rgba(255,0,212,0.6)';
+    ctx.shadowBlur = 10;
+  } else {
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.6, '#d8eef8');
+    g.addColorStop(1, '#6ab0c4');
+    ctx.shadowColor = 'rgba(0,240,255,0.7)';
+    ctx.shadowBlur = 12;
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // ободок
+  ctx.strokeStyle = color === BLACK ? 'rgba(255,0,212,0.8)' : 'rgba(0,240,255,0.9)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function computeQualityMap() {
+  if (!learningMode || gameOver || player !== humanColor || thinking || capturePreview) return null;
+  const map = new Uint8Array(NN);
+  for (let i = 0; i < NN; i++) {
+    if (board[i] !== EMPTY || i === ko) continue;
+    const r = tryPlay(board, i, player, ko);
+    if (!r) continue;
+    if (r.capturedStones.length > 0) { map[i] = 1; continue; }
+    if (isOwnEye(board, i, player)) continue;
+    if (isInOwnTerritory(board, i, player)) continue;
+    const g = groupInfo(r.board, i);
+    if (g.libs.length === 1) { map[i] = 2; continue; }
+    map[i] = 1;
+  }
+  return map;
+}
+
+function render() {
+  drawBoardBg();
+
+  // ховер-призрак
+  if (hover >= 0 && board[hover] === EMPTY && !thinking && !gameOver
+      && player === humanColor && !capturePreview && state === 'playing') {
+    ctx.fillStyle = 'rgba(0,240,255,0.2)';
+    ctx.beginPath();
+    ctx.arc(px(hover), py(hover), CS*0.42, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // камни
+  for (let i = 0; i < NN; i++) {
+    if (board[i] !== EMPTY) drawStone(px(i), py(i), board[i]);
+  }
+
+  // маркер последнего хода
+  if (lastMove >= 0 && board[lastMove] !== EMPTY && !capturePreview) {
+    ctx.strokeStyle = '#ffe94d';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#ffe94d';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(px(lastMove), py(lastMove), CS*0.17, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // обучение
+  if (learningMode && !gameOver && !capturePreview) {
+    if (player === humanColor && !thinking && state === 'playing') {
+      if (!qualityCache) qualityCache = computeQualityMap();
+      if (qualityCache) {
+        for (let i = 0; i < NN; i++) {
+          const q = qualityCache[i];
+          if (q === 1) {
+            ctx.fillStyle = 'rgba(0,255,136,0.9)';
+            ctx.shadowColor = 'rgba(0,255,136,0.9)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath(); ctx.arc(px(i), py(i), CS*0.14, 0, Math.PI*2); ctx.fill();
+          } else if (q === 2) {
+            ctx.fillStyle = 'rgba(255,233,77,0.9)';
+            ctx.shadowColor = 'rgba(255,233,77,0.9)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath(); ctx.arc(px(i), py(i), CS*0.1, 0, Math.PI*2); ctx.fill();
+          }
+        }
+        ctx.shadowBlur = 0;
+      }
+    }
+    const atari = findAtari(board);
+    ctx.strokeStyle = 'rgba(255,51,85,0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(255,51,85,0.8)';
+    ctx.shadowBlur = 8;
+    for (let i = 0; i < NN; i++) {
+      if (atari[i]) {
+        ctx.beginPath();
+        ctx.arc(px(i), py(i), CS*0.5, 0, Math.PI*2);
+        ctx.stroke();
+      }
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  // превью взятия
+  if (capturePreview) {
+    const t = performance.now() / 200;
+    const pulse = 0.5 + 0.5 * Math.sin(t);
+    for (const pos of capturePreview.captures) {
+      ctx.fillStyle = `rgba(255,51,85,${0.35 + 0.35*pulse})`;
+      ctx.shadowColor = '#ff3355';
+      ctx.shadowBlur = 15;
+      ctx.beginPath(); ctx.arc(px(pos), py(pos), CS*0.46, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = `rgba(255,120,140,${0.7 + 0.3*pulse})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px(pos), py(pos), CS*0.46, 0, Math.PI*2); ctx.stroke();
+    }
+    const mp = capturePreview.move;
+    ctx.fillStyle = `rgba(0,255,136,${0.45 + 0.35*pulse})`;
+    ctx.shadowColor = '#00ff88';
+    ctx.shadowBlur = 20;
+    ctx.beginPath(); ctx.arc(px(mp), py(mp), CS*0.44, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = `rgba(120,255,180,${0.8 + 0.2*pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px(mp), py(mp), CS*0.44, 0, Math.PI*2); ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+}
+
+/* ============================================================
+   ИГРОВОЙ ЦИКЛ
+   ============================================================ */
+function snapshot() {
+  history.push({
+    board: new Int8Array(board), player, ko, passes, lastMove, gameOver,
+    capturedByBlack, capturedByWhite,
+  });
+}
+
+function applyMove(idx) {
+  const r = tryPlay(board, idx, player, ko);
+  if (!r) return false;
+  snapshot();
+  board = r.board;
+  ko = r.ko;
+  lastMove = idx;
+  passes = 0;
+  if (player === BLACK) capturedByBlack += r.capturedStones.length;
+  else capturedByWhite += r.capturedStones.length;
+  player = 3 - player;
+  invalidateQuality();
+  render();
+  updateScoreUI();
+
+  // Эффекты
+  Sound.place();
+  if (r.capturedStones.length > 0) {
+    Sound.capture();
+    for (const pos of r.capturedStones) {
+      spawnBurstBoard(pos, 12, '#ff3355', 1.2);
+    }
+    spawnBurstBoard(idx, 18, '#ff00d4', 1.5);
+  } else {
+    spawnBurstBoard(idx, 6, player === WHITE ? '#00f0ff' : '#ff00d4', 0.7);
+  }
+  return true;
+}
+
+function applyPass() {
+  snapshot();
+  passes++;
+  ko = -1;
+  lastMove = -1;
+  player = 3 - player;
+  invalidateQuality();
+  render();
+  updateScoreUI();
+}
+
+function checkEnd() {
+  if (passes >= 2) {
+    endGame('scored');
+    return true;
+  }
+  return false;
+}
+
+/* ============================================================
+   КОНЕЦ ИГРЫ
+   ============================================================ */
+function endGame(reason) {
+  if (gameOver) return;
+  gameOver = true;
+  state = 'gameover';
+  setThinking(false);
+  invalidateQuality();
+
+  const s = scoreBoard(board);
+  const d = s.black - (s.white + KOMI);
+  const live = computeLiveScore();
+
+  let title, win;
+  if (reason === 'resign') {
+    title = 'ВЫ СДАЛИСЬ';
+    win = false;
+  } else if (d > 0) {
+    title = 'ПОБЕДА!';
+    win = true;
+  } else if (d < 0) {
+    title = 'ПОРАЖЕНИЕ';
+    win = false;
+  } else {
+    title = 'НИЧЬЯ';
+    win = false;
+  }
+
+  document.getElementById('gameOverTitle').textContent = title;
+  document.getElementById('gameOverTitle').style.color = win ? '#00ff88' : (d === 0 ? '#ffe94d' : '#ff3355');
+  document.getElementById('finalScore').textContent = live;
+  document.getElementById('bestScore').textContent = myBest;
+  document.getElementById('globalScore').textContent = globalRec.score || 0;
+
+  const isRecord = live > myBest && live > 0;
+  document.getElementById('newRecordBadge').style.display = isRecord ? 'block' : 'none';
+
+  if (win) Sound.win(); else Sound.lose();
+  if (isRecord) setTimeout(() => Sound.record(), 500);
+
+  if (win || isRecord) {
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => {
+        spawnBurst(
+          window.innerWidth * (0.2 + Math.random() * 0.6),
+          window.innerHeight * (0.2 + Math.random() * 0.6),
+          30, ['#ffe94d','#00ff88','#00f0ff','#ff00d4'][i % 4], 1.6
+        );
+      }, i * 180);
+    }
+  }
+
+  submitScore(live);
+
+  setTimeout(() => {
+    document.getElementById('gameOverOverlay').classList.add('active');
+  }, 600);
+}
+
+/* ============================================================
+   ИИ
+   ============================================================ */
+function setThinking(v) {
+  thinking = v;
+  passBtn.disabled = v || gameOver;
+  undoBtn.disabled = v || gameOver;
+  levelEl.disabled = v;
+  resignBtn.disabled = v || gameOver;
+}
+
+async function aiTurn() {
+  if (gameOver || player === humanColor || thinking) return;
+  const myGen = gen;
+
+  const legal = legalMoves(board, player, ko);
+  if (legal.length === 0) {
+    applyPass();
+    if (!checkEnd()) setStatus('Компьютер пасует. <span class="hl-cyan">Ваш ход.</span>');
+    return;
+  }
+
+  setThinking(true);
+  const thinkMs = parseInt(levelEl.value, 10);
+  setStatus('Компьютер думает…');
+  await sleep(20);
+  if (myGen !== gen) return;
+
+  const root = new Node(null, new Int8Array(board), player, ko, -1, 3 - player, 0);
+  let iters = 0;
+  const deadline = performance.now() + thinkMs;
+
+  while (performance.now() < deadline) {
+    const chunkEnd = performance.now() + 12;
+    do { iterate(root); iters++; }
+    while (performance.now() < chunkEnd && performance.now() < deadline);
+    await sleep(0);
+    if (myGen !== gen) return;
+  }
+
+  const rootWinRate = 1 - root.wins / Math.max(1, root.visits);
+
+  let best = null;
+  for (const ch of root.children) {
+    if (ch.move === -1) continue;
+    if (isOwnEye(root.board, ch.move, root.playerToMove)) continue;
+    if (isInOwnTerritory(root.board, ch.move, root.playerToMove)) continue;
+    if (!best || ch.visits > best.visits) best = ch;
+  }
+
+  if (!best) {
+    setThinking(false);
+    if (myGen !== gen) return;
+    applyPass();
+    if (checkEnd()) return;
+    setStatus('Компьютер <b>пасует</b> — нет хороших ходов.');
+    return;
+  }
+
+  const passChild = root.children.find(ch => ch.move === -1);
+  if (passChild && rootWinRate > 0.6 && passChild.visits >= best.visits * 0.5) {
+    setThinking(false);
+    if (myGen !== gen) return;
+    applyPass();
+    if (checkEnd()) return;
+    setStatus(`Компьютер считает себя впереди (<span class="hl-yellow">${(rootWinRate*100).toFixed(0)}%</span>) и <b>пасует</b>.`);
+    return;
+  }
+
+  const finalCheck = tryPlay(board, best.move, player, ko);
+  if (!finalCheck) {
+    if (legal.length > 0) best = { move: legal[0], visits: 1, wins: 0 };
+    else { setThinking(false); applyPass(); if (!checkEnd()) setStatus('Компьютер пасует.'); return; }
+  }
+
+  const previewResult = tryPlay(board, best.move, player, ko);
+  if (previewResult && previewResult.capturedStones.length > 0) {
+    capturePreview = { move: best.move, captures: previewResult.capturedStones };
+    setStatus(`Компьютер играет в <span class="hl-green">зелёную точку</span> и снимает ` +
+              `<span class="hl-red">${previewResult.capturedStones.length} ваш(их) камень(ей)</span>. Это легально — у вашей группы было 1 дыхание.`);
+    render();
+    await sleep(2200);
+    if (myGen !== gen) return;
+    capturePreview = null;
+  }
+
+  setThinking(false);
+  if (myGen !== gen) return;
+
+  const capturesNow = (tryPlay(board, best.move, player, ko) || {capturedStones:[]}).capturedStones.length;
+  applyMove(best.move);
+  if (checkEnd()) return;
+
+  if (capturesNow > 0) {
+    setStatus(`Компьютер снял <span class="hl-red">${capturesNow} ваш(их) камень(ей)</span>. · Ваш ход.`);
+  } else {
+    setStatus(`Компьютер сыграл. <span class="hl-cyan">Оценка ${(rootWinRate*100).toFixed(0)}%</span> · Ваш ход.`);
+  }
+}
+
+/* ============================================================
+   ХОД ИГРОКА
+   ============================================================ */
+async function humanPlay(idx) {
+  if (thinking || gameOver || player !== humanColor || capturePreview || state !== 'playing') return;
+  if (board[idx] !== EMPTY) return;
+  if (!applyMove(idx)) { setStatus('<span class="hl-red">Недопустимый ход.</span>'); return; }
+  if (checkEnd()) return;
+  setStatus('Ход компьютера…');
+  await aiTurn();
+}
+
+/* ============================================================
+   ВВОД
+   ============================================================ */
+function pointFromClient(clientX, clientY) {
+  const rect = cv.getBoundingClientRect();
+  const scaleX = PX / rect.width;
+  const scaleY = PX / rect.height;
+  const mx = (clientX - rect.left) * scaleX;
+  const my = (clientY - rect.top) * scaleY;
+  const x = Math.round((mx - MG) / CS);
+  const y = Math.round((my - MG) / CS);
+  if (x < 0 || x >= N || y < 0 || y >= N) return -1;
+  const dx = mx - (MG + x * CS), dy = my - (MG + y * CS);
+  if (dx*dx + dy*dy > (CS*0.5)**2) return -1;
+  return y * N + x;
+}
+
+let tapStart = null;
+cv.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  tapStart = { x: e.clientX, y: e.clientY };
+});
+cv.addEventListener('pointerup', e => {
+  if (e.pointerType === 'mouse') return;
+  if (!tapStart) return;
+  const dx = e.clientX - tapStart.x, dy = e.clientY - tapStart.y;
+  if (dx*dx + dy*dy < 144) {
+    const p = pointFromClient(e.clientX, e.clientY);
+    if (p >= 0) humanPlay(p);
+  }
+  tapStart = null;
+});
+cv.addEventListener('pointermove', e => {
+  if (e.pointerType === 'mouse') {
+    const p = pointFromClient(e.clientX, e.clientY);
+    if (p !== hover) { hover = p; render(); }
+  }
+});
+cv.addEventListener('pointerleave', () => { if (hover !== -1) { hover = -1; render(); } });
+cv.addEventListener('click', e => {
+  const p = pointFromClient(e.clientX, e.clientY);
+  if (p >= 0) humanPlay(p);
+});
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ============================================================
+   КНОПКИ
+   ============================================================ */
+passBtn.onclick = async () => {
+  if (thinking || gameOver || player !== humanColor || capturePreview || state !== 'playing') return;
+  applyPass();
+  if (checkEnd()) return;
+  setStatus('Вы пасуете. Ход компьютера…');
+  await aiTurn();
+};
+
+undoBtn.onclick = () => {
+  if (thinking || capturePreview || history.length === 0 || state !== 'playing') return;
+  let s;
+  do { s = history.pop(); if (!s) break; } while (s.player !== humanColor);
+  if (!s) return;
+  board = s.board; player = s.player; ko = s.ko; passes = s.passes;
+  lastMove = s.lastMove; gameOver = s.gameOver;
+  capturedByBlack = s.capturedByBlack; capturedByWhite = s.capturedByWhite;
+  hover = -1;
+  invalidateQuality();
+  render(); updateScoreUI();
+  setStatus('Ход отменён. Ваш ход.');
+};
+
+resignBtn.onclick = () => {
+  if (thinking || capturePreview || gameOver) return;
+  if (!confirm('Сдаться и завершить партию?')) return;
+  endGame('resign');
+};
+
+learnBox.addEventListener('change', () => {
+  learningMode = learnBox.checked;
+  render();
+});
+
+/* ============================================================
+   ЗАПУСК / РЕСТАРТ
+   ============================================================ */
+function newGame() {
+  gen++;
+  board = new Int8Array(NN);
+  player = BLACK;
+  ko = -1;
+  passes = 0;
+  gameOver = false;
+  lastMove = -1;
+  history = [];
+  hover = -1;
+  capturedByBlack = 0;
+  capturedByWhite = 0;
+  capturePreview = null;
+  invalidateQuality();
+  milestonesFired.clear();
+  lastMilestone = 0;
+  particles.length = 0;
+  setThinking(false);
+  state = 'playing';
+  render();
+  updateScoreUI();
+  setStatus('Ваш ход — чёрные. Белым +0.5 коми.');
+}
+
+document.getElementById('startBtn').onclick = () => {
+  Sound.init();
+  document.getElementById('splash').classList.remove('active');
+  newGame();
+};
+
+document.getElementById('playAgainBtn').onclick = () => {
+  document.getElementById('gameOverOverlay').classList.remove('active');
+  newGame();
+};
+
+document.getElementById('showLbBtn').onclick = () => {
+  try { if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.open(GAME_ID); } catch(e) {}
+};
+
+/* ============================================================
+   ANIMATION LOOP
+   ============================================================ */
+function loop() {
+  updateParticles();
+  drawParticles();
+  if (capturePreview) render();
+  requestAnimationFrame(loop);
+}
+loop();
+
+/* ============================================================
+   МОБИЛЬНЫЙ РЕЖИМ
+   ============================================================ */
+if (window.matchMedia('(max-width: 700px)').matches) {
+  setTimeout(() => window.scrollTo(0, 1), 150);
+  document.body.addEventListener('touchstart', () => {
+    window.scrollTo(0, 1);
+  }, { passive: true, once: true });
+}
+
+// Первый клик инициализирует звук (нужен user gesture)
+document.addEventListener('pointerdown', () => Sound.init(), { once: true });
+
+// Финальный рендер
+render();
+updateScoreUI();
+});
+</script>
+</body>
+</html>
