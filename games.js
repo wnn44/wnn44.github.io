@@ -163,7 +163,7 @@ window.GAMES = [
       icon:        '📦',
       color:       '#00f0ff',
       tags:        ['головоломка', 'логика', 'классика'],
-      preview:     { type: 'video', src: 'previews/neon-sokoban.mp4' }
+      preview:     { type: 'image', src: 'previews/neon-sokoban.png' }
   },
   {
 	  id:          'neon-go',
@@ -173,6 +173,6 @@ window.GAMES = [
 	  icon:        '⚫',
 	  color:       '#00f0ff',
 	  tags:        ['логика', 'стратегия', 'настольная', 'ии', 'го'],
-	  preview:     { type: 'video', src: 'previews/neon-go.mp4' }
+	  preview:     { type: 'image', src: 'previews/neon-go.jpg' }
   },
 ];
