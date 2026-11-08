@@ -10,6 +10,21 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="leaderboard.js"></script>
 <script src="leaderboard-ui.js"></script>
+<script>
+window.__neonGoDiag = window.__neonGoDiag || {
+  version: 'v5 (tactical)',
+  totalIters: 0, aiTurns: 0, aiPasses: 0,
+  aiCaptures: 0, aiSelfAtariAvoid: 0,
+  perTurnLog: [], lastError: null,
+};
+window.diag = window.__neonGoDiag;
+window.addEventListener('error', (e) => {
+  window.__neonGoDiag.lastError = { msg: e.message, line: e.lineno, col: e.colno };
+  console.error('[NEON-GO] ОШИБКА:', e.message, 'line', e.lineno);
+});
+console.log('%c[NEON-GO] Готово. Версия: ' + window.__neonGoDiag.version,
+  'color:#00f0ff;font-weight:bold;font-size:13px');
+</script>
 <style>
 :root{
   --cyan:#00f0ff; --magenta:#ff00d4; --purple:#a855ff;
@@ -43,7 +58,12 @@ header{
 .logo{
   font-size:clamp(15px,3vw,22px);font-weight:900;letter-spacing:2px;
   color:var(--cyan);text-shadow:0 0 8px var(--cyan),0 0 22px rgba(0,240,255,.5);
-  white-space:nowrap;
+  white-space:nowrap;display:flex;align-items:baseline;gap:8px;
+}
+.logo .ver{
+  font-size:clamp(8px,1.5vw,10px);font-weight:600;letter-spacing:.5px;
+  color:rgba(168,85,255,.7);text-shadow:none;
+  border:1px solid rgba(168,85,255,.35);padding:2px 6px;border-radius:8px;
 }
 .header-right{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
 .chip{
@@ -231,13 +251,14 @@ label.btn{display:flex;align-items:center;gap:6px;user-select:none}
   .btn{padding:6px 9px;font-size:11px}
   #boardWrap{width:min(94vw,calc(100dvh - 240px))}
   .big-btn{padding:12px 22px;font-size:13px}
+  .logo .ver{font-size:8px;padding:1px 4px}
 }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">NEON GO</div>
+  <div class="logo">NEON GO<span class="ver" id="versionBadge">v5</span></div>
   <div class="header-right">
     <div class="chip mute" id="muteBtn" title="Звук">🔊</div>
     <div class="chip lb" id="lbHeaderBtn">🏆 ЛИДЕРЫ</div>
@@ -280,6 +301,7 @@ label.btn{display:flex;align-items:center;gap:6px;user-select:none}
     <option value="400">ЛЕГКО</option>
     <option value="1200" selected>СРЕДНЕ</option>
     <option value="3000">СЛОЖНО</option>
+    <option value="6000">ЭКСПЕРТ</option>
   </select>
   <label class="btn"><input type="checkbox" id="learnToggle" style="margin:0;cursor:pointer"> ОБУЧЕНИЕ</label>
   <button class="btn yel" id="passBtn">ПАС</button>
@@ -343,9 +365,8 @@ label.btn{display:flex;align-items:center;gap:6px;user-select:none}
 document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
-/* ============================================================
-   ПЛАТФОРМА
-   ============================================================ */
+const diag = window.__neonGoDiag;
+
 const GAME_ID = 'neon-go';
 let currentPlayer = null;
 try { currentPlayer = (typeof Auth !== 'undefined' && Auth.get) ? Auth.get() : null; } catch(e) { currentPlayer = null; }
@@ -382,12 +403,8 @@ async function submitScore(finalScore) {
   } catch(e) { console.warn('Ошибка отправки счёта', e); }
 }
 
-/* ============================================================
-   ЗВУК
-   ============================================================ */
 const Sound = {
-  ctx: null,
-  muted: false,
+  ctx: null, muted: false,
   init() {
     if (this.ctx) return;
     try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -398,30 +415,18 @@ const Sound = {
     const t = this.ctx.currentTime;
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
-    o.type = type || 'sine';
-    o.frequency.value = freq;
+    o.type = type || 'sine'; o.frequency.value = freq;
     g.gain.setValueAtTime(vol || 0.1, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(this.ctx.destination);
     o.start(t); o.stop(t + dur);
   },
-  place() { this.tone(620, 0.08, 'sine', 0.07); },
-  capture() {
-    this.tone(220, 0.15, 'triangle', 0.13);
-    setTimeout(() => this.tone(160, 0.22, 'triangle', 0.1), 50);
-  },
-  milestone() {
-    [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.3, 'sine', 0.11), i * 90));
-  },
-  win() {
-    [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => this.tone(f, 0.35, 'sine', 0.1), i * 110));
-  },
-  lose() {
-    [400, 320, 240, 180].forEach((f, i) => setTimeout(() => this.tone(f, 0.35, 'triangle', 0.09), i * 140));
-  },
-  record() {
-    [784, 988, 1175, 1568, 1568, 1175, 1568].forEach((f, i) => setTimeout(() => this.tone(f, 0.25, 'sine', 0.12), i * 100));
-  }
+  place(){ this.tone(620, 0.08, 'sine', 0.07); },
+  capture(){ this.tone(220, 0.15, 'triangle', 0.13); setTimeout(()=>this.tone(160,0.22,'triangle',0.1), 50); },
+  milestone(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>this.tone(f,0.3,'sine',0.11),i*90)); },
+  win(){ [523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>this.tone(f,0.35,'sine',0.1),i*110)); },
+  lose(){ [400,320,240,180].forEach((f,i)=>setTimeout(()=>this.tone(f,0.35,'triangle',0.09),i*140)); },
+  record(){ [784,988,1175,1568,1568,1175,1568].forEach((f,i)=>setTimeout(()=>this.tone(f,0.25,'sine',0.12),i*100)); }
 };
 
 const muteBtn = document.getElementById('muteBtn');
@@ -430,26 +435,17 @@ muteBtn.onclick = () => {
   muteBtn.textContent = Sound.muted ? '🔇' : '🔊';
 };
 
-/* ============================================================
-   СИСТЕМА СОХРАНЕНИЙ
-   ============================================================ */
 const SAVE_KEY = 'neon-go-save-v1';
 
-function hasMoves() {
-  for (let i = 0; i < NN; i++) if (board[i] !== EMPTY) return true;
-  return false;
-}
+function hasMoves() { for (let i = 0; i < NN; i++) if (board[i] !== EMPTY) return true; return false; }
 
 function saveGame() {
   if (gameOver || state !== 'playing') return false;
-  if (!hasMoves()) return false; // нечего сохранять
+  if (!hasMoves()) return false;
   try {
     const data = {
-      v: 1,
-      board: Array.from(board),
-      player, ko, passes,
-      capturedByBlack, capturedByWhite,
-      lastMove,
+      v: 1, board: Array.from(board), player, ko, passes,
+      capturedByBlack, capturedByWhite, lastMove,
       milestones: Array.from(milestonesFired),
       history: history.slice(-20).map(h => ({
         board: Array.from(h.board),
@@ -471,7 +467,6 @@ function hasSavedGame() {
     const data = JSON.parse(raw);
     if (!data || data.v !== 1) return false;
     if (!Array.isArray(data.board) || data.board.length !== NN) return false;
-    // должна быть хоть одна клетка непустая
     for (let i = 0; i < data.board.length; i++) if (data.board[i] !== 0) return true;
     return false;
   } catch(e) { return false; }
@@ -483,12 +478,9 @@ function loadGame() {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!data || data.v !== 1) return false;
-
     gen++;
     board = new Int8Array(data.board);
-    player = data.player;
-    ko = data.ko;
-    passes = data.passes;
+    player = data.player; ko = data.ko; passes = data.passes;
     capturedByBlack = data.capturedByBlack || 0;
     capturedByWhite = data.capturedByWhite || 0;
     lastMove = data.lastMove;
@@ -499,17 +491,9 @@ function loadGame() {
       lastMove: h.lastMove, gameOver: h.gameOver,
       capturedByBlack: h.capturedByBlack, capturedByWhite: h.capturedByWhite,
     }));
-    gameOver = false;
-    thinking = false;
-    capturePreview = null;
-    hover = -1;
-    invalidateQuality();
-    state = 'playing';
-    particles.length = 0;
-    setThinking(false);
-    render();
-    updateScoreUI();
-
+    gameOver = false; thinking = false; capturePreview = null; hover = -1;
+    invalidateQuality(); state = 'playing'; particles.length = 0;
+    setThinking(false); render(); updateScoreUI();
     if (player !== humanColor) {
       setStatus('Партия восстановлена. Ход компьютера…');
       setTimeout(() => aiTurn(), 400);
@@ -517,19 +501,11 @@ function loadGame() {
       setStatus('Партия восстановлена. <span class="hl-cyan">Ваш ход.</span>');
     }
     return true;
-  } catch(e) {
-    console.warn('Load failed', e);
-    return false;
-  }
+  } catch(e) { console.warn('Load failed', e); return false; }
 }
 
-function deleteSave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
-}
+function deleteSave() { try { localStorage.removeItem(SAVE_KEY); } catch(e) {} }
 
-/* ============================================================
-   ЯДРО ГО
-   ============================================================ */
 const N = 9, NN = N * N;
 const EMPTY = 0, BLACK = 1, WHITE = 2;
 const KOMI = 0.5;
@@ -547,15 +523,13 @@ for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
 
 const _mark = new Uint8Array(NN);
 const _lib = new Uint8Array(NN);
+const _seenTerr = new Uint8Array(NN);
 
 function groupInfo(b, start) {
-  const color = b[start];
-  const stones = [], libs = [];
-  const stack = [start];
+  const color = b[start]; const stones = [], libs = []; const stack = [start];
   _mark[start] = 1;
   while (stack.length) {
-    const p = stack.pop();
-    stones.push(p);
+    const p = stack.pop(); stones.push(p);
     const nb = NB[p];
     for (let k = 0; k < nb.length; k++) {
       const q = nb[k], v = b[q];
@@ -569,13 +543,9 @@ function groupInfo(b, start) {
 }
 
 function tryPlay(b, idx, player, ko) {
-  if (b[idx] !== EMPTY) return null;
-  if (idx === ko) return null;
-  const opp = 3 - player;
-  const nb = new Int8Array(b);
-  nb[idx] = player;
-  let capturedStones = null;
-  let capPos = -1;
+  if (b[idx] !== EMPTY || idx === ko) return null;
+  const opp = 3 - player; const nb = new Int8Array(b); nb[idx] = player;
+  let capturedStones = null, capPos = -1;
   const nbs = NB[idx];
   for (let k = 0; k < nbs.length; k++) {
     const q = nbs[k];
@@ -584,10 +554,7 @@ function tryPlay(b, idx, player, ko) {
       if (g.libs.length === 0) {
         if (g.stones.length === 1) capPos = g.stones[0];
         if (!capturedStones) capturedStones = [];
-        for (let j = 0; j < g.stones.length; j++) {
-          nb[g.stones[j]] = EMPTY;
-          capturedStones.push(g.stones[j]);
-        }
+        for (let j = 0; j < g.stones.length; j++) { nb[g.stones[j]] = EMPTY; capturedStones.push(g.stones[j]); }
       }
     }
   }
@@ -596,16 +563,19 @@ function tryPlay(b, idx, player, ko) {
   let newKo = -1;
   if (capturedStones && capturedStones.length === 1 && own.stones.length === 1 && own.libs.length === 1)
     newKo = capPos;
-  return { board: nb, ko: newKo, captured: capturedStones ? capturedStones.length : 0,
-           capturedStones: capturedStones || EMPTY_ARR };
+  return {
+    board: nb, ko: newKo,
+    captured: capturedStones ? capturedStones.length : 0,
+    capturedStones: capturedStones || EMPTY_ARR,
+    ownLibs: own.libs.length,
+  };
 }
 
 function legalMoves(b, player, ko) {
   const res = [];
   for (let i = 0; i < NN; i++) {
     if (b[i] !== EMPTY || i === ko) continue;
-    const nbs = NB[i];
-    let hasEmpty = false;
+    const nbs = NB[i]; let hasEmpty = false;
     for (let k = 0; k < nbs.length; k++) if (b[nbs[k]] === EMPTY) { hasEmpty = true; break; }
     if (hasEmpty || tryPlay(b, i, player, ko)) res.push(i);
   }
@@ -623,53 +593,49 @@ function isInOwnTerritory(b, i, player, maxSize) {
   if (i < 0 || b[i] !== EMPTY) return false;
   const nbs = NB[i];
   for (let k = 0; k < nbs.length; k++) if (b[nbs[k]] === 3 - player) return false;
-  const visited = [i]; const stack = [i]; let size = 1;
+  const visited = [i]; const stack = [i]; _seenTerr[i] = 1;
+  let size = 1, result = true;
   while (stack.length) {
-    const p = stack.pop();
-    const pnbs = NB[p];
+    const p = stack.pop(); const pnbs = NB[p];
     for (let k = 0; k < pnbs.length; k++) {
       const q = pnbs[k];
-      if (visited.indexOf(q) >= 0) continue;
+      if (_seenTerr[q]) continue;
       const v = b[q];
       if (v === EMPTY) {
-        if (size >= maxSize) return false;
-        visited.push(q); stack.push(q); size++;
-      } else if (v === 3 - player) return false;
+        if (size >= maxSize) { result = false; stack.length = 0; break; }
+        _seenTerr[q] = 1; visited.push(q); stack.push(q); size++;
+      } else if (v === 3 - player) { result = false; stack.length = 0; break; }
     }
   }
-  return true;
+  for (let k = 0; k < visited.length; k++) _seenTerr[visited[k]] = 0;
+  return result;
 }
 
 function scoreBoard(b) {
   let black = 0, white = 0;
   const seen = new Uint8Array(NN);
   for (let i = 0; i < NN; i++) {
-    if (b[i] === BLACK) black++;
-    else if (b[i] === WHITE) white++;
+    if (b[i] === BLACK) black++; else if (b[i] === WHITE) white++;
   }
   for (let i = 0; i < NN; i++) {
     if (b[i] !== EMPTY || seen[i]) continue;
-    const stack = [i]; seen[i] = 1;
-    const region = []; let tb = false, tw = false;
+    const stack = [i]; seen[i] = 1; const region = []; let tb = false, tw = false;
     while (stack.length) {
       const p = stack.pop(); region.push(p);
       const nbs = NB[p];
       for (let k = 0; k < nbs.length; k++) {
         const q = nbs[k];
         if (b[q] === EMPTY) { if (!seen[q]) { seen[q] = 1; stack.push(q); } }
-        else if (b[q] === BLACK) tb = true;
-        else tw = true;
+        else if (b[q] === BLACK) tb = true; else tw = true;
       }
     }
-    if (tb && !tw) black += region.length;
-    else if (tw && !tb) white += region.length;
+    if (tb && !tw) black += region.length; else if (tw && !tb) white += region.length;
   }
   return { black, white };
 }
 
 function findAtari(b) {
-  const atari = new Uint8Array(NN);
-  const seen = new Uint8Array(NN);
+  const atari = new Uint8Array(NN); const seen = new Uint8Array(NN);
   for (let i = 0; i < NN; i++) {
     if (b[i] === EMPTY || seen[i]) continue;
     const g = groupInfo(b, i);
@@ -679,9 +645,6 @@ function findAtari(b) {
   return atari;
 }
 
-/* ============================================================
-   ПЛЕЙАУТ
-   ============================================================ */
 const _order = new Int8Array(NN);
 for (let i = 0; i < NN; i++) _order[i] = i;
 
@@ -703,7 +666,18 @@ function playoutWinner(b0, player, ko, initialPasses) {
       if (isInOwnTerritory(b, i, p, 5)) continue;
       if (isOwnEye(b, i, 3 - p)) continue;
       const r = tryPlay(b, i, p, k);
-      if (r) { b = r.board; k = r.ko; mv = i; break; }
+      if (r && r.capturedStones.length > 0) { b = r.board; k = r.ko; mv = i; break; }
+    }
+    if (mv < 0) {
+      for (let t = 0; t < NN; t++) {
+        const i = _order[t];
+        if (b[i] !== EMPTY || i === k) continue;
+        if (isOwnEye(b, i, p)) continue;
+        if (isInOwnTerritory(b, i, p, 5)) continue;
+        if (isOwnEye(b, i, 3 - p)) continue;
+        const r = tryPlay(b, i, p, k);
+        if (r && r.ownLibs > 1) { b = r.board; k = r.ko; mv = i; break; }
+      }
     }
     if (mv < 0) { passes++; k = -1; } else passes = 0;
     p = 3 - p; turns++;
@@ -712,9 +686,6 @@ function playoutWinner(b0, player, ko, initialPasses) {
   return s.black > s.white + KOMI ? BLACK : WHITE;
 }
 
-/* ============================================================
-   MCTS
-   ============================================================ */
 class Node {
   constructor(parent, board, playerToMove, ko, move, playerJustMoved, passes) {
     this.parent = parent; this.board = board; this.playerToMove = playerToMove;
@@ -767,13 +738,7 @@ function iterate(root) {
       }
     }
   }
-  let winner;
-  if (node.passes >= 2) {
-    const s = scoreBoard(node.board);
-    winner = s.black > s.white + KOMI ? BLACK : WHITE;
-  } else {
-    winner = playoutWinner(node.board, node.playerToMove, node.ko, node.passes);
-  }
+  const winner = playoutWinner(node.board, node.playerToMove, node.ko, node.passes);
   let cur = node;
   while (cur) {
     cur.visits++;
@@ -782,9 +747,37 @@ function iterate(root) {
   }
 }
 
-/* ============================================================
-   КАНВАС
-   ============================================================ */
+function selectBestMove(root) {
+  let candidates = [];
+  let maxVisits = 0;
+  for (const ch of root.children) {
+    if (ch.move === -1) continue;
+    if (isOwnEye(root.board, ch.move, root.playerToMove)) continue;
+    if (isInOwnTerritory(root.board, ch.move, root.playerToMove)) continue;
+    candidates.push(ch);
+    if (ch.visits > maxVisits) maxVisits = ch.visits;
+  }
+  if (candidates.length === 0) return null;
+
+  let best = null, bestScore = -Infinity, bestInfo = { captures: 0, libs: 0, selfAtari: false };
+  for (const ch of candidates) {
+    let score = ch.visits;
+    let info = { captures: 0, libs: 0, selfAtari: false };
+    const result = tryPlay(root.board, ch.move, root.playerToMove, root.ko);
+    if (result) {
+      info.captures = result.capturedStones.length;
+      info.libs = result.ownLibs;
+      info.selfAtari = result.ownLibs === 1 && info.captures === 0;
+      if (info.captures > 0) score += info.captures * maxVisits * 0.5;
+      else if (info.selfAtari) score -= maxVisits * 0.4;
+    }
+    if (score > bestScore) {
+      bestScore = score; best = ch; bestInfo = info;
+    }
+  }
+  return { node: best, info: bestInfo };
+}
+
 const CS = 48, MG = 30;
 const PX = MG * 2 + CS * (N - 1);
 const cv = document.getElementById('board');
@@ -794,8 +787,7 @@ function fitCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const rect = cv.getBoundingClientRect();
   const size = Math.max(rect.width, rect.height, 200);
-  cv.width = Math.round(size * dpr);
-  cv.height = Math.round(size * dpr);
+  cv.width = Math.round(size * dpr); cv.height = Math.round(size * dpr);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(cv.width / PX, cv.height / PX);
 }
@@ -805,17 +797,10 @@ fitCanvas();
 function px(i) { return MG + (i % N) * CS; }
 function py(i) { return MG + Math.floor(i / N) * CS; }
 
-/* ============================================================
-   ЧАСТИЦЫ
-   ============================================================ */
 const fx = document.getElementById('fxCanvas');
 const fctx = fx.getContext('2d');
-function fitFx() {
-  fx.width = window.innerWidth;
-  fx.height = window.innerHeight;
-}
-window.addEventListener('resize', fitFx);
-fitFx();
+function fitFx() { fx.width = window.innerWidth; fx.height = window.innerHeight; }
+window.addEventListener('resize', fitFx); fitFx();
 
 const particles = [];
 function spawnBurst(x, y, count, color, spread) {
@@ -823,15 +808,7 @@ function spawnBurst(x, y, count, color, spread) {
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = (2 + Math.random() * 5) * spread;
-    particles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 1,
-      decay: 0.015 + Math.random() * 0.02,
-      color,
-      size: 2 + Math.random() * 3.5
-    });
+    particles.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, life: 1, decay: 0.015 + Math.random()*0.02, color, size: 2 + Math.random()*3.5 });
   }
 }
 function spawnBurstBoard(boardIdx, count, color, spread) {
@@ -843,48 +820,27 @@ function spawnBurstBoard(boardIdx, count, color, spread) {
 function updateParticles() {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx; p.y += p.vy;
-    p.vx *= 0.96; p.vy *= 0.96; p.vy += 0.15;
-    p.life -= p.decay;
+    p.x += p.vx; p.y += p.vy; p.vx *= 0.96; p.vy *= 0.96; p.vy += 0.15; p.life -= p.decay;
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
 function drawParticles() {
   fctx.clearRect(0, 0, fx.width, fx.height);
   for (const p of particles) {
-    fctx.globalAlpha = p.life;
-    fctx.fillStyle = p.color;
-    fctx.shadowColor = p.color;
-    fctx.shadowBlur = 12;
-    fctx.beginPath();
-    fctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    fctx.fill();
+    fctx.globalAlpha = p.life; fctx.fillStyle = p.color;
+    fctx.shadowColor = p.color; fctx.shadowBlur = 12;
+    fctx.beginPath(); fctx.arc(p.x, p.y, p.size, 0, Math.PI*2); fctx.fill();
   }
-  fctx.globalAlpha = 1;
-  fctx.shadowBlur = 0;
+  fctx.globalAlpha = 1; fctx.shadowBlur = 0;
 }
 
-/* ============================================================
-   ИГРОВОЕ СОСТОЯНИЕ
-   ============================================================ */
 const humanColor = BLACK;
 let board = new Int8Array(NN);
-let player = BLACK;
-let ko = -1;
-let passes = 0;
-let gameOver = false;
-let lastMove = -1;
-let thinking = false;
-let history = [];
-let hover = -1;
-let gen = 0;
-let capturedByBlack = 0;
-let capturedByWhite = 0;
-let learningMode = false;
-let qualityCache = null;
-let capturePreview = null;
-let state = 'splash';
-let milestonesFired = new Set();
+let player = BLACK, ko = -1, passes = 0, gameOver = false, lastMove = -1;
+let thinking = false, history = [], hover = -1, gen = 0;
+let capturedByBlack = 0, capturedByWhite = 0;
+let learningMode = false, qualityCache = null, capturePreview = null;
+let state = 'splash', milestonesFired = new Set();
 
 const statusEl = document.getElementById('status');
 const liveScoreEl = document.getElementById('liveScore');
@@ -905,112 +861,69 @@ function computeLiveScore() {
 
 function updateScoreUI() {
   const s = scoreBoard(board);
-  const bScore = s.black;
-  const wScore = s.white + KOMI;
-  const tScore = bScore + wScore;
+  const bScore = s.black, wScore = s.white + KOMI, tScore = bScore + wScore;
   const bPct = tScore === 0 ? 50 : (bScore / tScore) * 100;
   document.getElementById('barScoreBlack').style.width = bPct + '%';
   document.getElementById('barScoreWhite').style.width = (100 - bPct) + '%';
   document.getElementById('numScore').textContent = bScore + ':' + s.white;
-
   const tCap = capturedByBlack + capturedByWhite;
   const bCapPct = tCap === 0 ? 50 : (capturedByBlack / tCap) * 100;
   document.getElementById('barCapBlack').style.width = bCapPct + '%';
   document.getElementById('barCapWhite').style.width = (100 - bCapPct) + '%';
   document.getElementById('numCap').textContent = capturedByBlack + ':' + capturedByWhite;
-
   const ls = computeLiveScore();
   liveScoreEl.textContent = ls;
-
   const milestone = Math.floor(ls / 100) * 100;
-  if (milestone > 0 && !milestonesFired.has(milestone)) {
-    milestonesFired.add(milestone);
-    fireMilestone(milestone);
-  }
+  if (milestone > 0 && !milestonesFired.has(milestone)) { milestonesFired.add(milestone); fireMilestone(milestone); }
 }
 
 function fireMilestone(value) {
   Sound.milestone();
   const flash = document.getElementById('flash');
-  flash.classList.remove('fire');
-  void flash.offsetWidth;
-  flash.classList.add('fire');
+  flash.classList.remove('fire'); void flash.offsetWidth; flash.classList.add('fire');
   for (let i = 0; i < 3; i++) {
     setTimeout(() => {
-      spawnBurst(
-        window.innerWidth / 2 + (Math.random() - 0.5) * 200,
-        window.innerHeight / 2 + (Math.random() - 0.5) * 200,
-        25, i % 2 === 0 ? '#00f0ff' : '#ffe94d', 1.5
-      );
-    }, i * 120);
+      spawnBurst(window.innerWidth/2 + (Math.random()-0.5)*200, window.innerHeight/2 + (Math.random()-0.5)*200, 25, i%2===0?'#00f0ff':'#ffe94d', 1.5);
+    }, i*120);
   }
   setStatus(`🎉 <span class="hl-yellow">РУБЕЖ ${value} ОЧКОВ!</span> Так держать!`);
 }
 
-/* ============================================================
-   ОТРИСОВКА ДОСКИ
-   ============================================================ */
 function drawBoardBg() {
   const grad = ctx.createRadialGradient(PX/2, PX/2, 20, PX/2, PX/2, PX);
-  grad.addColorStop(0, '#0d1132');
-  grad.addColorStop(0.6, '#0a0d24');
-  grad.addColorStop(1, '#06080f');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, PX, PX);
-
-  ctx.strokeStyle = 'rgba(0,240,255,0.25)';
-  ctx.lineWidth = 1;
-  ctx.shadowColor = 'rgba(0,240,255,0.4)';
-  ctx.shadowBlur = 4;
+  grad.addColorStop(0, '#0d1132'); grad.addColorStop(0.6, '#0a0d24'); grad.addColorStop(1, '#06080f');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, PX, PX);
+  ctx.strokeStyle = 'rgba(0,240,255,0.25)'; ctx.lineWidth = 1;
+  ctx.shadowColor = 'rgba(0,240,255,0.4)'; ctx.shadowBlur = 4;
   ctx.beginPath();
   for (let i = 0; i < N; i++) {
     ctx.moveTo(MG, MG + i * CS); ctx.lineTo(MG + (N-1)*CS, MG + i*CS);
     ctx.moveTo(MG + i * CS, MG); ctx.lineTo(MG + i*CS, MG + (N-1)*CS);
   }
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  ctx.fillStyle = 'rgba(0,240,255,0.7)';
-  ctx.shadowColor = 'rgba(0,240,255,0.9)';
-  ctx.shadowBlur = 8;
+  ctx.stroke(); ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(0,240,255,0.7)'; ctx.shadowColor = 'rgba(0,240,255,0.9)'; ctx.shadowBlur = 8;
   for (const [x, y] of [[2,2],[2,6],[6,2],[6,6],[4,4]]) {
-    ctx.beginPath();
-    ctx.arc(MG + x*CS, MG + y*CS, 3.5, 0, Math.PI*2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(MG + x*CS, MG + y*CS, 3.5, 0, Math.PI*2); ctx.fill();
   }
   ctx.shadowBlur = 0;
 }
 
 function drawStone(x, y, color) {
   const r = CS * 0.44;
-  ctx.beginPath();
-  ctx.arc(x, y + 2, r, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,.5)';
-  ctx.fill();
-
+  ctx.beginPath(); ctx.arc(x, y + 2, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fill();
   const g = ctx.createRadialGradient(x - r*0.4, y - r*0.4, r*0.1, x, y, r);
   if (color === BLACK) {
-    g.addColorStop(0, '#5a3a8a');
-    g.addColorStop(0.5, '#2a1a4a');
-    g.addColorStop(1, '#0a0510');
-    ctx.shadowColor = 'rgba(255,0,212,0.6)';
-    ctx.shadowBlur = 10;
+    g.addColorStop(0, '#5a3a8a'); g.addColorStop(0.5, '#2a1a4a'); g.addColorStop(1, '#0a0510');
+    ctx.shadowColor = 'rgba(255,0,212,0.6)'; ctx.shadowBlur = 10;
   } else {
-    g.addColorStop(0, '#ffffff');
-    g.addColorStop(0.6, '#d8eef8');
-    g.addColorStop(1, '#6ab0c4');
-    ctx.shadowColor = 'rgba(0,240,255,0.7)';
-    ctx.shadowBlur = 12;
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#d8eef8'); g.addColorStop(1, '#6ab0c4');
+    ctx.shadowColor = 'rgba(0,240,255,0.7)'; ctx.shadowBlur = 12;
   }
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = g;
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
   ctx.shadowBlur = 0;
-
   ctx.strokeStyle = color === BLACK ? 'rgba(255,0,212,0.8)' : 'rgba(0,240,255,0.9)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.lineWidth = 1.5; ctx.stroke();
 }
 
 function computeQualityMap() {
@@ -1018,13 +931,11 @@ function computeQualityMap() {
   const map = new Uint8Array(NN);
   for (let i = 0; i < NN; i++) {
     if (board[i] !== EMPTY || i === ko) continue;
-    const r = tryPlay(board, i, player, ko);
-    if (!r) continue;
+    const r = tryPlay(board, i, player, ko); if (!r) continue;
     if (r.capturedStones.length > 0) { map[i] = 1; continue; }
     if (isOwnEye(board, i, player)) continue;
     if (isInOwnTerritory(board, i, player)) continue;
-    const g = groupInfo(r.board, i);
-    if (g.libs.length === 1) { map[i] = 2; continue; }
+    if (r.ownLibs === 1) { map[i] = 2; continue; }
     map[i] = 1;
   }
   return map;
@@ -1032,30 +943,17 @@ function computeQualityMap() {
 
 function render() {
   drawBoardBg();
-
   if (hover >= 0 && board[hover] === EMPTY && !thinking && !gameOver
       && player === humanColor && !capturePreview && state === 'playing') {
     ctx.fillStyle = 'rgba(0,240,255,0.2)';
-    ctx.beginPath();
-    ctx.arc(px(hover), py(hover), CS*0.42, 0, Math.PI*2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(px(hover), py(hover), CS*0.42, 0, Math.PI*2); ctx.fill();
   }
-
-  for (let i = 0; i < NN; i++) {
-    if (board[i] !== EMPTY) drawStone(px(i), py(i), board[i]);
-  }
-
+  for (let i = 0; i < NN; i++) if (board[i] !== EMPTY) drawStone(px(i), py(i), board[i]);
   if (lastMove >= 0 && board[lastMove] !== EMPTY && !capturePreview) {
-    ctx.strokeStyle = '#ffe94d';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#ffe94d';
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(px(lastMove), py(lastMove), CS*0.17, 0, Math.PI*2);
-    ctx.stroke();
+    ctx.strokeStyle = '#ffe94d'; ctx.lineWidth = 2.5; ctx.shadowColor = '#ffe94d'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(px(lastMove), py(lastMove), CS*0.17, 0, Math.PI*2); ctx.stroke();
     ctx.shadowBlur = 0;
   }
-
   if (learningMode && !gameOver && !capturePreview) {
     if (player === humanColor && !thinking && state === 'playing') {
       if (!qualityCache) qualityCache = computeQualityMap();
@@ -1063,14 +961,10 @@ function render() {
         for (let i = 0; i < NN; i++) {
           const q = qualityCache[i];
           if (q === 1) {
-            ctx.fillStyle = 'rgba(0,255,136,0.9)';
-            ctx.shadowColor = 'rgba(0,255,136,0.9)';
-            ctx.shadowBlur = 8;
+            ctx.fillStyle = 'rgba(0,255,136,0.9)'; ctx.shadowColor = 'rgba(0,255,136,0.9)'; ctx.shadowBlur = 8;
             ctx.beginPath(); ctx.arc(px(i), py(i), CS*0.14, 0, Math.PI*2); ctx.fill();
           } else if (q === 2) {
-            ctx.fillStyle = 'rgba(255,233,77,0.9)';
-            ctx.shadowColor = 'rgba(255,233,77,0.9)';
-            ctx.shadowBlur = 8;
+            ctx.fillStyle = 'rgba(255,233,77,0.9)'; ctx.shadowColor = 'rgba(255,233,77,0.9)'; ctx.shadowBlur = 8;
             ctx.beginPath(); ctx.arc(px(i), py(i), CS*0.1, 0, Math.PI*2); ctx.fill();
           }
         }
@@ -1078,170 +972,94 @@ function render() {
       }
     }
     const atari = findAtari(board);
-    ctx.strokeStyle = 'rgba(255,51,85,0.9)';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = 'rgba(255,51,85,0.8)';
-    ctx.shadowBlur = 8;
+    ctx.strokeStyle = 'rgba(255,51,85,0.9)'; ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(255,51,85,0.8)'; ctx.shadowBlur = 8;
     for (let i = 0; i < NN; i++) {
-      if (atari[i]) {
-        ctx.beginPath();
-        ctx.arc(px(i), py(i), CS*0.5, 0, Math.PI*2);
-        ctx.stroke();
-      }
+      if (atari[i]) { ctx.beginPath(); ctx.arc(px(i), py(i), CS*0.5, 0, Math.PI*2); ctx.stroke(); }
     }
     ctx.shadowBlur = 0;
   }
-
   if (capturePreview) {
-    const t = performance.now() / 200;
-    const pulse = 0.5 + 0.5 * Math.sin(t);
+    const t = performance.now() / 200, pulse = 0.5 + 0.5 * Math.sin(t);
     for (const pos of capturePreview.captures) {
-      ctx.fillStyle = `rgba(255,51,85,${0.35 + 0.35*pulse})`;
-      ctx.shadowColor = '#ff3355';
-      ctx.shadowBlur = 15;
+      ctx.fillStyle = `rgba(255,51,85,${0.35 + 0.35*pulse})`; ctx.shadowColor = '#ff3355'; ctx.shadowBlur = 15;
       ctx.beginPath(); ctx.arc(px(pos), py(pos), CS*0.46, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = `rgba(255,120,140,${0.7 + 0.3*pulse})`;
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = `rgba(255,120,140,${0.7 + 0.3*pulse})`; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(px(pos), py(pos), CS*0.46, 0, Math.PI*2); ctx.stroke();
     }
     const mp = capturePreview.move;
-    ctx.fillStyle = `rgba(0,255,136,${0.45 + 0.35*pulse})`;
-    ctx.shadowColor = '#00ff88';
-    ctx.shadowBlur = 20;
+    ctx.fillStyle = `rgba(0,255,136,${0.45 + 0.35*pulse})`; ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 20;
     ctx.beginPath(); ctx.arc(px(mp), py(mp), CS*0.44, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = `rgba(120,255,180,${0.8 + 0.2*pulse})`;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(120,255,180,${0.8 + 0.2*pulse})`; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(px(mp), py(mp), CS*0.44, 0, Math.PI*2); ctx.stroke();
     ctx.shadowBlur = 0;
   }
 }
 
-/* ============================================================
-   ИГРОВОЙ ЦИКЛ
-   ============================================================ */
 function snapshot() {
-  history.push({
-    board: new Int8Array(board), player, ko, passes, lastMove, gameOver,
-    capturedByBlack, capturedByWhite,
-  });
+  history.push({ board: new Int8Array(board), player, ko, passes, lastMove, gameOver, capturedByBlack, capturedByWhite });
 }
 
 function applyMove(idx) {
   const r = tryPlay(board, idx, player, ko);
   if (!r) return false;
-  snapshot();
-  board = r.board;
-  ko = r.ko;
-  lastMove = idx;
-  passes = 0;
+  snapshot(); board = r.board; ko = r.ko; lastMove = idx; passes = 0;
   if (player === BLACK) capturedByBlack += r.capturedStones.length;
   else capturedByWhite += r.capturedStones.length;
-  player = 3 - player;
-  invalidateQuality();
-  render();
-  updateScoreUI();
-
-  // Автосохранение после хода
+  const mover = player; player = 3 - player;
+  invalidateQuality(); render(); updateScoreUI();
   if (!gameOver) saveGame();
-
   Sound.place();
   if (r.capturedStones.length > 0) {
     Sound.capture();
-    for (const pos of r.capturedStones) {
-      spawnBurstBoard(pos, 12, '#ff3355', 1.2);
-    }
+    for (const pos of r.capturedStones) spawnBurstBoard(pos, 12, '#ff3355', 1.2);
     spawnBurstBoard(idx, 18, '#ff00d4', 1.5);
   } else {
-    spawnBurstBoard(idx, 6, player === WHITE ? '#00f0ff' : '#ff00d4', 0.7);
+    spawnBurstBoard(idx, 6, mover === WHITE ? '#00f0ff' : '#ff00d4', 0.7);
   }
   return true;
 }
 
 function applyPass() {
-  snapshot();
-  passes++;
-  ko = -1;
-  lastMove = -1;
-  player = 3 - player;
-  invalidateQuality();
-  render();
-  updateScoreUI();
-
+  snapshot(); passes++; ko = -1; lastMove = -1; player = 3 - player;
+  invalidateQuality(); render(); updateScoreUI();
   if (!gameOver) saveGame();
 }
 
-function checkEnd() {
-  if (passes >= 2) {
-    endGame('scored');
-    return true;
-  }
-  return false;
-}
+function checkEnd() { if (passes >= 2) { endGame('scored'); return true; } return false; }
 
-/* ============================================================
-   КОНЕЦ ИГРЫ
-   ============================================================ */
 function endGame(reason) {
   if (gameOver) return;
-  gameOver = true;
-  state = 'gameover';
-  setThinking(false);
-  invalidateQuality();
-  deleteSave();
-
-  const s = scoreBoard(board);
-  const d = s.black - (s.white + KOMI);
+  gameOver = true; state = 'gameover';
+  setThinking(false); invalidateQuality(); deleteSave();
+  console.log('%c[NEON-GO] Итог:', 'color:#ffe94d;font-weight:bold', JSON.parse(JSON.stringify(diag)));
+  const s = scoreBoard(board); const d = s.black - (s.white + KOMI);
   const live = computeLiveScore();
-
   let title, win;
-  if (reason === 'resign') {
-    title = 'ВЫ СДАЛИСЬ';
-    win = false;
-  } else if (d > 0) {
-    title = 'ПОБЕДА!';
-    win = true;
-  } else if (d < 0) {
-    title = 'ПОРАЖЕНИЕ';
-    win = false;
-  } else {
-    title = 'НИЧЬЯ';
-    win = false;
-  }
-
+  if (reason === 'resign') { title = 'ВЫ СДАЛИСЬ'; win = false; }
+  else if (d > 0) { title = 'ПОБЕДА!'; win = true; }
+  else if (d < 0) { title = 'ПОРАЖЕНИЕ'; win = false; }
+  else { title = 'НИЧЬЯ'; win = false; }
   document.getElementById('gameOverTitle').textContent = title;
   document.getElementById('gameOverTitle').style.color = win ? '#00ff88' : (d === 0 ? '#ffe94d' : '#ff3355');
   document.getElementById('finalScore').textContent = live;
   document.getElementById('bestScore').textContent = myBest;
   document.getElementById('globalScore').textContent = globalRec.score || 0;
-
   const isRecord = live > myBest && live > 0;
   document.getElementById('newRecordBadge').style.display = isRecord ? 'block' : 'none';
-
   if (win) Sound.win(); else Sound.lose();
   if (isRecord) setTimeout(() => Sound.record(), 500);
-
   if (win || isRecord) {
     for (let i = 0; i < 4; i++) {
       setTimeout(() => {
-        spawnBurst(
-          window.innerWidth * (0.2 + Math.random() * 0.6),
-          window.innerHeight * (0.2 + Math.random() * 0.6),
-          30, ['#ffe94d','#00ff88','#00f0ff','#ff00d4'][i % 4], 1.6
-        );
-      }, i * 180);
+        spawnBurst(window.innerWidth*(0.2+Math.random()*0.6), window.innerHeight*(0.2+Math.random()*0.6), 30, ['#ffe94d','#00ff88','#00f0ff','#ff00d4'][i%4], 1.6);
+      }, i*180);
     }
   }
-
   submitScore(live);
-
-  setTimeout(() => {
-    document.getElementById('gameOverOverlay').classList.add('active');
-  }, 600);
+  setTimeout(() => { document.getElementById('gameOverOverlay').classList.add('active'); }, 600);
 }
 
-/* ============================================================
-   ИИ
-   ============================================================ */
 function setThinking(v) {
   thinking = v;
   passBtn.disabled = v || gameOver;
@@ -1253,66 +1071,79 @@ function setThinking(v) {
 async function aiTurn() {
   if (gameOver || player === humanColor || thinking) return;
   const myGen = gen;
-
+  diag.aiTurns++;
   const legal = legalMoves(board, player, ko);
   if (legal.length === 0) {
+    diag.aiPasses++;
     applyPass();
-    if (!checkEnd()) setStatus('Компьютер пасует. <span class="hl-cyan">Ваш ход.</span>');
+    if (!checkEnd()) setStatus('Компьютер пасует (нет ходов). <span class="hl-cyan">Ваш ход.</span>');
     return;
   }
-
   setThinking(true);
   const thinkMs = parseInt(levelEl.value, 10);
   setStatus('Компьютер думает…');
   await sleep(20);
   if (myGen !== gen) return;
-
-  const root = new Node(null, new Int8Array(board), player, ko, -1, 3 - player, 0);
+  const root = new Node(null, new Int8Array(board), player, ko, -1, 3 - player, passes);
   let iters = 0;
   const deadline = performance.now() + thinkMs;
-
   while (performance.now() < deadline) {
     const chunkEnd = performance.now() + 12;
-    do { iterate(root); iters++; }
-    while (performance.now() < chunkEnd && performance.now() < deadline);
+    do { iterate(root); iters++; } while (performance.now() < chunkEnd && performance.now() < deadline);
     await sleep(0);
     if (myGen !== gen) return;
   }
+  const totalVisits = root.visits;
+  const rootWinRate = totalVisits > 0 ? 1 - root.wins / totalVisits : 0.5;
+  diag.totalIters += iters;
 
-  const rootWinRate = 1 - root.wins / Math.max(1, root.visits);
-
-  let best = null;
-  for (const ch of root.children) {
-    if (ch.move === -1) continue;
-    if (isOwnEye(root.board, ch.move, root.playerToMove)) continue;
-    if (isInOwnTerritory(root.board, ch.move, root.playerToMove)) continue;
-    if (!best || ch.visits > best.visits) best = ch;
-  }
+  const selected = selectBestMove(root);
+  let best = selected ? selected.node : null;
+  let tacticalInfo = selected ? selected.info : null;
+  let avoided = false;
 
   if (!best) {
-    setThinking(false);
-    if (myGen !== gen) return;
-    applyPass();
-    if (checkEnd()) return;
-    setStatus('Компьютер <b>пасует</b> — нет хороших ходов.');
-    return;
-  }
-
-  const passChild = root.children.find(ch => ch.move === -1);
-  if (passChild && rootWinRate > 0.6 && passChild.visits >= best.visits * 0.5) {
-    setThinking(false);
-    if (myGen !== gen) return;
-    applyPass();
-    if (checkEnd()) return;
-    setStatus(`Компьютер считает себя впереди (<span class="hl-yellow">${(rootWinRate*100).toFixed(0)}%</span>) и <b>пасует</b>.`);
-    return;
+    const usable = legal.filter(mv => {
+      if (isOwnEye(board, mv, player)) return false;
+      if (isInOwnTerritory(board, mv, player)) return false;
+      const r = tryPlay(board, mv, player, ko);
+      if (!r) return false;
+      if (r.capturedStones.length > 0) return true;
+      return r.ownLibs > 1;
+    });
+    if (usable.length > 0) {
+      best = { move: usable[(Math.random() * usable.length) | 0], visits: 1, wins: 0 };
+      avoided = true;
+      diag.aiSelfAtariAvoid++;
+      console.log('[NEON-GO] AI: MCTS пусто, но есть безопасный ход → fallback', best.move);
+    } else {
+      diag.aiPasses++;
+      setThinking(false);
+      if (myGen !== gen) return;
+      applyPass();
+      if (checkEnd()) return;
+      setStatus('Компьютер <b>пасует</b> — все ходы вели бы к самоатари. Если у вас тоже, жмите ПАС.');
+      return;
+    }
   }
 
   const finalCheck = tryPlay(board, best.move, player, ko);
   if (!finalCheck) {
-    if (legal.length > 0) best = { move: legal[0], visits: 1, wins: 0 };
-    else { setThinking(false); applyPass(); if (!checkEnd()) setStatus('Компьютер пасует.'); return; }
+    const usable = legal.filter(mv => {
+      if (isOwnEye(board, mv, player) || isInOwnTerritory(board, mv, player)) return false;
+      const r = tryPlay(board, mv, player, ko);
+      return r && (r.capturedStones.length > 0 || r.ownLibs > 1);
+    });
+    if (usable.length > 0) { best = { move: usable[0], visits: 1, wins: 0 }; avoided = true; }
+    else {
+      diag.aiPasses++;
+      setThinking(false); applyPass();
+      if (!checkEnd()) setStatus('Компьютер пасует.');
+      return;
+    }
   }
+
+  if (tacticalInfo && tacticalInfo.selfAtari) avoided = true;
 
   const previewResult = tryPlay(board, best.move, player, ko);
   if (previewResult && previewResult.capturedStones.length > 0) {
@@ -1327,21 +1158,18 @@ async function aiTurn() {
 
   setThinking(false);
   if (myGen !== gen) return;
-
   const capturesNow = (tryPlay(board, best.move, player, ko) || {capturedStones:[]}).capturedStones.length;
+  if (capturesNow > 0) diag.aiCaptures += capturesNow;
+  diag.perTurnLog.push({ turn: diag.aiTurns, move: best.move, iters, winRate: rootWinRate, captures: capturesNow, avoided });
   applyMove(best.move);
   if (checkEnd()) return;
 
-  if (capturesNow > 0) {
-    setStatus(`Компьютер снял <span class="hl-red">${capturesNow} ваш(их) камень(ей)</span>. · Ваш ход.`);
-  } else {
-    setStatus(`Компьютер сыграл. <span class="hl-cyan">Оценка ${(rootWinRate*100).toFixed(0)}%</span> · Ваш ход.`);
-  }
+  let info = '';
+  if (capturesNow > 0) info = ` · <span class="hl-green">взятие ${capturesNow}</span>`;
+  else if (avoided) info = ' · <span class="hl-yellow">избежал подставы</span>';
+  setStatus(`Компьютер сыграл${info}. <span style="color:#6f7889">Оценка ${(rootWinRate*100).toFixed(0)}%, дерево ${totalVisits}</span> · Ваш ход.`);
 }
 
-/* ============================================================
-   ХОД ИГРОКА
-   ============================================================ */
 async function humanPlay(idx) {
   if (thinking || gameOver || player !== humanColor || capturePreview || state !== 'playing') return;
   if (board[idx] !== EMPTY) return;
@@ -1351,17 +1179,11 @@ async function humanPlay(idx) {
   await aiTurn();
 }
 
-/* ============================================================
-   ВВОД
-   ============================================================ */
 function pointFromClient(clientX, clientY) {
   const rect = cv.getBoundingClientRect();
-  const scaleX = PX / rect.width;
-  const scaleY = PX / rect.height;
-  const mx = (clientX - rect.left) * scaleX;
-  const my = (clientY - rect.top) * scaleY;
-  const x = Math.round((mx - MG) / CS);
-  const y = Math.round((my - MG) / CS);
+  const scaleX = PX / rect.width, scaleY = PX / rect.height;
+  const mx = (clientX - rect.left) * scaleX, my = (clientY - rect.top) * scaleY;
+  const x = Math.round((mx - MG) / CS), y = Math.round((my - MG) / CS);
   if (x < 0 || x >= N || y < 0 || y >= N) return -1;
   const dx = mx - (MG + x * CS), dy = my - (MG + y * CS);
   if (dx*dx + dy*dy > (CS*0.5)**2) return -1;
@@ -1369,18 +1191,11 @@ function pointFromClient(clientX, clientY) {
 }
 
 let tapStart = null;
-cv.addEventListener('pointerdown', e => {
-  if (e.pointerType === 'mouse') return;
-  tapStart = { x: e.clientX, y: e.clientY };
-});
+cv.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') tapStart = { x: e.clientX, y: e.clientY }; });
 cv.addEventListener('pointerup', e => {
-  if (e.pointerType === 'mouse') return;
-  if (!tapStart) return;
+  if (e.pointerType === 'mouse' || !tapStart) return;
   const dx = e.clientX - tapStart.x, dy = e.clientY - tapStart.y;
-  if (dx*dx + dy*dy < 144) {
-    const p = pointFromClient(e.clientX, e.clientY);
-    if (p >= 0) humanPlay(p);
-  }
+  if (dx*dx + dy*dy < 144) { const p = pointFromClient(e.clientX, e.clientY); if (p >= 0) humanPlay(p); }
   tapStart = null;
 });
 cv.addEventListener('pointermove', e => {
@@ -1390,15 +1205,9 @@ cv.addEventListener('pointermove', e => {
   }
 });
 cv.addEventListener('pointerleave', () => { if (hover !== -1) { hover = -1; render(); } });
-cv.addEventListener('click', e => {
-  const p = pointFromClient(e.clientX, e.clientY);
-  if (p >= 0) humanPlay(p);
-});
+cv.addEventListener('click', e => { const p = pointFromClient(e.clientX, e.clientY); if (p >= 0) humanPlay(p); });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 
-/* ============================================================
-   КНОПКИ
-   ============================================================ */
 passBtn.onclick = async () => {
   if (thinking || gameOver || player !== humanColor || capturePreview || state !== 'playing') return;
   applyPass();
@@ -1409,16 +1218,12 @@ passBtn.onclick = async () => {
 
 undoBtn.onclick = () => {
   if (thinking || capturePreview || history.length === 0 || state !== 'playing') return;
-  let s;
-  do { s = history.pop(); if (!s) break; } while (s.player !== humanColor);
+  let s; do { s = history.pop(); if (!s) break; } while (s.player !== humanColor);
   if (!s) return;
   board = s.board; player = s.player; ko = s.ko; passes = s.passes;
   lastMove = s.lastMove; gameOver = s.gameOver;
   capturedByBlack = s.capturedByBlack; capturedByWhite = s.capturedByWhite;
-  hover = -1;
-  invalidateQuality();
-  render(); updateScoreUI();
-  saveGame();
+  hover = -1; invalidateQuality(); render(); updateScoreUI(); saveGame();
   setStatus('Ход отменён. Ваш ход.');
 };
 
@@ -1428,144 +1233,81 @@ resignBtn.onclick = () => {
   endGame('resign');
 };
 
-learnBox.addEventListener('change', () => {
-  learningMode = learnBox.checked;
-  render();
-});
+learnBox.addEventListener('change', () => { learningMode = learnBox.checked; render(); });
 
-/* ============================================================
-   ОБРАБОТКА МЕНЮ (выход с диалогом сохранения)
-   ============================================================ */
 document.getElementById('menuBtn').addEventListener('click', () => {
-  // Если активная партия с ходами — показать диалог
   if (state === 'playing' && !gameOver && hasMoves()) {
-    // Отменить текущий ход ИИ (если думает или запланирован)
-    gen++;
-    if (thinking) setThinking(false);
-    // Автосохранение перед диалогом, чтобы "Сохранить" точно имел свежие данные
-    saveGame();
+    gen++; if (thinking) setThinking(false); saveGame();
     document.getElementById('exitOverlay').classList.add('active');
     return;
   }
-  // Иначе — прямой выход (сохранение не требуется)
   window.location.href = 'index.html';
 });
-
-document.getElementById('exitSaveBtn').onclick = () => {
-  saveGame();
-  window.location.href = 'index.html';
-};
-
-document.getElementById('exitNoSaveBtn').onclick = () => {
-  deleteSave();
-  window.location.href = 'index.html';
-};
-
+document.getElementById('exitSaveBtn').onclick = () => { saveGame(); window.location.href = 'index.html'; };
+document.getElementById('exitNoSaveBtn').onclick = () => { deleteSave(); window.location.href = 'index.html'; };
 document.getElementById('exitCancelBtn').onclick = () => {
   document.getElementById('exitOverlay').classList.remove('active');
-  // Если был отменён ход ИИ — перезапустить его
-  if (state === 'playing' && !gameOver && player !== humanColor) {
-    setThinking(false);
-    aiTurn();
-  }
+  if (state === 'playing' && !gameOver && player !== humanColor) { setThinking(false); aiTurn(); }
 };
 
-/* ============================================================
-   ЗАПУСК / РЕСТАРТ
-   ============================================================ */
 function newGame() {
   gen++;
-  board = new Int8Array(NN);
-  player = BLACK;
-  ko = -1;
-  passes = 0;
-  gameOver = false;
-  lastMove = -1;
-  history = [];
-  hover = -1;
-  capturedByBlack = 0;
-  capturedByWhite = 0;
-  capturePreview = null;
-  invalidateQuality();
-  milestonesFired.clear();
-  particles.length = 0;
-  setThinking(false);
-  state = 'playing';
-  deleteSave();
-  render();
-  updateScoreUI();
+  board = new Int8Array(NN); player = BLACK; ko = -1; passes = 0;
+  gameOver = false; lastMove = -1; history = []; hover = -1;
+  capturedByBlack = 0; capturedByWhite = 0;
+  capturePreview = null; invalidateQuality(); milestonesFired.clear(); particles.length = 0;
+  diag.totalIters = 0; diag.aiTurns = 0; diag.aiPasses = 0;
+  diag.aiCaptures = 0; diag.aiSelfAtariAvoid = 0; diag.perTurnLog = [];
+  setThinking(false); state = 'playing'; deleteSave(); render(); updateScoreUI();
   setStatus('Ваш ход — чёрные. Белым +0.5 коми.');
 }
 
-/* ---------- заставка: динамические кнопки ---------- */
 function refreshSplashButtons() {
   const container = document.getElementById('splashActions');
   const badgeWrap = document.getElementById('savedBadgeWrap');
   if (!container) return;
-
   if (hasSavedGame()) {
     if (badgeWrap) badgeWrap.style.display = 'block';
     container.innerHTML =
       '<button class="big-btn" id="continueBtn">▶ ПРОДОЛЖИТЬ</button>' +
       '<button class="big-btn mag" id="newFromSplashBtn">🆕 НОВАЯ ИГРА</button>';
     document.getElementById('continueBtn').onclick = () => {
-      Sound.init();
-      document.getElementById('splash').classList.remove('active');
-      if (!loadGame()) {
-        deleteSave();
-        newGame();
-      }
+      Sound.init(); document.getElementById('splash').classList.remove('active');
+      if (!loadGame()) { deleteSave(); newGame(); }
     };
     document.getElementById('newFromSplashBtn').onclick = () => {
-      Sound.init();
-      deleteSave();
-      document.getElementById('splash').classList.remove('active');
-      newGame();
+      Sound.init(); deleteSave(); document.getElementById('splash').classList.remove('active'); newGame();
     };
   } else {
     if (badgeWrap) badgeWrap.style.display = 'none';
     container.innerHTML = '<button class="big-btn" id="startBtn">▶ СТАРТ</button>';
     document.getElementById('startBtn').onclick = () => {
-      Sound.init();
-      document.getElementById('splash').classList.remove('active');
-      newGame();
+      Sound.init(); document.getElementById('splash').classList.remove('active'); newGame();
     };
   }
 }
 
 document.getElementById('playAgainBtn').onclick = () => {
-  document.getElementById('gameOverOverlay').classList.remove('active');
-  newGame();
+  document.getElementById('gameOverOverlay').classList.remove('active'); newGame();
 };
-
 document.getElementById('showLbBtn').onclick = () => {
   try { if (typeof LeaderboardUI !== 'undefined') LeaderboardUI.open(GAME_ID); } catch(e) {}
 };
 
-/* ============================================================
-   ANIMATION LOOP
-   ============================================================ */
 function loop() {
-  updateParticles();
-  drawParticles();
+  updateParticles(); drawParticles();
   if (capturePreview) render();
   requestAnimationFrame(loop);
 }
 loop();
 
-/* ============================================================
-   МОБИЛЬНЫЙ РЕЖИМ
-   ============================================================ */
 if (window.matchMedia('(max-width: 700px)').matches) {
   setTimeout(() => window.scrollTo(0, 1), 150);
-  document.body.addEventListener('touchstart', () => {
-    window.scrollTo(0, 1);
-  }, { passive: true, once: true });
+  document.body.addEventListener('touchstart', () => { window.scrollTo(0, 1); }, { passive: true, once: true });
 }
 
 document.addEventListener('pointerdown', () => Sound.init(), { once: true });
 
-/* ---------- инициализация ---------- */
 refreshSplashButtons();
 render();
 updateScoreUI();
