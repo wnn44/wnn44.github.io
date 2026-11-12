@@ -175,4 +175,15 @@ window.GAMES = [
 	  tags:        ['логика', 'стратегия', 'настольная', 'ии', 'го'],
 	  preview:     { type: 'image', src: 'previews/neon-go.jpg' }
   },
+  {
+	  id:          'renju',
+	  title:       'NEON РЭНДЗЮ',
+	  description: 'Классическое рэндзю в неоне: пять в ряд, строгие запреты для чёрных и тактический ИИ.',
+	  url:         'renju.html',
+	  icon:        '⚫⚪',
+	  color:       '#00f0ff',
+	  accent:      '#ff2bd6',
+	  tags:        ['логика', 'стратегия', 'настольная', 'пять-в-ряд', 'рэндзю', 'ии'],
+	  preview:     { type: 'video', src: 'previews/renju.mp4' }
+  },
 ];
