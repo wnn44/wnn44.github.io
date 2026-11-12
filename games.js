@@ -182,7 +182,6 @@ window.GAMES = [
 	  url:         'renju.html',
 	  icon:        '⚫⚪',
 	  color:       '#00f0ff',
-	  accent:      '#ff2bd6',
 	  tags:        ['логика', 'стратегия', 'настольная', 'пять-в-ряд', 'рэндзю', 'ии'],
 	  preview:     { type: 'video', src: 'previews/renju.mp4' }
   },
