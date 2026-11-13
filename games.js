@@ -183,6 +183,6 @@ window.GAMES = [
 	  icon:        '⚫⚪',
 	  color:       '#00f0ff',
 	  tags:        ['логика', 'стратегия', 'настольная', 'пять-в-ряд', 'рэндзю', 'ии'],
-	  preview:     { type: 'video', src: 'previews/renju.mp4' }
+	  preview:     { type: 'image', src: 'previews/renju.jpg' }
   },
 ];
