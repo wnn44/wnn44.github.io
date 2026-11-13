@@ -598,7 +598,11 @@ const Sound = {
       this.master.connect(this.ctx.destination);
     } catch (e) { this.ctx = null; }
   },
-  resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); },
+  resume() {
+    if (this.ctx && this.ctx.state !== 'running') {
+      try { this.ctx.resume(); } catch (e) {}
+    }
+  },
   tone(freq, dur, type, vol, delay, slideTo) {
     if (this.muted || !this.ctx) return;
     const t0 = this.ctx.currentTime + (delay || 0);
@@ -626,8 +630,29 @@ const Sound = {
     src.connect(f); f.connect(g); g.connect(this.master);
     src.start(t0);
   },
-  placeBlack() { this.noise(0.05, 0.16, 2400); this.tone(196, 0.09, 'sine', 0.10, 0, 130); },
-  placeWhite() { this.noise(0.05, 0.14, 3200); this.tone(392, 0.09, 'sine', 0.09, 0, 300); },
+  /* «бульканье»: мягкая капля — скачок частоты вверх и плавный спад вниз */
+  drop(f0, f1, dur, vol, when) {
+    if (this.muted || !this.ctx) return;
+    const t0 = this.ctx.currentTime + (when || 0);
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 7;
+    lp.frequency.setValueAtTime(f0 * 2.2, t0);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(180, f1 * 1.5), t0 + dur);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f0 * 0.8, t0);
+    o.frequency.exponentialRampToValueAtTime(f0, t0 + Math.min(0.03, dur * 0.25));
+    o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.014);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(lp); lp.connect(g); g.connect(this.master);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  },
+  placeBlack() { this.drop(300, 110, 0.17, 0.13); this.drop(520, 220, 0.09, 0.045, 0.055); },
+  placeWhite() { this.drop(430, 160, 0.15, 0.115); this.drop(700, 300, 0.08, 0.04, 0.05); },
   forbidden() { this.tone(120, 0.18, 'sawtooth', 0.11, 0, 70); this.tone(90, 0.22, 'square', 0.06, 0.05); },
   threat() { this.tone(660, 0.10, 'triangle', 0.08); this.tone(990, 0.14, 'sine', 0.07, 0.07); },
   block() { this.tone(300, 0.10, 'triangle', 0.09); this.tone(220, 0.14, 'sine', 0.07, 0.06); },
